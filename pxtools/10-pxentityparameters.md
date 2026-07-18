@@ -127,7 +127,6 @@ Cuando `MultiLanguage=true`, cada parámetro puede tener un valor diferente por 
 
 ## Uso real
 
-- 2 instancias en pFacturas KB
 - El módulo **@SystemParameters** usa este pattern para parámetros globales del sistema (PXWorkWithSystemParametersPreferences)
 
 ## Diferencia con @SystemParameters

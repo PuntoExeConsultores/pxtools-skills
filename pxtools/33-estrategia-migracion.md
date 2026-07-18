@@ -41,7 +41,7 @@ Antes de migrar WebPanels individuales, instalar los módulos @PXTools que prove
 | Funcionalidad actual | Módulo @PXTools | Acción |
 |---------------------|-----------------|--------|
 | Seguridad custom | @Security | Migrar usuarios/roles/permisos |
-| Menús manuales | @Menus o @SmartMenus | Migrar estructura de menú |
+| Menús manuales | @Menus | Migrar estructura de menú |
 | Parámetros del sistema | @SystemParameters | Migrar parámetros |
 | Envío de mails | @SendMails + @MailAccounts | Migrar configuración |
 | Gestión de archivos | @FileStorage | Migrar almacenamiento |

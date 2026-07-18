@@ -506,6 +506,8 @@ El nodo `codes` permite inyectar código GeneXus en puntos específicos del cicl
 </codes>
 ```
 
+> **Formato e indentación del CDATA**: en el `.gxPattern` real cada hook es `<code type="Start"><![CDATA[…]]></code>`; la primera línea va en **columna 0** y solo el anidamiento de bloques indenta (+1 tab). Regla completa (común a los patterns) en [`00-overview.md`](00-overview.md) → *Hooks de código: formato e indentación del CDATA*.
+
 ### Eventos personalizados
 
 Además de los hooks de código, el nodo `events` permite definir eventos GeneXus completos:
@@ -646,7 +648,7 @@ PXComposer puede embeber un PXParameterRequest como WebComponent, útil para pan
 
 ## 11. Ejemplos de uso real
 
-En la KB pFacturas se identifican **93 instancias** de PXParameterRequest. Los módulos @PXTools también usan extensivamente este pattern.
+PXParameterRequest se usa extensivamente, tanto en los propios módulos @PXTools como en las aplicaciones que los integran.
 
 ### Ejemplos por categoría
 
@@ -680,10 +682,10 @@ En la KB pFacturas se identifican **93 instancias** de PXParameterRequest. Los m
         <attribute name="FechaHasta" />
       </attributes>
       <variables>
-        <variable name="&Sucursal">
+        <variable name="&Categoria">
           <controlInfo controlType="Combo" />
         </variable>
-        <variable name="&Vendedor">
+        <variable name="&Etiquetas">
           <controlInfo controlType="Chosen" />
         </variable>
       </variables>

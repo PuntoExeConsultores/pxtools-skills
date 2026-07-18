@@ -316,7 +316,7 @@ Do Case
         Call(WbConfirmacion, ...)
     Case &Step = 2
         // Procesar
-        PrcFacturar(...)
+        PrcProcesar(...)
     Case &Step = 3
         // Resultado
 EndCase

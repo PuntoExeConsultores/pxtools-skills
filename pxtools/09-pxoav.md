@@ -136,7 +136,6 @@ instance
 
 ## Uso real
 
-- 2 instancias en pFacturas KB
 - El módulo **@OAV** provee la infraestructura base: TOAVAttributes, TOAVAttributeValues, TSystemObjectOAVAttributes con sus respectivos PXWorkWith para ABM
 - Se usa para agregar campos personalizables a entidades sin modificar la base de datos
 

@@ -370,3 +370,25 @@ Guia para migrar eventos de WebPanels manuales a acciones de patterns:
 | `Return` al final del evento | Implicito en el ciclo de la accion |
 | Solo codigo sin invocacion a objeto | `callType="Event"` (todo va como codigo inline) |
 | Solo retorno sin logica | `callType="Return"` |
+
+---
+
+## 10. Seguridad automática: visibilidad de acciones que navegan (PIsAuthorized)
+
+Cuando una acción **navega a otro objeto** (`callType="Link"` con `instanceObject`/`gxObject`, o un `<link>` de columna/variable), PXTools genera en el **Start** del objeto generado un chequeo de autorización sobre el **objeto destino**; si el usuario no está autorizado, **oculta el control** (no lo deshabilita: `Visible = False`):
+
+```
+&lEnabled = udp(PIsAuthorized ,!'MiApp.WbAprobar')
+If &lEnabled = Boolean.False
+	btnAprobar.Visible = Boolean.False
+EndIf
+```
+
+**Consecuencias prácticas:**
+
+- **Es comportamiento esperado, no un bug.** Si una acción "no aparece" al entrar a la pantalla —y su `evaluateCondition` es `Event`, que no debería ocultar nada— la causa típica es esta gating: el usuario **no tiene permiso sobre el objeto destino**.
+- El chequeo es sobre el **objeto generado destino**, cuyo nombre depende de la plataforma: para un PXParameterRequest, `Wb{Name}` (Desktop) y `RWb{Name}` (Responsive); para un PXWorkWith, `WW{Name}`/`RWW{Name}`, `View{Name}`/`RView{Name}`, etc. Hay que **autorizar ambos** (Desktop y Responsive) en PXSecurity.
+- **Al agregar una acción que abre un objeto nuevo**, ese destino queda **sin autorizar por defecto** hasta que un admin lo conceda al rol → hasta entonces el botón **no se ve**. Paso obligatorio tras crear la acción: **autorizar el/los objeto(s) destino**.
+- No confundir con `condition`/`evaluateCondition`/`execute` (validación de datos) ni con el subnodo `<security object=… operation=…>` (permiso de ejecución de la propia acción): esta gating de **visibilidad** la genera PXTools **automáticamente** a partir de la navegación, sin declararla en la instancia.
+
+> Propiedad descubierta inspeccionando el objeto generado (`Tr{Name}`/`RTr{Name}`) — ver la metodología en `00-overview.md` → *"Verificar la instancia contra el objeto generado"*.

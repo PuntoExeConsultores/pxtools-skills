@@ -536,9 +536,9 @@ Esto garantiza que la version Desktop embeba componentes Desktop y la version Re
 | @WebServicesLog | `PXComposerWebServicesLog` | Panel de logs de web services |
 | @WebServicesLog | `PXComposerWebServicesStatisticCounters` | Panel de contadores estadisticos de WS |
 
-### Instancias en aplicaciones (pFacturas KB)
+### Uso típico en aplicaciones
 
-La base de conocimiento pFacturas contiene **14 instancias** de PXComposer, usadas para dashboards y pantallas compuestas del sistema de facturacion.
+PXComposer se usa típicamente para dashboards y pantallas compuestas que combinan varias instancias (Selection/View de PXWorkWith, etc.) en una sola vista.
 
 ### Instancias en @PuntoPagos
 

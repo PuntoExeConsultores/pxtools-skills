@@ -172,6 +172,26 @@ Cuando múltiples WebComponents están **desplegados simultáneamente en la mism
 
 La configuración de `GlobalEvents` se implementa en los **hooks de código** (nodos `codes` y `events`) de las instancias de patterns, no como propiedad declarativa del pattern.
 
+## Hooks de código: formato e indentación del CDATA (común a los patterns)
+
+Los nodos `codes` existen en **PXWorkWith, PXParameterRequest y PXComposer**. En el `.gxPattern` cada hook se serializa con el código dentro de un CDATA y la **primera línea pegada a la apertura** `<![CDATA[`:
+
+```xml
+<code type="Start"><![CDATA[&Total = 0
+For Each
+	Where PedidoId = &PedidoId
+	&Total = &Total + PedidoImporte
+EndFor]]></code>
+```
+
+**Regla de indentación** (aplica a todo pattern con code nodes CDATA):
+
+- La **primera línea** queda en **columna 0** (pegada al `<![CDATA[`), y las **líneas siguientes también arrancan en columna 0** para el nivel base. Error frecuente: dejar un **tab de más** desde la línea 2 — corre todo el bloque y deja `For Each`/`EndFor` (o `If`/`EndIf`) alineados con su propio contenido.
+- Solo el **anidamiento de bloques** (`For Each`, `If`, `Do While`, `Do Case`, `Sub`) suma **+1 tab**; las palabras clave de cierre (`EndFor`, `EndIf`, `EndDo`, `EndCase`, `EndSub`) se alinean con su apertura.
+- La **alineación interna** de los `=` (tabs a mitad de línea, tras el nombre del atributo) es independiente del leading y se conserva.
+
+> **Excepción — PXFlowController**: serializa el código como atributo `data="…"` (no CDATA), así que esta guía de indentación no aplica ahí.
+
 ## Templates de UI — Personalización total del diseño visual
 
 ### Concepto clave
@@ -321,7 +341,9 @@ Esto permite:
 
 PXTools incluye 25+ módulos reutilizables que proveen funcionalidad transversal. Cada módulo es un paquete de objetos GeneXus (Procedures, WebPanels, SDTs, DataProviders) que se instala bajo `Knowledge Base/@PXTools/@<NombreModulo>/`. Los módulos incluyen sus propias instancias de patterns (PXWorkWith para ABMs, PXParameterRequest para formularios, PXComposer para vistas compuestas).
 
-Módulos disponibles: @APIs, @Alerts, @Audit, @CloudTasks, @ControlPreferences, @DynamicCallReferences, @ExportImport, @FileStorage, @MailAccounts, @Menus, @OAV, @ProcessMonitor, @Projects, @ReceiveMails, @ResponsiveLayout, @Security, @SecurityProjects, @SendMails, @SmartMenus, @Statistics, @System, @SystemParameters, @TableCleaner, @TaskManager, @WSLayer, @WebServicesLog.
+Módulos disponibles: @APIs, @Alerts, @CloudTasks, @ControlPreferences, @DynamicCallReferences, @ExportImport, @FileStorage, @MailAccounts, @Menus, @OAV, @ProcessMonitor, @Projects, @ReceiveMails, @Security, @SecurityProjects, @SendMails, @Statistics, @System, @SystemParameters, @TableCleaner, @TaskManager, @WSLayer, @WebServicesLog.
+
+> **No son módulos PXTools** (aparecen bajo `@PXTools/` solo como glue): `@ResponsiveLayout` y `@SmartMenus` son módulos **de la plataforma GeneXus** que aportan SDTs/APIs de soporte a los User Controls de PXTools.
 
 Ver detalle en [20-modulos-pxtools.md](20-modulos-pxtools.md).
 
@@ -329,23 +351,23 @@ Ver detalle en [20-modulos-pxtools.md](20-modulos-pxtools.md).
 
 ### Objetos generados por PXWorkWith
 
-| Objeto generado | Naming | Ejemplo (instancia "Factura") |
+| Objeto generado | Naming | Ejemplo (instancia "Customer") |
 |-----------------|--------|-------------------------------|
-| Selection (Desktop) | `WW{Name}` | `WWFactura` |
-| Selection (Responsive) | `RWW{Name}` | `RWWFactura` |
-| View (Desktop) | `View{Name}` | `ViewFactura` |
-| View (Responsive) | `RView{Name}` | `RViewFactura` |
-| Prompt (Desktop) | `Pr{Name}` | `PrFactura` |
-| Prompt (Responsive) | `RPr{Name}` | `RPrFactura` |
-| Controller (Desktop) | `Ct{Name}` | `CtFactura` |
-| Controller (Responsive) | `RCt{Name}` | `RCtFactura` |
+| Selection (Desktop) | `WW{Name}` | `WWCustomer` |
+| Selection (Responsive) | `RWW{Name}` | `RWWCustomer` |
+| View (Desktop) | `View{Name}` | `ViewCustomer` |
+| View (Responsive) | `RView{Name}` | `RViewCustomer` |
+| Prompt (Desktop) | `Pr{Name}` | `PrCustomer` |
+| Prompt (Responsive) | `RPr{Name}` | `RPrCustomer` |
+| Controller (Desktop) | `Ct{Name}` | `CtCustomer` |
+| Controller (Responsive) | `RCt{Name}` | `RCtCustomer` |
 | Tab Grid Component | `{wcname}` | (definido en la instancia) |
 | Tab Tabular Component | `{wcname}` | (definido en la instancia) |
-| Export Excel | `Ex{Name}` | `ExFactura` |
-| Selected Rows SDT | `PXWW{Name}Rows` | `PXWWFacturaRows` |
-| Grid Handler DP | `PXWW{Name}Rows` | `PXWWFacturaRows` |
-| Transaction (Desktop) | `D{Name}` | `DFactura` |
-| Transaction (Responsive) | `R{Name}` | `RFactura` |
+| Export Excel | `Ex{Name}` | `ExCustomer` |
+| Selected Rows SDT | `PXWW{Name}Rows` | `PXWWCustomerRows` |
+| Grid Handler DP | `PXWW{Name}Rows` | `PXWWCustomerRows` |
+| Transaction (Desktop) | `D{Name}` | `DCustomer` |
+| Transaction (Responsive) | `R{Name}` | `RCustomer` |
 
 ### Objetos generados por patterns WS
 
@@ -361,3 +383,22 @@ Ver detalle en [20-modulos-pxtools.md](20-modulos-pxtools.md).
 | PXWSTransaction | Load Procedure | `WSTransactionTrnV1Load` | `WSTransactionCustomerV1Load` |
 | PXWSTransaction | Save Procedure | `WSTransactionTrnV1Save` | `WSTransactionCustomerV1Save` |
 | PXWSTransaction | Delete Procedure | `WSTransactionTrnV1Delete` | `WSTransactionCustomerV1Delete` |
+
+## Metodología: verificar la instancia contra el objeto generado
+
+Los objetos que genera un pattern **se escriben en disco** (KB externalizada) dentro de una carpeta oculta hermana de la instancia:
+
+```
+@Modulo/.../.{Instancia}.{Pattern}.gxPattern.Childs/
+    TrCustomer.WebPanel.gxSource    <- Selection Desktop generado
+    RTrCustomer.WebPanel.gxSource   <- Selection Responsive
+    ...
+```
+
+Ante un comportamiento inesperado (un control invisible/deshabilitado, un evento que no dispara, un dato que no llega), la vía más directa es **leer el objeto generado** y buscar qué código lo produce, en vez de adivinar sobre la instancia:
+
+- `grep` en el `.gxSource` generado por `.Visible`, `.Enabled`, `PIsAuthorized`, `Event '<Accion>'`, el nombre del control (`btn<Accion>`), o la variable/atributo involucrado.
+- Comparar lo generado con la intención de la instancia y localizar la **propiedad** (o la falta de autorización, o la regla del pattern) que causa la diferencia.
+- Corregir en la **instancia** (o en la config, p. ej. seguridad), **nunca** en el objeto generado (se regenera y se pierde).
+
+Cada propiedad así descubierta se **documenta** (en el doc del pattern o en `12-acciones-patterns-ui.md`) para que, con el tiempo, **no haga falta** volver a leer el código generado para programar la instancia correctamente. Ejemplos ya catalogados: la gating de visibilidad por `PIsAuthorized` de las acciones que navegan (`12-acciones-patterns-ui.md` §10); el hook `RefreshForm` que no se incluye en el export a Excel (`01-pxworkwith.md` §9.7).

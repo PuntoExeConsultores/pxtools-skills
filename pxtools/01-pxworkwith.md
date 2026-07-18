@@ -28,7 +28,7 @@ Cada objeto se genera en version Desktop (HTML WebForm) y Responsive (Abstract F
 
 ### Estadisticas de uso real
 
-En la KB pFacturas se registran **179 instancias** de PXWorkWith. El pattern se usa extensivamente en los modulos internos de PXTools: Security, Alerts, CloudTasks, FileStorage, entre otros.
+PXWorkWith es el pattern más usado del framework: aparece extensivamente en los propios módulos @PXTools (Security, Alerts, CloudTasks, FileStorage, entre otros) y en las aplicaciones que los integran.
 
 ---
 
@@ -297,8 +297,34 @@ El nodo `view` genera la pantalla de detalle de un registro. Produce los objetos
 **Componentes:**
 
 - **form**: layout tabular de atributos del registro principal.
+- **layouts/layout/fixedData**: la **cabecera** del View (ver abajo).
 - **sections**: pestanas (tabs) que pueden ser de tipo `Tabular` o `Grid`. Cada seccion genera un WebComponent independiente. Solo el tab activo está renderizado, por lo que `GlobalEvents` no aplica entre tabs. Para compartir información entre tabs se puede usar **WebSession** (un tab escribe, otro lee en su Start/Refresh), implementándolo en los hooks de código.
 - **actions, events, codes, variables, parameters**: misma estructura que Selection.
+
+**Cabecera del View (`fixedData`):** el View debe declarar un `layouts/layout/fixedData/fixedDataAttributes` (normalmente con un `<row>`) que muestra, fijo arriba de las pestañas, los **datos representativos del registro posicionado** — típicamente los valores de los **parámetros recibidos** por el View (o sus descripciones/atributos representativos). Ej.: si el View recibe `ClienteId, PedidoId`, la row muestra `ClienteNombre`, `PedidoFecha` y `PedidoId`:
+
+```xml
+<view caption="&quot;Pedido &quot; + PedidoId.ToString().Trim()" ...>
+  <parameters>
+    <parameter name="ClienteId" null="True" />
+    <parameter name="PedidoId" null="True" />
+  </parameters>
+  <layouts>
+    <layout platform="Any">
+      <fixedData>
+        <fixedDataAttributes>
+          <row>
+            <attribute name="ClienteNombre" description="Cliente" descriptionPosition="Left" />
+            <attribute name="PedidoFecha" description="Fecha" descriptionPosition="Left" />
+            <attribute name="PedidoId" description="Pedido" descriptionPosition="Left" />
+          </row>
+        </fixedDataAttributes>
+      </fixedData>
+    </layout>
+  </layouts>
+  <sections> ... </sections>
+</view>
+```
 
 ### 4.3 Prompt
 
@@ -473,6 +499,8 @@ filter
 
 **conditions (condiciones fijas)**: expresiones GeneXus que se aplican siempre como filtro WHERE sin que el usuario pueda modificarlas. Se usan para restringir datos por contexto (por ejemplo, filtrar solo registros activos).
 
+**Combos de filtro alimentados por DataProvider**: un filtro puede ser un `variable` con `<controlInfo controlType="Dynamic Combo Box" dataSourceFrom="DataProvider" dataProvider="Ret<Entidad>, <módulo>" dataProviderParameters="&amp;X" dataProviderItemValue="Id" dataProviderItemDescription="Nombre" emptyItem="True" emptyItemText="(Todos)" />`, alimentado por un `Ret<Entidad>` que devuelve un SDT colección `{Id, Nombre}`. Para el **formato del DataProvider + SDT** (Output/Collection, el grupo Output, la regla "un DataProvider **no** admite `For Each`" y la receta del combo) ver la referencia **kbbridge → `genexus-dataprovider.md`**.
+
 ### 6.2 Ordenes
 
 El nodo `orders` define las opciones de ordenamiento disponibles:
@@ -601,6 +629,16 @@ Genera:
 Genera:
 - `Upd{Instance.Name}GridRows` (Procedure): logica de actualizacion masiva de filas seleccionadas en la grilla.
 
+### 8.4 Modos CRUD (atributos) y Selection sin transacción
+
+En las instancias reales el nodo `modes` lleva los modos como **atributos** (no subnodos): `Insert`, `Update`, `Delete`, `Display` — que interactúan con la **Transacción** del WorkWith — más `Export`:
+
+```xml
+<modes Insert="false" Update="false" Delete="false" Display="false" Export="true" />
+```
+
+**Selection standalone (sin transacción):** cuando el PXWorkWith no está asociado a una Transacción (tabla base por inferencia), los **4** modos que interactúan con la transacción — `Insert`, `Update`, `Delete`, `Display` — deben ponerse en **`false`** (no hay transacción a la cual navegar). `Export="true"` es independiente y habilita la exportación a Excel; es un uso válido del nodo `modes` incluso en un listado de solo lectura. El link al View se mantiene por `descriptionAttribute` / `<link>` (no depende del modo `Display`).
+
 ---
 
 ## 9. Hooks de codigo (Events y Codes)
@@ -619,6 +657,7 @@ Define bloques de codigo que se ejecutan en momentos especificos del ciclo de vi
 |------|---------------------|------------|
 | `start` | Al iniciar el WebPanel (evento Start) | Inicializar variables, validar permisos |
 | `refresh` | Al refrescar la grilla (evento Refresh) | Recalcular filtros, actualizar estado |
+| `refreshForm` | Refresh **solo del WebForm** (no se incluye en el export `Ex{Name}`) | Comandos de UI del form: `.Enabled`, `.Visible`, propiedades de controles (ver §9.7) |
 | `load` | Al cargar cada fila de la grilla (evento Load) | Calcular campos derivados, aplicar formato condicional |
 | `subroutine` | Subrutinas invocables desde eventos | Logica reutilizable dentro del objeto |
 
@@ -645,6 +684,8 @@ Define bloques de codigo que se ejecutan en momentos especificos del ciclo de vi
   </subroutine>
 </codes>
 ```
+
+> **Formato e indentación del CDATA**: la primera línea del código va en **columna 0** y solo el anidamiento de bloques indenta (+1 tab). Es común a todos los patterns con code nodes — regla completa en [`00-overview.md`](00-overview.md) → *Hooks de código: formato e indentación del CDATA*.
 
 ### 9.3 Grilla sin tabla base (Load sin Tabla Base)
 
@@ -701,6 +742,76 @@ El nodo `variables` permite declarar variables adicionales necesarias para los h
   <variable name="&amp;RowClass" type="Character" length="20" />
 </variables>
 ```
+
+**Regla — no duplicar variables del form:** el nodo `variables` debe contener **solo** las variables usadas en programación procedural (`codes`, `previousCode`, `actionPostCode`, etc.) que **no** estén ya declaradas en el form. Una variable declarada como **filtro** (`filter/attributes`) o como **columna** de la grilla (`variable` dentro de `attributes`) **no** debe re-declararse en `variables`: hacerlo produce el error de build *"Variable X is declared twice"* y **falla la aplicación del patrón** (`PatternApplicationException`), por lo que no se generan los objetos Ww/View. (Ej.: `&EmisorId`, usado en el Start y en los `dataProviderParameters` de un combo pero sin control en el form, sí va en `variables`; en cambio `&SucursalId`/`&Estado`, que son combos de filtro, no.)
+
+### 9.5 Determinación de la tabla base del Selection
+
+GeneXus determina la **tabla base** de un Selection **por inferencia**: reúne (a) todos los atributos usados como **columnas** de la grilla y (b) todos los atributos referenciados dentro de las **acciones InGrid** — parámetros de lo que la acción invoca, `previousCode`, `actionPostCode` y `condition` evaluada en evento (todo lo que se evalúa dentro del evento de la acción) — y busca la tabla que tenga a todos esos atributos como tabla base o extendida.
+
+- **Sin tabla base** (todas las columnas y datos de acción son variables): GeneXus determina que el objeto no tiene tabla base ⇒ hay que iterar manualmente en un `code type="Load"` con el comando **`Load`** adentro (ver 9.3).
+- **Con tabla base**: el `code Load` es **opcional** (la iteración la hace GeneXus recorriendo la tabla base). Un comando `Load` dentro del `code Load` es **carga condicional**: si en una iteración el código corre y **no** llega a un `Load`, ese registro **no** se carga. Pero **tabla base + comando `Load` es muy ineficiente** con miles de registros (corre el `code Load` por cada registro) y complica el conteo total del Selection, obligando a `PagingProgrammingStyle = PXTools` (recorrida masiva, aún más costosa). ⇒ **No recomendado**: con tabla base, usar `code Load` **solo para calcular variables** (sin comando `Load`) y filtrar con `filter/conditions`.
+
+**Regla práctica:** para que el Selection tenga tabla base y recorrida nativa eficiente, definí las columnas y los parámetros/condiciones de las acciones como **atributos** (no variables). Las variables calculadas por fila (p. ej. un id derivado) se computan en un `code Load` **sin** comando `Load`.
+
+### 9.6 descriptionAttribute, links por variable y regla multitenant
+
+**`descriptionAttribute`** — el nodo `<descriptionAttribute name="X" />` a nivel `level` establece que la columna `X` del Selection **linkea al View**. No hace falta la propiedad `autolink` en esa columna. La propiedad `autolink` es antigua y **no se recomienda** usarla (sobre todo en proyectos **multitenant**): en lugar de auto-linkear, declarar los links explícitamente con `descriptionAttribute` (columna → View propio) o con `<link>` (abajo).
+
+**Link por `<link>` en columna/variable** — tanto un `<attribute>` como un `<variable>` de la grilla admiten un sub-nodo `<link>` que genera un link en formato **PXInstance** al View de **otro** registro (o de otra instancia):
+
+```xml
+<variable name="PedidoRelacionadoId" description="Pedido relacionado" basedOn="PedidoId" readOnly="True">
+  <link instanceObject="PXWorkWithPedidos, MiApp" instanceLevel="Pedidos" instanceLevelNode="View"
+        condition="not &amp;PedidoRelacionadoId.IsEmpty()">
+    <parameters>
+      <parameter name="ClienteId" />
+      <parameter name="&amp;PedidoRelacionadoId" />
+    </parameters>
+  </link>
+</variable>
+```
+
+**Regla multitenant — el id de tenant nunca por parámetro (excepto componentes).** En interfaces FrontEnd el discriminador de tenant (aquí `TenantId`) **no** se recibe por parámetro (evita que se pueda forzar por URL). Se carga con `&Context` (`PLoadContext.Call(&Context)`; el patrón lo inyecta) usando `&Context.SecurityUserTenantId`, y se filtra en las `conditions`:
+
+- **View**: sus `parameters` llevan solo las claves subordinadas (p. ej. `ClienteId, PedidoId`), **no** `TenantId`; el filtro se hace con `<conditions><condition value="TenantId = &amp;Context.SecurityUserTenantId" /></conditions>`.
+- **Sections (tabs)**: si no declaran `parameters`, heredan los del View. Como los Sections son **componentes** (no accesibles por URL), **sí** pueden recibir `TenantId` junto con el resto de la clave — es la forma de filtrar una grilla hija por la PK completa del registro padre.
+
+**`evaluateCondition="Refresh"`** — una acción cuya visibilidad depende de una **variable de filtro** (no de un atributo de fila) debe evaluarse en Refresh. Ej.: mostrar una acción solo cuando el filtro `&Estado` tiene cierto valor: `evaluateCondition="Refresh" condition="&amp;Estado = EstadoPedido.Pendiente"`.
+
+### 9.7 `Refresh` vs `RefreshForm`: código de datos vs código de WebForm (export a Excel)
+
+El procedimiento de **export a Excel** (`Ex{Name}`, §8.1) reutiliza la **lógica de datos** del Selection: recorre la misma tabla base con los mismos filtros/órdenes. Para eso el generador **incluye el `code Refresh` dentro de `Ex{Name}`**, pero **no** incluye `RefreshForm`, `events` ni el código de `ControlEvent` (todo eso es exclusivo del WebForm).
+
+**Regla:** cualquier comando que toque una **propiedad de un control del form** — `&Var.Enabled`, `&Var.Visible`, `Control.Visible`, `.Class`, foco, etc. — **debe ir en `RefreshForm`**, nunca en `Refresh`. Si queda en `Refresh`, se filtra al proc `Ex{Name}` (que **no tiene WebForm**) y la especificación emite warnings sobre ese objeto:
+
+- `src0224` — `'Enabled' is a non-standard expression and support for non-standard expressions is enabled.`
+- `spc0002` — `&Var does not have the 'Enabled' property.`
+
+(Se leen en la navegación del objeto `Ex{Name}` — ver kbbridge → `genexus-navigation.md`.)
+
+| En `Refresh` (datos — también corre en `Ex{Name}`) | En `RefreshForm` (solo WebForm) |
+|---|---|
+| Variables de filtro / rango de fechas (`RetFechasFromPeriodo.Call(&Periodo, &Desde, &Hasta)`) | `&Desde.Enabled = ...` / `&Hasta.Enabled = ...` |
+| Contadores, totales, flags de datos usados en `conditions` | `.Visible`, `.Class`, habilitar/deshabilitar controles |
+| Cualquier lógica que el export **también** necesita para filtrar | Cualquier cosa que **solo** tenga sentido con el form presente |
+
+**Ejemplo — filtro Período/Desde/Hasta bien separado:**
+
+```xml
+<!-- Datos: computa el rango; el export lo necesita para su Where -->
+<code type="Refresh"><![CDATA[If &Periodo <> Periodo.Personalizar
+	RetFechasFromPeriodo.Call(&Periodo, &Desde, &Hasta)
+EndIf]]></code>
+
+<!-- WebForm: solo habilita/deshabilita los controles del form -->
+<code type="RefreshForm"><![CDATA[&Desde.Enabled = &Periodo = Periodo.Personalizar
+&Hasta.Enabled = &Periodo = Periodo.Personalizar]]></code>
+```
+
+> El código de **`ControlEvent`** (p. ej. `&Periodo.Click`) **sí** puede usar `.Enabled`/`.Visible`: los eventos solo existen en el WebForm y no se incluyen en `Ex{Name}`. La fuga ocurre **únicamente** cuando el comando de WebForm queda en `Refresh`.
+
+**Checklist** (PXWorkWith con export a Excel habilitado): si una línea toca una propiedad de control (`.Enabled`, `.Visible`, `.Class`, foco) o cualquier cosa del form → `RefreshForm`; si computa datos/variables que el listado filtra o muestra → `Refresh`.
 
 ---
 
@@ -786,32 +897,32 @@ Cuando una accion tiene `linkType="PXInstance"`, el pattern resuelve automaticam
 
 | Prefijo | Tipo de objeto | Ejemplo |
 |---------|---------------|---------|
-| `D` | Transaction Desktop | `DFactura` |
-| `R` | Transaction Responsive | `RFactura` |
-| `WW` | Selection Desktop | `WWFactura` |
-| `RWW` | Selection Responsive | `RWWFactura` |
-| `View` | View Desktop | `ViewFactura` |
-| `RView` | View Responsive | `RViewFactura` |
-| `Pr` | Prompt Desktop | `PrFactura` |
-| `RPr` | Prompt Responsive | `RPrFactura` |
-| `Ct` | Controller Desktop | `CtFactura` |
-| `RCt` | Controller Responsive | `RCtFactura` |
-| `Ex` | Export/Chart Procedure | `ExFactura` |
-| `Upd` | Update Grid Rows Procedure | `UpdFacturaGridRows` |
-| `PXWW` | SDT de filas | `PXWWFacturaRows` |
-| `Chk` | Validacion Chosen | `ChkFacturaChosenValueSelected` |
-| `Ret` | Return Chosen values | `RetFacturaChosenValues` |
+| `D` | Transaction Desktop | `DCustomer` |
+| `R` | Transaction Responsive | `RCustomer` |
+| `WW` | Selection Desktop | `WWCustomer` |
+| `RWW` | Selection Responsive | `RWWCustomer` |
+| `View` | View Desktop | `ViewCustomer` |
+| `RView` | View Responsive | `RViewCustomer` |
+| `Pr` | Prompt Desktop | `PrCustomer` |
+| `RPr` | Prompt Responsive | `RPrCustomer` |
+| `Ct` | Controller Desktop | `CtCustomer` |
+| `RCt` | Controller Responsive | `RCtCustomer` |
+| `Ex` | Export/Chart Procedure | `ExCustomer` |
+| `Upd` | Update Grid Rows Procedure | `UpdCustomerGridRows` |
+| `PXWW` | SDT de filas | `PXWWCustomerRows` |
+| `Chk` | Validacion Chosen | `ChkCustomerChosenValueSelected` |
+| `Ret` | Return Chosen values | `RetCustomerChosenValues` |
 
 ### 12.2 Sufijos comunes
 
 | Sufijo | Uso | Ejemplo |
 |--------|-----|---------|
-| `Rows` | SDT de coleccion de filas | `PXWWFacturaRows` |
-| `ExcelSDT` | SDT para exportacion Excel | `ExFacturaExcelSDT` |
-| `GridRows` | Procedure de actualizacion masiva | `UpdFacturaGridRows` |
-| `ChosenValueSelected` | Validacion de Chosen | `ChkFacturaChosenValueSelected` |
-| `ChosenValues` | DataProvider de valores Chosen | `RetFacturaChosenValues` |
-| `ChosenResults` | Procedure de resultados Chosen | `RetFacturaChosenResults` |
+| `Rows` | SDT de coleccion de filas | `PXWWCustomerRows` |
+| `ExcelSDT` | SDT para exportacion Excel | `ExCustomerExcelSDT` |
+| `GridRows` | Procedure de actualizacion masiva | `UpdCustomerGridRows` |
+| `ChosenValueSelected` | Validacion de Chosen | `ChkCustomerChosenValueSelected` |
+| `ChosenValues` | DataProvider de valores Chosen | `RetCustomerChosenValues` |
+| `ChosenResults` | Procedure de resultados Chosen | `RetCustomerChosenResults` |
 
 ### 12.3 Regla general
 
@@ -821,11 +932,11 @@ El nombre base es siempre `{Instance.Name}`, que tipicamente coincide con el nom
 [Prefijo Plataforma][Prefijo Funcion]{Instance.Name}[Sufijo]
 
 Ejemplos:
-  R    +  WW   + Factura +        = RWWFactura      (Selection Responsive)
-       +  View + Factura +        = ViewFactura      (View Desktop)
-  R    +  Pr   + Factura +        = RPrFactura       (Prompt Responsive)
-       +  Ex   + Factura + ExcelSDT = ExFacturaExcelSDT (SDT Export Excel)
-       +  PXWW + Factura + Rows   = PXWWFacturaRows  (SDT filas)
+  R    +  WW   + Customer +        = RWWCustomer       (Selection Responsive)
+       +  View + Customer +        = ViewCustomer      (View Desktop)
+  R    +  Pr   + Customer +        = RPrCustomer       (Prompt Responsive)
+       +  Ex   + Customer + ExcelSDT = ExCustomerExcelSDT (SDT Export Excel)
+       +  PXWW + Customer + Rows   = PXWWCustomerRows  (SDT filas)
 ```
 
 ---

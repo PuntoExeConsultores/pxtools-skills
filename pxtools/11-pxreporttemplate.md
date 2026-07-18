@@ -35,7 +35,6 @@ El pattern sirve para:
 
 ## Uso real
 
-- 8 instancias en pFacturas KB
 - El módulo **@ExportImport** tiene una instancia: `PXReportTemplateRepImportResult` (reporte de resultados de importación)
 - Se usa para definir la configuración de reportes PDF/Excel
 

@@ -277,71 +277,71 @@ Cada level tiene propiedades `generateWeb`, `generateWebResponsive` y `generateS
 - `FlowController` → genera WebPanel con template `FlowControllerWebForm.dll` (HTML)
 - `FlowControllerResponsive` → genera WebPanel con template `FlowControllerAbstractForm.dll` (abstracto)
 
-## Ejemplo real: PXFlowControllerCFEManual (pFacturas)
+## Ejemplo: alta continua con confirmación (PXFlowControllerAltaContinua)
 
-Esta instancia real orquesta la **emisión continua de CFEs (Comprobantes Fiscales Electrónicos)**:
+Esta instancia orquesta el **alta continua de registros**: tras crear uno, pregunta si se desea crear otro del mismo tipo y encadena la navegación según la respuesta.
 
 ```xml
 <?xml version="1.0" encoding="utf-16"?>
 <instance>
-  <level name="CFEManual" generateWebResponsive="True">
+  <level name="AltaContinua" generateWebResponsive="True">
     <blocksLevels>
       <blocksLevel>
-        <!-- Línea 1: ¿Emitir otro CFE del mismo tipo? -->
+        <!-- Línea 1: ¿Crear otro registro del mismo tipo? -->
         <linesBlock lineFrom="1">
           <mainCode><![CDATA[
-            &SDTFMEmisionContinua = RetSDTFMEmisionContinua.Udp()
-            If not &SDTFMEmisionContinua.Habilitada
-              ControllerGotoLine 4        // Ir directamente al Selection
+            &SDTAltaContinua = RetSDTAltaContinua.Udp()
+            If not &SDTAltaContinua.Habilitada
+              ControllerGotoLine 4          // Ir directamente al Selection
             Else
-              ControllerConfirm Reemitir  // Preguntar al usuario
+              ControllerConfirm Reingresar  // Preguntar al usuario
             EndIf
           ]]></mainCode>
 
           <confirms>
-            <confirm name="Reemitir"
+            <confirm name="Reingresar"
                      gxObject="PuConfirm, PXTools.APIs"
                      responseDomain="Boolean"
-                     question="¿Desea emitir un nuevo CFE del mismo tipo?"
+                     question="¿Desea crear un nuevo registro del mismo tipo?"
                      nextLine="1">
               <responses>
-                <response responseValue="True" responseLine="2" />   <!-- Sí: crear nuevo CFE -->
+                <response responseValue="True" responseLine="2" />   <!-- Sí: crear nuevo -->
                 <response responseValue="False" responseLine="3" />  <!-- No: ir al Selection -->
               </responses>
 
-              <!-- Línea 2: Crear nuevo CFE y navegar al View -->
+              <!-- Línea 2: Crear nuevo registro y navegar al View -->
               <linesBlock lineFrom="2">
                 <mainCode><![CDATA[
-                  AddSDTCFEInterno.Call(&Context.SecurityUserEmisorId, 0,
-                    &Context.Ambiente, &SDTFMEmisionContinua.Sucursal, ...)
+                  AddPedido.Call(&Context.SecurityUserTenantId, 0,
+                    &SDTAltaContinua.Tipo, ...)
                   For Each
-                    Where EmisorId = &Context.SecurityUserEmisorId
-                    Where ComprobanteId = &SDTFMEmisionContinua.Comprobante
-                    If ComprobanteSaltarDatosReceptor
+                    Where TenantId = &Context.SecurityUserTenantId
+                    Where TipoId = &SDTAltaContinua.Tipo
+                    If TipoSaltaDatosCabecera
                       ControllerAction IrAlViewDetalle
                     Else
-                      ControllerAction IrAlViewReceptor
+                      ControllerAction IrAlViewCabecera
                     EndIf
                   EndFor
                 ]]></mainCode>
                 <actions>
-                  <!-- Acción que invoca PXWorkWith View, sección DatosReceptor -->
-                  <action name="IrAlViewReceptor"
-                          instanceObject="PXWorkWithFacturaManual, eFactura.FrontEnd"
-                          instanceLevel="CFEManual"
+                  <!-- Acción que invoca PXWorkWith View, sección Cabecera -->
+                  <action name="IrAlViewCabecera"
+                          instanceObject="PXWorkWithPedidos, MiApp"
+                          instanceLevel="Pedido"
                           instanceLevelNode="View"
-                          instanceLevelViewSection="DatosReceptor"
+                          instanceLevelViewSection="Cabecera"
                           nextLine="999">
                     <parameters>
                       <parameter name="TrnMode.Insert" />
                       <parameter name="0" />
-                      <parameter name="&CFETipoHomologacionVacio" />
+                      <parameter name="&EstadoVacio" />
                     </parameters>
                   </action>
                   <!-- Acción que invoca PXWorkWith View, sección Detalle -->
                   <action name="IrAlViewDetalle"
-                          instanceObject="PXWorkWithFacturaManual, eFactura.FrontEnd"
-                          instanceLevel="CFEManual"
+                          instanceObject="PXWorkWithPedidos, MiApp"
+                          instanceLevel="Pedido"
                           instanceLevelNode="View"
                           instanceLevelViewSection="Detalle"
                           nextLine="999">
@@ -349,16 +349,16 @@ Esta instancia real orquesta la **emisión continua de CFEs (Comprobantes Fiscal
                 </actions>
               </linesBlock>
 
-              <!-- Línea 3: No reemitir, ir al Selection -->
+              <!-- Línea 3: No reingresar, ir al Selection -->
               <linesBlock lineFrom="3">
                 <mainCode><![CDATA[
-                  DelSDTFMEmisionContinua.Call()
+                  DelSDTAltaContinua.Call()
                   ControllerAction IrAlSelection
                 ]]></mainCode>
                 <actions>
                   <action name="IrAlSelection"
-                          instanceObject="PXWorkWithCFEs, eFactura.FrontEnd"
-                          instanceLevel="CFE"
+                          instanceObject="PXWorkWithPedidos, MiApp"
+                          instanceLevel="Pedido"
                           instanceLevelNode="Selection"
                           nextLine="999" />
                 </actions>
@@ -367,13 +367,13 @@ Esta instancia real orquesta la **emisión continua de CFEs (Comprobantes Fiscal
           </confirms>
         </linesBlock>
 
-        <!-- Línea 4: Ir al Selection (cuando emisión continua no está habilitada) -->
+        <!-- Línea 4: Ir al Selection (cuando el alta continua no está habilitada) -->
         <linesBlock lineFrom="4">
           <mainCode><![CDATA[ControllerAction IrAlSelection]]></mainCode>
           <actions>
             <action name="IrAlSelection"
-                    instanceObject="PXWorkWithCFEs, eFactura.FrontEnd"
-                    instanceLevel="CFE"
+                    instanceObject="PXWorkWithPedidos, MiApp"
+                    instanceLevel="Pedido"
                     instanceLevelNode="Selection"
                     nextLine="1" />
           </actions>
@@ -381,26 +381,26 @@ Esta instancia real orquesta la **emisión continua de CFEs (Comprobantes Fiscal
       </blocksLevel>
     </blocksLevels>
     <variables>
-      <variable name="SDTFMEmisionContinua" SDT="SDTFMEmisionContinua, eFactura.FrontEnd" />
-      <variable name="CFETipoHomologacionVacio" basedOn="CFETipoHomologacion" />
-      <variable name="CFEOrigenVacio" basedOn="CFEOrigen" />
+      <variable name="SDTAltaContinua" SDT="SDTAltaContinua, MiApp" />
+      <variable name="EstadoVacio" basedOn="PedidoEstado" />
+      <variable name="TipoVacio" basedOn="PedidoTipo" />
     </variables>
   </level>
 </instance>
 ```
 
-### Diagrama del flujo real
+### Diagrama del flujo
 
 ```
-Línea 1: ¿Emisión continua habilitada?
+Línea 1: ¿Alta continua habilitada?
     │
-    ├── NO ──► Línea 4 ──► IrAlSelection (PXWorkWithCFEs)
+    ├── NO ──► Línea 4 ──► IrAlSelection (PXWorkWithPedidos)
     │
-    └── SÍ ──► Confirm "¿Emitir nuevo CFE del mismo tipo?"
+    └── SÍ ──► Confirm "¿Crear un nuevo registro del mismo tipo?"
                  │
-                 ├── True (Línea 2) ──► Crear CFE ──►
-                 │     ├── Si salta datos receptor ──► View.Detalle
-                 │     └── Si no ──► View.DatosReceptor
+                 ├── True (Línea 2) ──► Crear registro ──►
+                 │     ├── Si salta cabecera ──► View.Detalle
+                 │     └── Si no ──► View.Cabecera
                  │
                  └── False (Línea 3) ──► Eliminar estado ──► IrAlSelection
 ```
