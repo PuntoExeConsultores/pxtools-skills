@@ -816,7 +816,7 @@ Cada accion soporta codigo pre/post invocacion:
 
 | callType | Descripcion | Ejemplo de uso |
 |----------|-------------|----------------|
-| `Call` | Invoca un Procedure (sin interfaz) | Contabilizar, procesar, actualizar registros |
+| `Call` | Invoca un Procedure (sin interfaz) | Procesar, calcular, actualizar registros |
 | `Link` | Navega a otro WebPanel/Transaction | Abrir pantalla de detalle |
 | `External Link` | Abre WebPanel no generado por PXTools | Abrir WebPanel manual |
 | `Prompt` | Abre dialogo modal | Abrir otro PXParameterRequest como popup |
@@ -867,31 +867,31 @@ callType="Event" + (codigo inline)      → OK (no depende de nombres externos)
 
 ### Catalogo ampliado de casos de uso
 
-Basado en analisis de 225 WebPanels manuales de una KB real de contabilidad:
+Basado en el análisis de cientos de WebPanels manuales de aplicaciones reales (nombres de objeto **ilustrativos**, siguiendo la convención de naming):
 
-| Caso de uso | behaviour | Elementos clave | Ejemplo real |
+| Caso de uso | behaviour | Elementos clave | Ejemplo (ilustrativo) |
 |-------------|-----------|-----------------|--------------|
-| **Confirmacion simple** | PopupParameterRequest | Mensaje + Aceptar/Cancelar | ConfirmaCambio, ConfirmarBorrarPUC |
-| **Confirmacion con causal** | PopupParameterRequest | Mensaje + campo texto + validacion min 10 chars | Anula*, TemIntConfirmaAnula |
-| **Activar/Inactivar entidad** | PopupParameterRequest | Start evalua estado, Aceptar llama proc toggle | ConfirmarBanco, ConfirmarCiudad |
-| **Activar/Inactivar con validacion arbol** | PopupParameterRequest | Start recorre jerarquia padre/hijos, valida dependencias | ConfirmarCuenta, ConfirmarCentroCosto |
-| **Borrar con validaciones** | PopupParameterRequest | Start verifica dependencias, oculta Aceptar si hay | ConfirmarBorrarCuentaEmp |
-| **Seleccion simple con grilla** | PopupParameterRequest | Grid + filtros + Enter retorna valor | SelBancos, SelEmpresas, SelPuc |
-| **Seleccion con creacion de registros** | PopupParameterRequest | Grid + seleccion + crea registro temporal via proc | SelCuentaxPagar, SelCuentaEmpCruce |
-| **Seleccion con validacion compleja** | PopupParameterRequest | Grid + Load con logica NIIF/Local/Mixto, homologos | SelTipComAge, SelTipComPar |
-| **Seleccion con checkbox multi-fila** | PopupParameterRequest | Grid con boolean por fila + valor editable | SelDeduccion |
-| **Seleccion con creacion inline** | PopupParameterRequest | Grid + form mini para crear nuevo registro | SelPaisCre |
-| **Anulacion de proceso** | PopupParameterRequest | Observacion + validacion estado + proc de anulacion | AnulaPagosTes, WPAnularFactura |
-| **Reversa de contabilizacion** | PopupParameterRequest | Start valida, Aceptar reversa + comprobantes hermanos | ConfirmarReversarComprobante |
-| **Captura de parametros para reporte** | ParameterRequest | Form con fechas/filtros + calls a reporte | PXEstadosFinancieros |
-| **Generacion de archivos** | PopupParameterRequest | Form + callType Event + genera TXT/Excel | AutorizarPagosRep |
-| **Carga/Upload de archivos** | PopupParameterRequest | Form con controlType File + validacion extension | CarDocAdjTercero, CargarFirmaDigital, CargarLogoEmpresa |
-| **Edicion de campo unico** | PopupParameterRequest | Form con un campo editable + Confirmar | ModificaNombreNIIF |
-| **Visor de errores con grilla** | PopupParameterRequest | Grid readonly cargada desde SDT/WebSession | ErroresComprobante, ErroresRPComprobante |
-| **Visor readonly de datos** | Panel o None | Solo display, Salir | ptDetalleCuenta, WPVerConceptosRP, WPVerFirma |
-| **Ajuste/calculo con form** | PopupParameterRequest | Form con inputs + logica de calculo + proc | WpnAjustarCausacionCPS |
-| **Asignacion de cheques** | PopupParameterRequest | Start valida consecutivos, Aceptar asigna + contabiliza | ConfirmaChequeTraslado |
-| **CRUD de detalle** | PopupParameterRequest | Form INS/UPD/DSP con imagen, fechas, validaciones | CreaModificaDetalleContenidoParametrico |
+| **Confirmacion simple** | PopupParameterRequest | Mensaje + Aceptar/Cancelar | `ConfirmChange`, `ConfirmDeleteCategory` |
+| **Confirmacion con causal** | PopupParameterRequest | Mensaje + campo texto + validacion min 10 chars | `ConfirmCancelWithReason` |
+| **Activar/Inactivar entidad** | PopupParameterRequest | Start evalua estado, Aceptar llama proc toggle | `ConfirmToggleCustomer`, `ConfirmToggleCity` |
+| **Activar/Inactivar con validacion arbol** | PopupParameterRequest | Start recorre jerarquia padre/hijos, valida dependencias | `ConfirmToggleNode`, `ConfirmToggleCategory` |
+| **Borrar con validaciones** | PopupParameterRequest | Start verifica dependencias, oculta Aceptar si hay | `ConfirmDeleteEntity` |
+| **Seleccion simple con grilla** | PopupParameterRequest | Grid + filtros + Enter retorna valor | `SelCustomers`, `SelProducts` |
+| **Seleccion con creacion de registros** | PopupParameterRequest | Grid + seleccion + crea registro temporal via proc | `SelWithCreateOrder`, `SelWithCreateItem` |
+| **Seleccion con validacion compleja** | PopupParameterRequest | Grid + Load con lógica condicional por configuración | `SelTypeByContext` |
+| **Seleccion con checkbox multi-fila** | PopupParameterRequest | Grid con boolean por fila + valor editable | `SelMultiRowItems` |
+| **Seleccion con creacion inline** | PopupParameterRequest | Grid + form mini para crear nuevo registro | `SelWithInlineCreate` |
+| **Anulacion de proceso** | PopupParameterRequest | Observacion + validacion estado + proc de anulacion | `CancelProcess`, `CancelDocument` |
+| **Reversa de registro** | PopupParameterRequest | Start valida, Aceptar reversa + registros relacionados | `ConfirmReverseEntity` |
+| **Captura de parametros para reporte** | ParameterRequest | Form con fechas/filtros + calls a reporte | `PXReportParameters` |
+| **Generacion de archivos** | PopupParameterRequest | Form + callType Event + genera TXT/Excel | `ExportRecordsFile` |
+| **Carga/Upload de archivos** | PopupParameterRequest | Form con controlType File + validacion extension | `UploadAttachment`, `UploadSignature`, `UploadLogo` |
+| **Edicion de campo unico** | PopupParameterRequest | Form con un campo editable + Confirmar | `EditFieldName` |
+| **Visor de errores con grilla** | PopupParameterRequest | Grid readonly cargada desde SDT/WebSession | `ErrorViewer`, `ImportErrorViewer` |
+| **Visor readonly de datos** | Panel o None | Solo display, Salir | `ViewEntityDetail`, `ViewConcepts` |
+| **Ajuste/calculo con form** | PopupParameterRequest | Form con inputs + logica de calculo + proc | `AdjustEntity` |
+| **Asignacion con validacion de numeracion** | PopupParameterRequest | Start valida numeración, Aceptar asigna + registra | `AssignEntity` |
+| **CRUD de detalle** | PopupParameterRequest | Form INS/UPD/DSP con imagen, fechas, validaciones | `CreateEditDetail` |
 | **Ejecucion one-shot** | Panel | Un solo boton que dispara un proceso | EjecucionPagos |
 
 ### Errores comunes de clasificacion por IAs

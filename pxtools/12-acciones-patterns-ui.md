@@ -132,7 +132,7 @@ La estructura del nodo `action` es **practicamente identica** en los tres patter
 | callType | Descripcion | Uso tipico |
 |----------|-------------|------------|
 | `Link` | Navega a otro WebPanel/Transaction | Abrir pantalla de detalle, edicion, otro pattern |
-| `Call` | Invoca un Procedure (sin interfaz) | Contabilizar, procesar, actualizar registros |
+| `Call` | Invoca un Procedure (sin interfaz) | Procesar, calcular, actualizar registros |
 | `Prompt` | Abre dialogo modal (popup) | Abrir un PXParameterRequest o lookup |
 | `External Link` | Abre WebPanel/URL no generado por PXTools | Abrir WebPanel manual o URL externa |
 | `Client Text Print` | Impresion desde el cliente | Imprimir comprobante |
@@ -174,7 +174,7 @@ Con `linkType="PXInstance"`, el generador resuelve automaticamente el nombre cor
 
 ```xml
 <!-- OK: Call invoca un Procedure (nombre no cambia) -->
-<action callType="Call" gxObject="Contabilizar" />
+<action callType="Call" gxObject="ProcessRecord" />
 
 <!-- OK: Event ejecuta codigo inline (no depende de nombres) -->
 <action callType="Event" />
@@ -223,7 +223,7 @@ ConditionalCalls permite que una misma accion invoque **distintos objetos/interf
 | Diferente pantalla de detalle segun tipo de registro | Ver factura nacional vs exportacion |
 | Diferente formulario de edicion segun estado | Editar borrador vs editar aprobado |
 | Diferente flujo segun rol del usuario | Flujo administrador vs flujo operador |
-| Diferentes vistas segun configuracion de empresa | Vista con NIIF vs vista Local |
+| Diferentes vistas segun configuracion | Vista detallada vs vista resumida |
 
 ### ConditionalCalls y PXInstance
 

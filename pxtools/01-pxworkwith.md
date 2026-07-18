@@ -743,7 +743,7 @@ El nodo `variables` permite declarar variables adicionales necesarias para los h
 </variables>
 ```
 
-**Regla — no duplicar variables del form:** el nodo `variables` debe contener **solo** las variables usadas en programación procedural (`codes`, `previousCode`, `actionPostCode`, etc.) que **no** estén ya declaradas en el form. Una variable declarada como **filtro** (`filter/attributes`) o como **columna** de la grilla (`variable` dentro de `attributes`) **no** debe re-declararse en `variables`: hacerlo produce el error de build *"Variable X is declared twice"* y **falla la aplicación del patrón** (`PatternApplicationException`), por lo que no se generan los objetos Ww/View. (Ej.: `&EmisorId`, usado en el Start y en los `dataProviderParameters` de un combo pero sin control en el form, sí va en `variables`; en cambio `&SucursalId`/`&Estado`, que son combos de filtro, no.)
+**Regla — no duplicar variables del form:** el nodo `variables` debe contener **solo** las variables usadas en programación procedural (`codes`, `previousCode`, `actionPostCode`, etc.) que **no** estén ya declaradas en el form. Una variable declarada como **filtro** (`filter/attributes`) o como **columna** de la grilla (`variable` dentro de `attributes`) **no** debe re-declararse en `variables`: hacerlo produce el error de build *"Variable X is declared twice"* y **falla la aplicación del patrón** (`PatternApplicationException`), por lo que no se generan los objetos Ww/View. (Ej.: `&CustomerId`, usado en el Start y en los `dataProviderParameters` de un combo pero sin control en el form, sí va en `variables`; en cambio `&CategoryId`/`&StatusId`, que son combos de filtro, no.)
 
 ### 9.5 Determinación de la tabla base del Selection
 

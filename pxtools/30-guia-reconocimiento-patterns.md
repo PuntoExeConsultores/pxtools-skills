@@ -177,7 +177,7 @@ Un WebPanel con grilla de **solo lectura** (todos los campos readonly/display) t
 - Grilla principal con `Rows` o `MaxRows` (paginación)
 - Todos los campos/variables de la grilla son **readonly** (no editables por el usuario)
 - Puede tener datos tabulares arriba de la grilla (encabezado) también **readonly**
-- Acción por fila para navegar a detalle (ej: `Ver_Asiento`, `Ver_Detalle`)
+- Acción por fila para navegar a detalle (ej: `Ver_Registro`, `Ver_Detalle`)
 - Solo `Parm` con `In:` (no retorna valores, solo consulta)
 - Botón Salir/Cerrar como única acción global
 - Los datos pueden venir de tabla base (con `#Conditions`) o de SDT/WebSession (con `Grid.Load` manual)
@@ -187,14 +187,14 @@ Un WebPanel con grilla de **solo lectura** (todos los campos readonly/display) t
 // Señal: Grilla paginada
 Grid1.Rows = 10
 
-// Señal: Datos tabulares readonly (encabezado del comprobante)
-&EmpNom = EmpNom
-&TipoComprobante = CTipComCod.Trim() + " - " + TipComCod.Trim()
-&Estado = "Digitado"
+// Señal: Datos tabulares readonly (encabezado del registro)
+&CustomerName = CustomerName
+&ItemLabel = CategoryCode.Trim() + " - " + ItemCode.Trim()
+&Status = "Pending"
 
 // Señal: Acción de navegación por fila (ver detalle)
-Event 'Ver_Asiento'
-    &Window.Url = Link(PreAsiento, TrnMode.Display, ...)
+Event 'Ver_Detalle'
+    &Window.Url = Link(TrnDetail, TrnMode.Display, ...)
     &Window.Open()
 EndEvent
 

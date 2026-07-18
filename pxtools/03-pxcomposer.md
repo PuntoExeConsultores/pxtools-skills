@@ -540,12 +540,12 @@ Esto garantiza que la version Desktop embeba componentes Desktop y la version Re
 
 PXComposer se usa típicamente para dashboards y pantallas compuestas que combinan varias instancias (Selection/View de PXWorkWith, etc.) en una sola vista.
 
-### Instancias en @PuntoPagos
+### Ubicaciones típicas de instancias
 
 | Ubicacion | Instancias |
 |-----------|-----------|
-| `@FrontEnd/Formularios` | Formularios compuestos del frontend |
-| `@FrontEnd/Inicio` | Pantalla de inicio con multiples paneles |
+| `@<Modulo>/Formularios` | Formularios compuestos del frontend |
+| `@<Modulo>/Inicio` | Pantalla de inicio con multiples paneles |
 
 ### Patron tipico: panel maestro-detalle compuesto
 
