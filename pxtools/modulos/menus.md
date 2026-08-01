@@ -49,6 +49,62 @@ Tres piezas:
 - **Declarar**: cada módulo aporta un DataProvider **`RetMenus<X>`** con `Output = SDTMenus` que devuelve su porción del árbol. `SDTMenus` es una colección recursiva (`Item` con `Name/Description/Program/Module/InstanceReference/Image…/SecurityCode/Category`, `Parent`, y `Childs : SDTMenus`; + colección `ApplicationPlatform` para overrides).
 - **Sembrar** (idempotente): `PDefaultMenus` → `ChkMenusExistance` (si no hay `Origin=Development`, siembra) → **`AddDefaultMenus`** (`Personalized/`, la lista de `RetMenus<X>()` a agregar) → `AddMenus` → **`AddMenusRecursive`**: por cada item resuelve el padre (`RetParentMenu`), verifica el módulo, hace `New … When Duplicate` (upsert por `MnWName`) en `TMnuWeb` con `MnWOri=Development`, genera las filas de `ApplicationPlatform` (una por plataforma soportada) y desciende en `Childs`.
 
+### 5.1.1 `Parent`: SOLO en el nodo raíz de cada `RetMenus<X>`
+
+`Parent` sirve para **enganchar la porción de árbol que aporta el módulo debajo de un nodo que ya
+existe** (típicamente `'Basic'`). Se usa **únicamente en el/los ítems del primer nivel** del
+DataProvider. La jerarquía interna ya está dada por el anidamiento en `Childs`.
+
+```
+SDTMenus
+{
+	Item
+	{
+		Description	= 'OAuth Service'
+		Module		= PXToolsModules.OAuthService
+		Parent		= 'Basic'              // ✅ engancha el módulo bajo el menú 'Basic'
+		Childs
+		{
+			Item
+			{
+				Description	= 'Clients'
+				Module		= PXToolsModules.OAuthService
+				// ❌ NO poner Parent aquí: el padre lo da el anidamiento
+				InstanceReference
+				{
+					LevelName	= !'OAuthServiceClient'
+					NodeType	= NodeType.Selection
+				}
+			}
+		}
+	}
+}
+```
+
+**Por qué**: en `AddMenusRecursive`, `Parent` se lee **solo cuando no viene un padre por la
+recursión**:
+
+```genexus
+For &Item in &SDTMenus
+	If &MnWPad.IsEmpty()                                  // nivel raíz
+		&ItemMnwPadSec = RetParentMenu.Udp(&Item.Parent)  // <- único lugar donde se usa Parent
+		…
+	Else                                                   // hijos: viene de la recursión
+		&ItemMnWPadOri = &MnWPadOri
+		&ItemMnwPadSec = &MnWPad
+	EndIf
+```
+
+Un `Parent` en un hijo **se ignora**: no rompe nada, pero es engañoso — sugiere una referencia que
+el motor nunca resuelve. Y si además apunta a un texto que no coincide con ningún `MnWName`
+(p. ej. `Parent = !'OAuth Service'` cuando ese nodo se declaró con `Description` y sin `Name`),
+alguien puede perder tiempo buscando ahí un problema inexistente.
+
+> **`RetParentMenu` crea el padre si no existe**: busca por `MnWName = &MnwName` y, si no lo
+> encuentra, hace `New` con ese nombre y `Origin.Development`. O sea que un `Parent` mal escrito
+> en el nodo raíz **no falla**: crea silenciosamente un menú nuevo con ese texto. Si aparece un
+> nodo huérfano inesperado en el árbol, revisar los `Parent` de los `RetMenus<X>`.
+
 ### 5.2 Seguridad por nodo y menú del usuario
 - **`PPEXE_DeMnW05`** (motor) recorre el árbol por categoría/padre; para cada **hoja** llama `PCheckMenuSecurity` (hook, default True) y `PIsAuthorized.Udp(<Modulo>.<Program>)` (autorización real). **Propagación bottom-up**: si un hijo queda habilitado, el padre también, y su clave `MnWOri+MnWSec` se agrega a `MenuContext.Enabled`.
 - El chequeo se hace **una vez** al armar el `MenuContext` (persistido en session con `PSetMenuContext`/`PLoadMenuContext`); en render, **`PPEXE_CtMnW01`** solo consulta `MenuContext.Enabled.IndexOf(<clave>)` para decidir si pintar cada nodo.
