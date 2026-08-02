@@ -14,6 +14,10 @@ Documentación técnica del framework **PXTools** (conjunto de *patterns* para G
 
 Cargá estos archivos como contexto o *skill* de tu asistente (Claude Code, Cursor, etc.) al trabajar sobre una KB de GeneXus con PXTools. Todos los ejemplos son **genéricos**: no contienen objetos de KBs de clientes.
 
+## Cambios
+
+Ver [CHANGELOG.md](CHANGELOG.md) para el registro de qué se agregó o corrigió en cada publicación.
+
 ## Recursos
 
 - Sitio: https://pxtools.puntoexe.com.uy/
