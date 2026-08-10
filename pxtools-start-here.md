@@ -44,6 +44,7 @@ Toda la documentación detallada está en la subcarpeta [`pxtools/`](pxtools/):
 
 ### Módulos @PXTools
 - [20-modulos-pxtools.md](pxtools/20-modulos-pxtools.md) — 25+ módulos reutilizables: Security, Alerts, CloudTasks, FileStorage, etc.
+- [21-oauth-service.md](pxtools/21-oauth-service.md) — `@OAuthService`: Authorization Server OAuth 2.0 + OpenID Connect (token / introspect / revoke / userinfo / .well-known + PKCE + JWT id_token HS256 + TaskManager purge)
 
 ### Guías transversales
 - [30-guia-reconocimiento-patterns.md](pxtools/30-guia-reconocimiento-patterns.md) — Cómo analizar WebPanels manuales y determinar a qué pattern migrar

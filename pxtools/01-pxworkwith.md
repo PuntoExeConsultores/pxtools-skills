@@ -349,6 +349,54 @@ La propiedad `afterTrn` de la transaccion determina el flujo post-guardado:
 | `Call Levels Controllers` | Retorna al controlador del nivel correspondiente |
 | `Do Nothing` | No ejecuta navegacion post-transaccion |
 
+### 4.5 Transaction (form de edicion)
+
+El nodo `transaction/layouts/layout` define el **form de la transaccion**. Vacio (`<layout platform="Any" />`) el pattern genera el form por defecto; con un nodo `<attributes>` se define **el form completo**: los atributos listados, en ese orden, con su descripcion y su control.
+
+```xml
+<transaction name="Cliente, Ventas">
+  <parameters>...</parameters>
+  <layouts>
+    <layout platform="Any">
+      <attributes>
+        <attribute name="ClienteId" description="Id" />
+        <attribute name="ClienteNombre" description="Nombre" />
+        <attribute name="ClientePaisId" description="Pais">
+          <controlInfo controlType="Dynamic Combo Box" itemValue="PaisId" itemDescription="PaisNombre" emptyItem="True" emptyItemText="Seleccione" />
+        </attribute>
+      </attributes>
+    </layout>
+  </layouts>
+</transaction>
+```
+
+`itemValue` / `itemDescription` son los atributos **de la tabla foranea** (no los subtipos), y deben pertenecer ambos a la misma tabla. Para un combo alimentado por DataProvider en vez de por tabla, ver §6.1.
+
+> **Listar todos los atributos.** El nodo `<attributes>` reemplaza el form completo: un atributo omitido **desaparece de la pantalla**. Al agregar un solo combo hay que enumerar igualmente el resto.
+
+### 4.6 Donde se define un ControlType
+
+| Lugar | Alcance | Cuando |
+|---|---|---|
+| Instancia del pattern (`layout/attributes/attribute/controlInfo`) | Solo esa pantalla | **Preferido** |
+| WebForm de la transaccion / WebPanel | Solo ese form | Cuando el form es `dynamic="false"` y se edita a mano |
+| `.gxAttribute` (propiedad del atributo) | **Toda la KB** | Evitar |
+
+Definirlo en el **atributo** lo propaga a toda aparicion del atributo, **grillas incluidas**. Un Dynamic Combo Box en una columna de grilla carga todos los registros de la tabla foranea **por cada fila**: una ineficiencia inaceptable en un listado. Solo seria admisible controlando forzar `Edit` en cada grilla donde el atributo aparezca, lo que es fragil.
+
+**Regla para grillas: siempre `Edit`.** Si hay que mostrar un dato de la entidad foranea (tipicamente el nombre), no se pone un combo: se define un **subtipo del atributo descripcion** en el grupo de subtipos y en la transaccion, y se muestra ese subtipo como `Edit`. El `Id` se deja `visible="False"` —sigue disponible para las acciones que necesiten la clave— y se muestra el nombre:
+
+```xml
+<attribute name="ClientePaisId" description="Pais Id" visible="False" autolink="False">
+  <controlInfo controlType="Edit" />
+</attribute>
+<attribute name="ClientePaisNombre" description="Pais" visible="True" autolink="False">
+  <controlInfo controlType="Edit" />
+</attribute>
+```
+
+Es decir: **combo en el form de edicion, subtipo de nombre en la grilla**. Ver la convencion de nombre de los grupos en [20-modulos-pxtools.md](20-modulos-pxtools.md).
+
 ---
 
 ## 5. Sistema de acciones

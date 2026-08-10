@@ -77,6 +77,30 @@ Los `Patterns/PXWSLayer/PXWSLayerSettings.xml` definen la convención de nombres
 
 Apoyo: `ValWSWhiteListIPInRange` (contención IP en CIDR vía ExternalObject `IPMaskValidation` — Java, en `@APIs/APIs/Network/`; **fail-open** ante error de validación), `ValWSWhiteListIPRange` (CIDR bien formado), `RetWSWhiteListIPVersion` (detecta v4/v6).
 
+### 5.4 Cómo se integra un consumidor
+
+El control se aplica **en el punto que se quiere proteger**, con la categoría **hardcodeada desde el
+dominio**. La IP no es parámetro del llamador: se obtiene ahí mismo.
+
+```genexus
+&RemoteAddress = RetHTTPRemoteAddress.Udp()
+&IPAllowed     = ValWSWhiteListIP.Udp(PXToolsWSLayerCategory.<Categoria>, &RemoteAddress)
+```
+
+Alta de un consumidor nuevo: **(1)** agregar el valor al dominio `PXToolsWSLayerCategory`;
+**(2)** invocar `ValWSWhiteListIP` lo más temprano posible en el endpoint — antes de parsear el body,
+porque es un control de **red** y no debe depender de que el request sea válido; **(3)** cargar las
+reglas por la pantalla White List.
+
+Activar o desactivar el control **no requiere tocar código**: una categoría sin registros permite
+todo (§2), así que el gate puede quedar programado desde el día uno y las reglas cargarse después.
+
+> **Antipatrón: FK a `WSWhiteListId`.** No modelar en la entidad a proteger una clave foránea al
+> registro de whitelist. Un concepto necesita **N registros** (varios rangos Accept conviviendo con
+> varios Deny) y una FK apunta a uno solo; además el `Id` es autonumber —distinto en cada
+> instalación, no hardcodeable— mientras que el valor del dominio sí lo es. **La unidad del concepto
+> es la categoría**, y por eso toda la API la recibe como parámetro en lugar de un `Id`.
+
 ## 6. APIs vs Personalized
 
 - **`APIs/`** (core): `WSWhiteList`, la familia `Val*`/`RetWSWhiteList*`, `AddWSWhiteListSDT`, el envelope (`SDTConnection`/`SDTConnectionResponse`) y la conversión de mensajes.
