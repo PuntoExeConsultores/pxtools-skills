@@ -231,6 +231,59 @@ Cada `conditionalCall` soporta las mismas propiedades de `linkType`/`instanceObj
 
 ---
 
+## 5.bis Confirms — dialogo de confirmacion con texto dinamico
+
+La propiedad `confirm` del action (§2) solo admite **texto fijo**. Cuando la pregunta tiene que
+nombrar el registro concreto ("Eliminar el cliente X?"), hay que usar el nodo **`confirms`**, hermano
+de `actions` dentro del mismo nivel.
+
+```xml
+<actions>
+  <!-- La accion no ejecuta: invoca al confirm -->
+  <action name="Delete" inGrid="True" callType="Subroutine" subroutine="ConfirmBorrado" />
+
+  <!-- La accion que hace el trabajo real, disparada por la respuesta afirmativa -->
+  <action name="Borrar" controlType="Event" callType="Call"
+          gxObject="DelCliente, Ventas" refreshAction="Grid Refresh">
+    <parameters><parameter name="ClienteId" /></parameters>
+  </action>
+</actions>
+
+<confirms>
+  <confirm name="ConfirmBorrado" linkType="GXObject" gxObject="HPEXE_Confirm, PXTools.APIs"
+           question="&quot;Eliminar el cliente &quot; + ClienteNombre.Trim() + &quot;?&quot;"
+           questionType="Variable">
+    <responses>
+      <response responseValue="True" callType="Subroutine" subroutine="Borrar" />
+    </responses>
+  </confirm>
+</confirms>
+```
+
+| Propiedad | Descripcion |
+|---|---|
+| `name` | Nombre del confirm. La accion lo invoca con `callType="Subroutine" subroutine="<name>"` |
+| `question` | Texto o **expresion** de la pregunta |
+| `questionType` | `Variable` = `question` se evalua como expresion. **Sin esto el texto sale literal** |
+| `linkType` / `gxObject` | Dialogo a usar; el estandar de PXTools es `HPEXE_Confirm, PXTools.APIs` |
+| `responses/response` | `responseValue` (`True`/`False`) + la invocacion a ejecutar, igual que un action |
+
+> **El confirm se invoca como si fuera una subrutina.** La accion visible no ejecuta nada: solo llama
+> al confirm, y es la **respuesta** la que dispara la accion que trabaja. Por eso hacen falta *dos*
+> actions: la que ve el usuario y la que hace el trabajo.
+
+### Caso tipico: reemplazar el borrado de la transaccion
+
+Cuando la entidad tiene dependientes, el borrado estandar falla por integridad referencial. El
+reemplazo tiene **tres partes, y omitir cualquiera lo deja sin efecto**:
+
+1. **`<modes Delete="false" />`** — sin esto el pattern **sigue generando su propia accion Delete**
+   contra la transaccion, y el arreglo no sirve de nada (ver [01-pxworkwith.md](01-pxworkwith.md) §4.1).
+2. Un `action` propio llamado `Delete` que invoque al confirm.
+3. Un procedimiento que borre en cascada, de la hoja a la raiz, invocado por la respuesta afirmativa.
+
+---
+
 ## 6. Ciclo de ejecucion completo
 
 ```

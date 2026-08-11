@@ -10,6 +10,27 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-08-11
+
+### Added
+- **`pxtools/12-acciones-patterns-ui.md`** — section *5.bis Confirms*. The `confirm` **property** of
+  an action only takes fixed text; naming the record in the question ("Delete client X?") requires
+  the **`confirms` node**, which was undocumented. Covers `questionType="Variable"` —without it the
+  expression is rendered literally— the standard `HPEXE_Confirm` dialog, and the fact that the
+  confirm is invoked as a subroutine, so **two** actions are needed: the one the user sees and the
+  one that does the work. Includes the recipe for replacing the built-in delete when referential
+  integrity blocks it, whose three parts all have to be present or the change has no effect.
+
+### Changed
+- **`pxtools/01-pxworkwith.md`** — the `modes` subnode was described as *"special modes: Export
+  Excel, Charts, Update Grid Rows"*, which is **incomplete**: it also governs Insert, Update, Delete
+  and Display. It is configured with **attributes, not children**, and its full table is now
+  documented. The consequence that was missing: **disabling a mode is what frees the action name**,
+  so overriding `Delete` requires `Delete="false"` *and* declaring the action — with the mode enabled
+  the pattern still generates its own action against the transaction. Also adds the **required order
+  of the subnodes** of `selection`, which the pattern validates as a sequence, and the `confirms`
+  node to the table.
+
 ## 2026-08-10
 
 ### Added

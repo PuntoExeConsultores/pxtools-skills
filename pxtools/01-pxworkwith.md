@@ -283,12 +283,41 @@ El nodo `selection` genera la grilla principal de seleccion (listado maestro). P
 | `filter` | Filtros de busqueda rapida, avanzada y condiciones fijas |
 | `orders` | Ordenes de clasificacion disponibles |
 | `actions` | Botones y acciones del usuario |
-| `modes` | Modos especiales: Export Excel, Charts, Update Grid Rows |
+| `modes` | Que operaciones genera el pattern (ver abajo) |
+| `confirms` | Dialogos de confirmacion con texto dinamico (ver [12-acciones-patterns-ui.md](12-acciones-patterns-ui.md) §5.bis) |
 | `events` | Codigo GeneXus de eventos personalizados |
 | `codes` | Hooks de codigo: Start, Refresh, Load, Subroutine |
 | `variables` | Variables personalizadas adicionales |
 | `parameters` | Parametros de entrada del WebPanel |
 | `fixedData` | Filas de datos fijos (no provienen de la BD) |
+
+**Orden de los subnodos** (el pattern los valida por secuencia; fuera de orden, la instancia no
+aplica): `modes`, `orders`, `filter`, `layouts`, `codes`, `actions`, `confirms`, `variables`.
+
+#### El nodo `modes`
+
+Se configura con **atributos, no con hijos**, y controla que operaciones genera el pattern:
+
+```xml
+<modes />                                          <!-- todas las del default -->
+<modes Delete="false" />                           <!-- sin borrado -->
+<modes Insert="false" Update="false" Delete="false" Display="false" Export="true" />
+```
+
+| Atributo | Que habilita |
+|---|---|
+| `Insert` / `Update` / `Delete` / `Display` | Las cuatro operaciones sobre la transaccion |
+| `Export` | Exportacion a Excel |
+| `Chart` (+ `chartWidth`, `chartHeight`) | Graficos |
+| `AddSelected` / `AddAll` / `RemoveSelected` / `RemoveAll` | Seleccion multiple |
+| `InsertEventCondition` | Condiciona el alta por evento |
+
+Valores: `true` | `false` | `default`.
+
+> **Deshabilitar un modo es lo que libera el nombre de la accion.** Para reemplazar el
+> comportamiento de `Delete` por uno propio hay que poner `Delete="false"` **y ademas** declarar un
+> `action name="Delete"`; con el modo habilitado el pattern genera igual su accion contra la
+> transaccion.
 
 ### 4.2 View
 
