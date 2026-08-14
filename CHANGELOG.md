@@ -10,6 +10,26 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-08-14
+
+### Added
+- **`pxtools/modulos/menus.md`** — section *5.1.2 The module has to be in the `SystemModules`
+  catalog*. Writing the `RetMenus<X>` and adding its line to `AddDefaultMenus` is **not enough**: a
+  new module must also be registered in `@System/Personalized/SaveSystemModules`, because
+  `AddMenusRecursive` looks each item's `Module` up in the catalog and drops the node when it is not
+  there. The consequence that makes this hard to diagnose is that `AddDefaultMenus` then issues a
+  **`RollBack` of the whole run** — one undeclared module leaves *every* module of that execution
+  without menus, not just its own, so the symptom is "no new menu appeared" rather than an error about
+  the module. Documents that the string compared is the `Value` of the `PXToolsModules` domain (the
+  qualified module name) and must match the argument of `AddSystemModule` character for character,
+  plus the four-step checklist for adding a module with menus and the order the two seeds must run in.
+
+### Changed
+- **`pxtools/modulos/system.md`** — the `SaveSystemModules` entry now states that registering the
+  module there is a **precondition for its menus to be seeded**, with a cross-reference to the section
+  above; previously it only described the procedure as rebuilding the module catalog, which did not
+  suggest that skipping it breaks something elsewhere.
+
 ## 2026-08-11
 
 ### Added

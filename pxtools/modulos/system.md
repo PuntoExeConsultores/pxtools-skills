@@ -58,7 +58,7 @@ Objetos auxiliares:
 | `CheckSystemModules` | — | **Bootstrap perezoso**: si hay 0 módulos, invoca `SaveSystemModules`. |
 
 ### Procs de "seed" (`Personalized/`)
-- **`SaveSystemModules`** — reconstruye el catálogo de módulos (`DelSystemModules` + N `AddSystemModule` — la lista de módulos es específica del proyecto, se regenera al agregar módulos).
+- **`SaveSystemModules`** — reconstruye el catálogo de módulos (`DelSystemModules` + N `AddSystemModule` — la lista de módulos es específica del proyecto, se regenera al agregar módulos). ⚠️ **Agregar acá el módulo es requisito para que sus menús se siembren**: `AddMenusRecursive` descarta el ítem cuyo `Module` no esté en el catálogo y `AddDefaultMenus` hace `RollBack` de toda la corrida. Ver [`menus.md`](menus.md) → *El módulo tiene que estar en el catálogo de `SystemModules`*.
 - **`SaveSystemObjects`** — punto de registro de objetos concretos (se personaliza/regenera por proyecto).
 
 ### Quién puebla el catálogo

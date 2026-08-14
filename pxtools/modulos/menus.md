@@ -105,6 +105,70 @@ alguien puede perder tiempo buscando ahí un problema inexistente.
 > en el nodo raíz **no falla**: crea silenciosamente un menú nuevo con ese texto. Si aparece un
 > nodo huérfano inesperado en el árbol, revisar los `Parent` de los `RetMenus<X>`.
 
+### 5.1.2 El módulo tiene que estar en el catálogo de `SystemModules`
+
+⚠️ **Antes de sembrar los menús de un módulo nuevo hay que darlo de alta en
+`@System/Personalized/SaveSystemModules`.** No alcanza con escribir el `RetMenus<X>` y agregarlo a
+`AddDefaultMenus`.
+
+`AddMenusRecursive` valida cada ítem contra el catálogo antes de crear el nodo:
+
+```genexus
+If not &Item.Module.IsEmpty()
+	&SystemModuleName = &Item.Module.Trim()
+	For Each order SystemModuleName
+		Where SystemModuleName = &SystemModuleName
+		&OkModule = True
+	When None
+		&OkModule = False
+	EndFor
+Else
+	&OkModule = True                                       // sin Module declarado, pasa
+EndIf
+
+If &OkModule
+	…crea el nodo…
+Else
+	AddMissingModules.Call(&MissingModules, &SystemModuleName)
+EndIf
+```
+
+Y `AddDefaultMenus` **descarta toda la siembra** si quedó algún módulo sin resolver:
+
+```genexus
+If &ColMissingModules.Count > 0
+	For &Item in &ColMissingModules
+		Msg('Missing module  ' + &Item)
+	EndFor
+	Msg('Some menu options could not be saved! Execute SaveSystemModule extension, do F5 and retry!')
+	RollBack                                               // <- se pierde TODO, no solo ese módulo
+Else
+	Commit
+EndIf
+```
+
+Dos consecuencias que conviene tener presentes:
+
+- El `RollBack` es **global a la corrida**: un solo módulo sin declarar deja sin menús a *todos* los
+  módulos de esa ejecución, no únicamente al suyo. Si después de agregar un módulo "no aparece ningún
+  menú nuevo", esto es lo primero a mirar.
+- El valor que se compara es el **`Value` del dominio `PXToolsModules`**, que es el nombre calificado
+  del módulo, y tiene que coincidir carácter a carácter con el string que se le pasa a
+  `AddSystemModule`:
+
+```genexus
+// #Domains/PXToolsModules.gxDomain
+Messaging: { Description: "PXTools Messaging", Value: "PXTools.Messaging"}
+
+// @System/Personalized/SaveSystemModules
+AddSystemModule.Call("PXTools.Messaging")     // mismo string exacto
+```
+
+**Checklist para dar de alta un módulo nuevo con menús**: (1) valor en el dominio `PXToolsModules`;
+(2) `AddSystemModule.Call("<nombre calificado>")` en `SaveSystemModules`; (3) el DataProvider
+`RetMenus<X>`; (4) la línea en `AddDefaultMenus`. Y después ejecutar `SaveSystemModules` **antes** que
+`AddDefaultMenus` — si el catálogo se pobló en la misma corrida no hay problema, pero al revés sí.
+
 ### 5.2 Seguridad por nodo y menú del usuario
 - **`PPEXE_DeMnW05`** (motor) recorre el árbol por categoría/padre; para cada **hoja** llama `PCheckMenuSecurity` (hook, default True) y `PIsAuthorized.Udp(<Modulo>.<Program>)` (autorización real). **Propagación bottom-up**: si un hijo queda habilitado, el padre también, y su clave `MnWOri+MnWSec` se agrega a `MenuContext.Enabled`.
 - El chequeo se hace **una vez** al armar el `MenuContext` (persistido en session con `PSetMenuContext`/`PLoadMenuContext`); en render, **`PPEXE_CtMnW01`** solo consulta `MenuContext.Enabled.IndexOf(<clave>)` para decidir si pintar cada nodo.
