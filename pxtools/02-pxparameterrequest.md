@@ -39,6 +39,26 @@ Esto significa que en un KB dado, se genera solo una versión activa (Desktop O 
 
 ## 3. Tipos de behaviour
 
+> ⚠️ **En el `.gxPattern` el behaviour se escribe como el atributo `type` del `<level>`, no como un
+> nodo `<behaviour>`.** El nodo `behaviour` y los nombres largos de la tabla de abajo son los de la
+> **definición** del pattern; en las instancias externalizadas a disco no aparece ninguno. Verificado
+> sobre las 57 instancias de esta KB: cero nodos `<behaviour>`.
+>
+> ```xml
+> <level name="MiFormulario" description="Mi Formulario" caption="Mi Formulario" type="Popup">
+> ```
+>
+> Valores observados en instancias reales, con su frecuencia: `Popup` (44), `Component` (8),
+> `Web Panel` (2), `Prompt` (2), `Process` (1).
+>
+> **Esto importa cuando el panel se invoca como modal**: si el level no declara `type="Popup"`, el
+> WebPanel generado no es un popup y una invocación con `.Popup()` lo muestra sin el marco, el título
+> ni la barra de acciones — se ve como un formulario suelto pegado sobre la página.
+>
+> El **tamaño** del popup no se declara acá: `popupWidth`, `popupHeight` y `popupBehaviour` van en la
+> **acción del llamador** (junto a `target="Modal"`), porque son propiedades de esa invocación y no
+> del formulario. Un mismo formulario puede abrirse con distintos tamaños desde distintos lugares.
+
 El nodo `behaviour` define cómo se presenta y comporta el formulario. Es la propiedad más importante del level.
 
 ```

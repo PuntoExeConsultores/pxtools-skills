@@ -12,6 +12,18 @@ Nothing pending.
 
 ## 2026-08-14
 
+### Changed
+- **`pxtools/02-pxparameterrequest.md`** — the behaviour section described a `<behaviour>` node with
+  long type names (`PopupParameterRequest`, `FloatingParameterRequest`, …). Those belong to the
+  pattern **definition**; an externalized instance writes the behaviour as the `type` attribute of
+  `<level>` instead, and no instance in the reference knowledge base contains a `<behaviour>` node at
+  all. The section now leads with the real form and the values actually observed (`Popup`,
+  `Component`, `Web Panel`, `Prompt`, `Process`), because the consequence is easy to hit and hard to
+  read: a level that omits `type="Popup"` still generates and still opens, it just renders without the
+  frame, the title and the action bar — a form pasted onto the page rather than a dialog. Also states
+  that the popup **size** is not declared there: `popupWidth`, `popupHeight` and `popupBehaviour`
+  belong to the caller's action, so one form can open at different sizes from different places.
+
 ### Added
 - **`pxtools/modulos/menus.md`** — section *5.1.2 The module has to be in the `SystemModules`
   catalog*. Writing the `RetMenus<X>` and adding its line to `AddDefaultMenus` is **not enough**: a
