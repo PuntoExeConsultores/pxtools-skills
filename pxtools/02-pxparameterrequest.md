@@ -496,6 +496,35 @@ El nodo `codes` permite inyectar código GeneXus en puntos específicos del cicl
 | `Load` | Evento `Load` de la grilla (si existe) | Calcular campos derivados por fila |
 | `Subroutine` | Se declaran como subrutinas del WebPanel | Lógica reutilizable dentro del formulario |
 
+### `Subroutine`: un nodo por subrutina, y el `name` ES el nombre
+
+⚠️ A diferencia de `Start`, `Refresh` y `Load` —que son puntos únicos del ciclo de vida— el tipo
+`Subroutine` se declara **una vez por cada subrutina**, con su nombre en el atributo `name`, y el
+CDATA lleva **solamente el cuerpo**: el `Sub 'Nombre'` y el `EndSub` los genera el pattern.
+
+```xml
+<codes>
+  <code type="Start"><![CDATA[Do 'Leer Datos'
+Do 'Mostrar Estado']]></code>
+
+  <code type="Subroutine" name="Leer Datos"><![CDATA[&Cargar = False
+For Each
+	Where EmisorRUT = &EmisorRUT
+	&Cargar = True
+	Exit
+EndFor]]></code>
+
+  <code type="Subroutine" name="Mostrar Estado"><![CDATA[&Mensaje.Visible = &Cargar]]></code>
+</codes>
+```
+
+**El error fácil** es meter todas las subrutinas en un solo nodo, escribiendo los `Sub … EndSub` a
+mano dentro del CDATA. El pattern **no las separa**: queda un único nodo con el `name` vacío, que en
+el editor visual se ve como *Code Subroutine* sin nombre, y las subrutinas no se generan.
+
+Los nombres pueden llevar espacios (`name="Busco Emisor"`), y se invocan como es habitual:
+`Do 'Busco Emisor'`.
+
 ### Ejemplo de hooks de código
 
 ```xml

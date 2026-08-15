@@ -13,6 +13,13 @@ Nothing pending.
 ## 2026-08-14
 
 ### Changed
+- **`pxtools/02-pxparameterrequest.md`** — new subsection on the `Subroutine` code hook. Unlike
+  `Start`, `Refresh` and `Load`, which are single points in the life cycle, `Subroutine` is declared
+  **once per subroutine**, the routine's name goes in the node's `name` attribute, and the CDATA
+  carries only the body — the pattern writes the `Sub` and `EndSub` itself. The mistake this prevents
+  is putting every routine in one node with hand-written `Sub … EndSub` inside: the pattern does not
+  split them, the node ends up with an empty name (visible as an unnamed *Code Subroutine* in the
+  visual editor) and none of the routines is generated.
 - **`pxtools/02-pxparameterrequest.md`** — the behaviour section described a `<behaviour>` node with
   long type names (`PopupParameterRequest`, `FloatingParameterRequest`, …). Those belong to the
   pattern **definition**; an externalized instance writes the behaviour as the `type` attribute of
