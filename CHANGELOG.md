@@ -13,6 +13,16 @@ Nothing pending.
 ## 2026-08-14
 
 ### Changed
+- **`pxtools/01-pxworkwith.md`** — section *4.6 Where a ControlType is defined* now lists the **domain**
+  as a fourth possible place, states the project convention (edit controls live in the instance, or in
+  the form when the object has no instance — never on attributes or domains), and adds a subsection on
+  the empty item. The rule it settles: an `(All)`, `(None)` or `(Select…)` is a need of **one screen** —
+  a filter saying "do not filter" — and never a property of the data, so it belongs to the control:
+  `<controlInfo controlType="Combo Box" emptyItem="True" emptyItemText="(All)" />`, in lower case,
+  inside the instance. It also documents the false friend that costs the time: the domain *does* accept
+  `EmptyItem` / `EmptyItemText` and the import takes it without complaint, but the combo is still
+  generated with `AddEmptyItem="False"`, so nothing appears on screen and the symptom is "I set the
+  property and nothing happened".
 - **`pxtools/02-pxparameterrequest.md`** — new subsection on the `Subroutine` code hook. Unlike
   `Start`, `Refresh` and `Load`, which are single points in the life cycle, `Subroutine` is declared
   **once per subroutine**, the routine's name goes in the node's `name` attribute, and the CDATA

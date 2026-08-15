@@ -408,8 +408,36 @@ El nodo `transaction/layouts/layout` define el **form de la transaccion**. Vacio
 | Lugar | Alcance | Cuando |
 |---|---|---|
 | Instancia del pattern (`layout/attributes/attribute/controlInfo`) | Solo esa pantalla | **Preferido** |
-| WebForm de la transaccion / WebPanel | Solo ese form | Cuando el form es `dynamic="false"` y se edita a mano |
+| WebForm de la transaccion / WebPanel | Solo ese form | Cuando el form es `dynamic="false"` y se edita a mano, o cuando el objeto no tiene instancia |
 | `.gxAttribute` (propiedad del atributo) | **Toda la KB** | Evitar |
+| `.gxDomain` (propiedad del dominio) | **Todos los atributos del dominio** | Evitar |
+
+> **Convención de este proyecto**: los controles de edición **no** se definen en atributos ni en
+> dominios. Es una modalidad que varía según el proyecto —GeneXus permite las cuatro— pero acá el
+> control vive siempre en la instancia, o en el form cuando el objeto no tiene instancia.
+
+#### El ítem vacío pertenece al control, nunca al dato
+
+⚠️ **Nunca declarar el valor vacío en el dominio ni en el atributo.** Un `(All)`, un `(Ninguno)` o un
+`(Seleccione...)` es una necesidad **de una pantalla concreta** —un filtro que quiere decir "sin
+filtrar"—, no una propiedad del dato. Puesto en el dominio, aparece en todas las pantallas que usen
+ese tipo, incluidos los formularios de edición donde ese valor no es válido.
+
+Va en el `controlInfo` del atributo dentro de la instancia, en **minúscula**:
+
+```xml
+<attribute name="MessagingMessageStatus" description="Status" descriptionPosition="Left">
+  <controlInfo controlType="Combo Box" emptyItem="True" emptyItemText="(All)" />
+</attribute>
+```
+
+Funciona igual sobre un `Dynamic Combo Box`, junto a su `dataProvider`.
+
+> **Ojo con el falso amigo**: el dominio *también* acepta `EmptyItem` / `EmptyItemText` (mayúscula
+> inicial, otro nodo) y el import lo acepta sin chistar. Pero el combo se genera igual con
+> `AddEmptyItem="False"`, así que el ítem vacío **no aparece** y el síntoma es "puse la propiedad y no
+> pasó nada". La pista para distinguirlo está en el form generado: el control que sí lo tiene sale con
+> `AddEmptyItem="True"`.
 
 Definirlo en el **atributo** lo propaga a toda aparicion del atributo, **grillas incluidas**. Un Dynamic Combo Box en una columna de grilla carga todos los registros de la tabla foranea **por cada fila**: una ineficiencia inaceptable en un listado. Solo seria admisible controlando forzar `Edit` en cada grilla donde el atributo aparezca, lo que es fragil.
 
