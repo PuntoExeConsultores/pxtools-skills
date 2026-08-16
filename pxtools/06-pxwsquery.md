@@ -194,6 +194,40 @@ Las variables definidas en el nodo `variables` (no en `fields`) tienen una propi
 
 Cuando `generateFieldsOrder="True"`, PXWSQuery genera automáticamente una opción de ordenamiento por cada campo de salida, además de los órdenes manuales definidos. Genera un **Domain enumerado** con todos los órdenes posibles.
 
+## Cómo declarar los `<orders>`
+
+Cada `<order>` se traduce literalmente a una cláusula `Order` del DataProvider generado, así
+que le aplican las mismas reglas de rendimiento que a cualquier `For Each`:
+
+**1. Empezar siempre por los atributos filtrados por igual.** El primero es el (o los)
+atributo multi-tenant del Settings del Layer, que el pattern filtra en todas las consultas
+(`Where EmisorId = &EmisorId`). Después van los filtros `type="Equal"` de la propia instancia
+—típicamente la clave del padre en una consulta sobre un nivel subordinado— y recién al final
+el atributo por el que se quiere ordenar.
+
+```xml
+<order name="PorVigencia">
+  <orderAttribute name="EmisorId" description="Emisor" />
+  <orderAttribute name="EmisorCodigoProductosServiciosId" description="Código del producto" />
+  <orderAttribute name="ProductosServiciosPrecioVigencia" description="Vigencia" ascending="False" />
+</order>
+```
+
+**2. Verificar que exista un índice que respalde ese orden.** La secuencia de atributos del
+`<order>` tiene que ser prefijo de algún índice de la tabla base. Se comprueba leyendo
+`Knowledge Base/#Tables/<Tabla>.Table.gxSource`, sección `#Indexes`. Si no existe, hay que
+sacar el orden o crear un índice de usuario — y crear un índice es una reorganización de la
+base, o sea una decisión del dueño de la KB, no algo que se agregue al pasar. Ordenar por un
+atributo de la **tabla extendida** (el nombre de una foránea) nunca queda respaldado: ordenar
+por la clave foránea.
+
+**3. Un mismo conjunto de atributos no puede usarse en dos órdenes.** El dominio enumerado que
+genera el pattern usa como `Description` de cada valor **la lista de nombres de atributos** del
+orden. Dos órdenes con los mismos atributos (por ejemplo el mismo atributo ascendente y
+descendente) producen dos valores con la misma descripción y el apply falla con
+`Failed processing Domain '<WSQuery…Order>' properties`. Si se necesita ida y vuelta sobre el
+mismo atributo, hay que declarar un solo orden con el sentido más útil.
+
 ## Códigos de hook
 
 | type | Destino | Cuándo |
