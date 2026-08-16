@@ -10,6 +10,25 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-08-16
+
+### Added
+- **`pxtools/06-pxwsquery.md`** — new section *How to declare the `<orders>`*. Each `<order>` becomes a
+  literal `Order` clause of the generated DataProvider, so the performance rules of any `For Each`
+  apply to it, and none of them were written down. Three of them, in the order they bite:
+  every order must **lead with the equality-filtered attributes** — first the Layer's multi-tenant
+  attribute, which the pattern filters on every query, then the instance's own `type="Equal"` filters
+  (typically the parent key when the query runs over a subordinate level), and only then the attribute
+  one actually wants to sort by. Second, the resulting attribute sequence must be a **prefix of an
+  existing index**, verifiable in `#Tables/<Table>.Table.gxSource`; ordering by an attribute of the
+  extended table — the descriptor of a foreign key — is never index-backed, so order by the foreign key
+  instead, and when no index supports the order the choice is to drop it or to create a user index,
+  which is a database reorganization and therefore the KB owner's call. Third, and this one only
+  shows up as a failed apply: the generated enumerated domain uses **the list of attribute names as the
+  `Description`** of each value, so two orders over the same attribute set — the same attribute
+  ascending and descending, for instance — produce two values with the same description and the apply
+  dies with `Failed processing Domain '<WSQuery…Order>' properties`.
+
 ## 2026-08-14
 
 ### Changed
