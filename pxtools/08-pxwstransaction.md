@@ -142,6 +142,34 @@ Esto permite controlar qué campos son editables en cada modo sin código custom
 - Output: SDTSaveOut (resultado + mensajes de error)
 - Usa **Business Component** de GeneXus internamente
 
+#### El Save es un REEMPLAZO COMPLETO, no un patch
+
+Es la característica del pattern que más fácil se malinterpreta, y hacerlo destruye datos sin dejar
+rastro. El código generado hace `BC.Load(...)` y **después asigna todos los atributos** desde el SDT
+de entrada:
+
+- Un atributo que no venga en el SDT **se graba vacío**. No se conserva el valor que tenía.
+- En cada nivel subordinado, después del insert-or-update de los ítems recibidos, hay un bloque
+  `// Delete <Nivel>` que **elimina las filas que no vengan en la colección**.
+
+Dicho de otra forma: **el SDT de entrada es el estado deseado completo, no un delta.**
+
+Consecuencia para cualquier consumidor —una API REST, una pantalla, una tarea batch, una tool de
+asistente—: la única forma segura de modificar es
+
+```
+Load  →  aplicar los cambios sobre lo que se cargó  →  Save
+```
+
+Un `Save` armado desde cero con los dos o tres campos que se querían cambiar **vacía el resto del
+registro y borra todos sus niveles subordinados**. Y lo hace en silencio: no hay error, no hay
+warning, y la operación devuelve `Succeed = True`.
+
+Un caso concreto de cómo se pierde un dato sin que nadie lo pida: si el consumidor decide qué
+atributos tocar preguntando si el valor recibido está vacío, confunde *"no me lo mandaron"* con *"lo
+quieren vacío"*. Hay que distinguir la **ausencia** del campo de su valor vacío — mandar un campo
+vacío es una forma legítima de borrarlo, no mandarlo no lo es.
+
 ### Delete
 - Elimina un registro por sus keys
 - Input: SDTDeleteIn (keys)

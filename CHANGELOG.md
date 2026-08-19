@@ -10,6 +10,23 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-08-19
+
+### Added
+- **`pxtools/08-pxwstransaction.md`** — new section *El Save es un REEMPLAZO COMPLETO, no un patch*,
+  under the generated `Save` operation. The generated code loads the Business Component and then
+  assigns **every** attribute from the input SDT, so an attribute that does not travel in it is
+  written empty rather than left alone; and in each subordinate level, after the insert-or-update of
+  the items received, a `Delete <Level>` block removes the rows that did not come in the collection.
+  The input SDT is the complete desired state, not a delta. The section states the consequence for
+  every consumer — REST API, screen, batch task, assistant tool alike — which is that the only safe
+  way to modify is Load, apply the changes over what was loaded, then Save: a `Save` assembled from
+  scratch with the two or three fields somebody wanted to change empties the rest of the record and
+  wipes its subordinate levels, in silence, with no error, no warning and `Succeed = True`. It closes
+  with the way the data is lost without anyone asking for it — deciding which attributes to touch by
+  asking whether the received value is empty confuses *"it was not sent to me"* with *"they want it
+  empty"*, so absence of a field has to be distinguished from its empty value.
+
 ## 2026-08-16
 
 ### Added
