@@ -1,110 +1,110 @@
-# Módulo @SendMails — Envío de Correos
+# @SendMails Module — Outgoing Mail
 
-> Comportamiento del módulo `@PXTools/@SendMails`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@SendMails` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@SendMails` (`APIs/` core + `Personalized/`).
-- Cualificador: `PXTools.SendMails`.
-- **Depende de:** `@APIs` (base), `@System`, `@MailAccounts` (cuenta SMTP), `@FileStorage` (adjuntos). Infra de generación: `@Menus`, `@SystemParameters`, `@DynamicCallReferences`, `@ControlPreferences`.
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@SendMails` (`APIs/` core + `Personalized/`).
+- Qualifier: `PXTools.SendMails`.
+- **Depends on:** `@APIs` (base), `@System`, `@MailAccounts` (the SMTP account), `@FileStorage` (attachments). Generation infrastructure: `@Menus`, `@SystemParameters`, `@DynamicCallReferences`, `@ControlPreferences`.
 
-## 1. Qué provee
+## 1. What it provides
 
-Envío de correos con **outbox persistente**, **reintentos**, envío por **lotes/series**, adjuntos (incl. desde @FileStorage) y resolución de la **cuenta SMTP** (@MailAccounts o parámetros del sistema). Soporta envío **diferido** (encola y una tarea batch envía/reintenta) o **inmediato**.
+Sending mail with a **persistent outbox**, **retries**, **batch/series** delivery, attachments (including from @FileStorage) and resolution of the **SMTP account** (from @MailAccounts or the system parameters). It supports **deferred** sending (enqueue, and a batch task sends/retries) or **immediate** sending.
 
-## 2. Concepto central: outbox + series
+## 2. Core concept: outbox + series
 
-- **`SendMailOutbox`** = un mail encolado (cabecera: from, subject, message, destinatarios To/CC/BCC, adjuntos).
-- **`SendMailOutboxSeries`** = los **intentos/lotes** de ese mail — **aquí vive la máquina de estados y los reintentos**. Un outbox se parte en varias series si supera el tope de destinatarios.
-- El **`MailData`** (SDT) es la **API de intercambio**: se arma en el código y se pasa a los procs de envío.
+- **`SendMailOutbox`** = one queued mail (header: from, subject, message, To/CC/BCC recipients, attachments).
+- **`SendMailOutboxSeries`** = that mail's **attempts/batches** — **this is where the state machine and the retries live**. One outbox is split into several series if it exceeds the recipient cap.
+- **`MailData`** (an SDT) is the **exchange API**: you build it in code and pass it to the sending procedures.
 
-## 3. Transacciones del módulo
+## 3. Module transactions
 
-`SendMailOutboxId` = `IdFirstLevel` (autonum).
+`SendMailOutboxId` = `IdFirstLevel` (autonumbered).
 
-| Transacción | PK | Rol |
+| Transaction | PK | Role |
 |---|---|---|
-| **SendMailOutbox** | `SendMailOutboxId` | **Cabecera**: `Status` (`SendMailOutboxStatus`), subject, `MessageType` (HTML/Text), message, remitente (email/description/user/password `PswEnc`, o FK `MailAccountId`), FKs FileStorage. Niveles **Attachments** (`AttachmentType`) y **Mails** (email + `MailType` To/CC/BCC). |
-| **SendMailOutboxSeries** | `SendMailOutboxId, SeriesDateTime` | **Intento/lote** (hora programada). `Status` (`SendMailOutboxSeriesStatus`), `ErrorCode`/`Description`/`ErrorRetries`. Nivel **Mails** (destinatario efectivo). Regla: al editar una serie `Fail` → vuelve a `Suspended` y resetea reintentos; tras cada update recalcula el estado de la cabecera. |
-| **SendMailOuboxBC** (BC) | `SendMailOutboxId` | Business Component sobre la misma tabla (uso programático). |
+| **SendMailOutbox** | `SendMailOutboxId` | **Header**: `Status` (`SendMailOutboxStatus`), subject, `MessageType` (HTML/Text), message, sender (email/description/user/password `PswEnc`, or the `MailAccountId` FK), FileStorage FKs. **Attachments** (`AttachmentType`) and **Mails** (email + `MailType` To/CC/BCC) levels. |
+| **SendMailOutboxSeries** | `SendMailOutboxId, SeriesDateTime` | An **attempt/batch** (its scheduled time). `Status` (`SendMailOutboxSeriesStatus`), `ErrorCode`/`Description`/`ErrorRetries`. A **Mails** level (the effective recipient). Rule: editing a `Fail` series → it returns to `Suspended` and resets the retries; after each update the header's status is recomputed. |
+| **SendMailOuboxBC** (BC) | `SendMailOutboxId` | Business Component over the same table (programmatic use). |
 
-FKs por Group: `SendMailOutBoxFromMailAccountId : MailAccountId` (@MailAccounts), `…FileStorage` (@FileStorage).
+FKs through Groups: `SendMailOutBoxFromMailAccountId : MailAccountId` (@MailAccounts), `…FileStorage` (@FileStorage).
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-Propios (nombre `SendMail*`/`MailMessage*`/`AttachmentType`), todos **root-legacy** (viven en el `#Domains/` raíz):
+Its own (named `SendMail*`/`MailMessage*`/`AttachmentType`), all **root-legacy** (they live in the root `#Domains/`):
 
-| Dominio | Valores |
+| Domain | Values |
 |---|---|
 | **SendMailOutboxStatus** | Fail=`FAI`, Discarded=`DIS`, Active=`ACT` |
 | **SendMailOutboxSeriesStatus** | Suspended=`SUS`, ErrorRetry=`TRY`, Fail=`FAI`, Discarded=`DIS` |
 | **SendMailOutboxMailType** | To, CC, BCC |
 | **MailMessageType** | HTML, Text |
-| **MailMessage** | LongVarChar(512000) — cuerpo del mensaje (también lo consume @ReceiveMails) |
+| **MailMessage** | LongVarChar(512000) — the message body (also consumed by @ReceiveMails) |
 | **AttachmentType** | Internal=`INT` (Blob), External=`EXT` (path/URL), FileStorage=`FSG` |
 
-**Usa de otros módulos:** `MailAccountId`/`MailAccountType` (@MailAccounts), `PswEnc`/`PXToolsEmail` (@APIs base). `MailMessageType` y `AttachmentType` los reutiliza además @Alerts.
+**Used from other modules:** `MailAccountId`/`MailAccountType` (@MailAccounts), `PswEnc`/`PXToolsEmail` (@APIs base). `MailMessageType` and `AttachmentType` are also reused by @Alerts.
 
-## 5. Mecanismo
+## 5. How it works
 
-### 5.1 `MailData` (SDT — la API)
-`From : MailSender` { eMail, Description, User, Password, **MailAccountId** }; `To`/`CC`/`BCC`/`ReplyTo` : colecciones `MailDestination`; `Subject`; `FileStorage`/`FileStorageGroup` (adjunta un grupo entero); `Message` { Type, Data }; `Attachments[]` { Type, Path, Name, Extension, FileStorage/Group/Storage }. Respuesta: `SDTSendMailResponse` { Error.Code, Error.Description, Id }.
+### 5.1 `MailData` (the SDT — the API)
+`From : MailSender` { eMail, Description, User, Password, **MailAccountId** }; `To`/`CC`/`BCC`/`ReplyTo` : `MailDestination` collections; `Subject`; `FileStorage`/`FileStorageGroup` (attaches a whole group); `Message` { Type, Data }; `Attachments[]` { Type, Path, Name, Extension, FileStorage/Group/Storage }. The response: `SDTSendMailResponse` { Error.Code, Error.Description, Id }.
 
-### 5.2 Encolar
-`AddSendMailOutbox(&MailData) → &SendMailOutboxId` inserta la cabecera (Active), cifra la password y crea Mails/Attachments. Dos estrategias encima:
-- **`SendMailOutboxWithErrorRetry(in: &MailData)`** — **diferido**: crea una o varias `Series` en `Suspended`, programadas a `ServerNow + SendMailsTimePeriod`; parte en lotes si supera `SendMailsRecipientsTop`. El envío lo hace la tarea batch.
-- **`SendMailOutboxWithoutErrorRetry(in: &MailData, out: &Response)`** — **inmediato**: envía con `SendMail`; crea la serie ya en `Discarded` (ok) o `Fail`.
+### 5.2 Enqueueing
+`AddSendMailOutbox(&MailData) → &SendMailOutboxId` inserts the header (Active), encrypts the password and creates the Mails/Attachments. Two strategies sit on top:
+- **`SendMailOutboxWithErrorRetry(in: &MailData)`** — **deferred**: creates one or more `Series` in `Suspended`, scheduled at `ServerNow + SendMailsTimePeriod`; it splits into batches if `SendMailsRecipientsTop` is exceeded. The batch task does the sending.
+- **`SendMailOutboxWithoutErrorRetry(in: &MailData, out: &Response)`** — **immediate**: sends through `SendMail`; creates the series already `Discarded` (success) or `Fail`.
 
-### 5.3 Máquina de estados
-- **Serie**: `Suspended` → éxito `Discarded` / error `ErrorRetry`; reintenta hasta `SMTPErrorRetries`, agotado → `Fail`. `Fail` puede reactivarse (`UpdRetrySeries`).
-- **Cabecera** (`UpdSendMailOutboxStatus`): alguna serie pendiente → `Active`; todas `Discarded` → `Discarded`; alguna `Fail` → `Fail`.
+### 5.3 State machine
+- **Series**: `Suspended` → on success `Discarded` / on error `ErrorRetry`; it retries up to `SMTPErrorRetries`, and once exhausted → `Fail`. A `Fail` can be reactivated (`UpdRetrySeries`).
+- **Header** (`UpdSendMailOutboxStatus`): any series still pending → `Active`; all `Discarded` → `Discarded`; any `Fail` → `Fail`.
 
-### 5.4 Envío batch — vía @TaskManager
-- **`TskSendMails(in: &TaskManagerId, out…)`** es el worker: recorre cuentas (Main → Alias → sin cuenta), hace login SMTP una vez por cuenta (`SendMailSessionLogin`) y envía las series vencidas reutilizando la sesión (`SendMailSessionSend`); respeta el límite por cuenta.
-- **`PrcSendMail`** (`IsMain=True, CommandLine`) es el entry-point del scheduler: lock (`StartProcessStatus`) + `TskSendMails`.
-- `Personalized/RetDynamicCallReferenceSendMails` registra `TskSendMails` en @TaskManager + `PrcTableCleanerSendMails`.
+### 5.4 Batch sending — through @TaskManager
+- **`TskSendMails(in: &TaskManagerId, out…)`** is the worker: it walks the accounts (Main → Alias → no account), logs into SMTP once per account (`SendMailSessionLogin`) and sends the due series reusing the session (`SendMailSessionSend`); it honours the per-account limit.
+- **`PrcSendMail`** (`IsMain=True, CommandLine`) is the scheduler's entry point: a lock (`StartProcessStatus`) + `TskSendMails`.
+- `Personalized/RetDynamicCallReferenceSendMails` registers `TskSendMails` in @TaskManager plus `PrcTableCleanerSendMails`.
 
-### 5.5 Resolución de cuenta
-Si `From.MailAccountId` está seteado → usa esa `MailAccount` (si es **Alias**, resuelve la Main y agrega el alias como `ReplyTo`); toma host/puerto/secure/auth de la cuenta (salvo `SMTPDefault` → System Parameters SMTP*). Sin `MailAccountId` → usa `From.eMail`/User/Password, o los System Parameters SMTP si vacíos.
+### 5.5 Account resolution
+If `From.MailAccountId` is set → it uses that `MailAccount` (if it is an **Alias**, it resolves the Main and adds the alias as `ReplyTo`); it takes host/port/secure/auth from the account (unless `SMTPDefault` → the SMTP* System Parameters). Without a `MailAccountId` → it uses `From.eMail`/User/Password, or the SMTP System Parameters if those are empty.
 
 ## 6. APIs vs Personalized
 
-- **`APIs/`** (core): transacciones, `MailData` y SDTs, los procs de encolado/envío/estado, el worker `TskSendMails`/`PrcSendMail`.
-- **`Personalized/`** (3 DataProviders de integración):
-  | Objeto | Qué se customiza |
+- **`APIs/`** (core): the transactions, `MailData` and the SDTs, the enqueue/send/status procedures, the `TskSendMails`/`PrcSendMail` worker.
+- **`Personalized/`** (3 integration DataProviders):
+  | Object | What gets customized |
   |---|---|
-  | `RetMenusSendMails` | Ítems de menú (Outbox / Series). |
-  | `RetSystemParametersSendMails` | System-parameters del módulo (`SendMailsRecipientsTop`, `SendMailsTimePeriod`, `SendMailsFailWhithoutMailAccount`, `SendMailsAccountLimit`). |
-  | `RetDynamicCallReferenceSendMails` | Registro en @TaskManager (`TskSendMails`) + Table Cleaner. |
+  | `RetMenusSendMails` | Menu items (Outbox / Series). |
+  | `RetSystemParametersSendMails` | The module's system parameters (`SendMailsRecipientsTop`, `SendMailsTimePeriod`, `SendMailsFailWhithoutMailAccount`, `SendMailsAccountLimit`). |
+  | `RetDynamicCallReferenceSendMails` | Registration in @TaskManager (`TskSendMails`) + the Table Cleaner. |
 
-> Los parámetros SMTP* (host/port/user/pass/secure/errorretries) se consumen como System Parameters pero se declaran en otro módulo del framework.
+> The SMTP* parameters (host/port/user/pass/secure/errorretries) are consumed as System Parameters but declared in another framework module.
 
-## 7. Instancias de patterns
+## 7. Pattern instances
 
-| Instancia | Qué es |
+| Instance | What it is |
 |---|---|
-| **PXWorkWithSendMailOutbox** | WW del outbox; acciones Retry/"Retry Failed Series", Change (cambio masivo). |
-| **PXWorkWithSendMailOutboxSeries** | WW de las series/intentos. |
-| **PXParameterRequestChange** | Popup de cambio masivo por filtro (MailAccount/subject/fechas/status/email) → `UpdSendMailsData`. |
+| **PXWorkWithSendMailOutbox** | The outbox WW; Retry / "Retry Failed Series" and Change (bulk change) actions. |
+| **PXWorkWithSendMailOutboxSeries** | WW for the series/attempts. |
+| **PXParameterRequestChange** | Bulk-change popup by filter (MailAccount/subject/dates/status/email) → `UpdSendMailsData`. |
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-| Proc | `Parm()` | Propósito |
+| Proc | `Parm()` | Purpose |
 |---|---|---|
-| **`SendMailOutboxWithErrorRetry`** | `in: &MailData` | **API recomendada** (diferido con reintentos). |
-| **`SendMailOutboxWithoutErrorRetry`** | `in: &MailData, out: &SDTSendMailResponse` | Envío inmediato + outbox. |
-| `SendMail` | `in: &MailData, out: &ErrorCode, out: &ErrorDescription` | Envío SMTP crudo (no persiste). |
-| `AddSendMailOutbox` | `in: &MailData, out: &SendMailOutboxId` | Solo encola (sin serie ni envío). |
-| `SendMailSessionLogin` / `SendMailSessionSend` | (sesión SMTP + MailData) | Login reutilizable / enviar sobre sesión abierta (batch). |
-| `TskSendMails` | `in: &TaskManagerId, out…` | Worker batch (lo llama @TaskManager). |
-| `RetrySendMailOutboxSerie` / `UpdRetrySeries` | (PK serie / `&SendMailOutboxId`) | Reintentar una serie / reactivar `Fail`→`ErrorRetry`. |
-| `UpdSendMailOutboxStatus` | `in: &SendMailOutboxId` | Recalcula estado de cabecera. |
-| `UpdSendMailsData` | (filtro + flags) | Cambio masivo de estado/contadores. |
-| `RetMailDataFromSendMailOutboxSerie` | (PK serie, out: &MailData) | Reconstruye `MailData` desde el outbox. |
+| **`SendMailOutboxWithErrorRetry`** | `in: &MailData` | **The recommended API** (deferred, with retries). |
+| **`SendMailOutboxWithoutErrorRetry`** | `in: &MailData, out: &SDTSendMailResponse` | Immediate send + outbox. |
+| `SendMail` | `in: &MailData, out: &ErrorCode, out: &ErrorDescription` | Raw SMTP send (nothing persisted). |
+| `AddSendMailOutbox` | `in: &MailData, out: &SendMailOutboxId` | Enqueues only (no series, no sending). |
+| `SendMailSessionLogin` / `SendMailSessionSend` | (SMTP session + MailData) | Reusable login / send over an open session (batch). |
+| `TskSendMails` | `in: &TaskManagerId, out…` | The batch worker (called by @TaskManager). |
+| `RetrySendMailOutboxSerie` / `UpdRetrySeries` | (series PK / `&SendMailOutboxId`) | Retry one series / reactivate `Fail`→`ErrorRetry`. |
+| `UpdSendMailOutboxStatus` | `in: &SendMailOutboxId` | Recomputes the header's status. |
+| `UpdSendMailsData` | (filter + flags) | Bulk change of status/counters. |
+| `RetMailDataFromSendMailOutboxSerie` | (series PK, out: &MailData) | Rebuilds `MailData` from the outbox. |
 
-**Patrón de uso**: armar `&MailData` (From con `MailAccountId` o email; To/CC/BCC; Subject; Message; Attachments) → `SendMailOutboxWithErrorRetry.Call(&MailData)` (diferido) o `SendMailOutboxWithoutErrorRetry.Call(&MailData, &Response)` (inmediato).
+**Usage pattern**: build `&MailData` (From with either a `MailAccountId` or an email; To/CC/BCC; Subject; Message; Attachments) → `SendMailOutboxWithErrorRetry.Call(&MailData)` (deferred) or `SendMailOutboxWithoutErrorRetry.Call(&MailData, &Response)` (immediate).
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- [taskmanager.md](taskmanager.md) — ejecuta `TskSendMails` (cola `SendMails`).
-- Módulos **@MailAccounts** (cuenta/credenciales SMTP), **@FileStorage** (adjuntos), **@SystemParameters** (SMTP* + parámetros del módulo).
-- [alerts.md](alerts.md) — el canal Mail de las alertas envía con `SendMailOutboxWithErrorRetry`.
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- [taskmanager.md](taskmanager.md) — runs `TskSendMails` (the `SendMails` queue).
+- The **@MailAccounts** (SMTP account/credentials), **@FileStorage** (attachments) and **@SystemParameters** (SMTP* + the module's parameters) modules.
+- [alerts.md](alerts.md) — the alerts' Mail channel sends through `SendMailOutboxWithErrorRetry`.

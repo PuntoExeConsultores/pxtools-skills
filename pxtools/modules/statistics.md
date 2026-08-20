@@ -1,103 +1,103 @@
-# Módulo @Statistics — Estadísticas del Sistema
+# @Statistics Module — System Statistics
 
-> Comportamiento del módulo `@PXTools/@Statistics`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@Statistics` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@Statistics` (`APIs/` core + `Personalized/`).
-- Cualificador: `PXTools.Statistics`.
-- **Depende de:** `@APIs` (base), `@DynamicCallReferences` (despacho del proceso de cada estadística), `@Menus`. Lo dispara `@TaskManager`; purga vía `@TableCleaner`.
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@Statistics` (`APIs/` core + `Personalized/`).
+- Qualifier: `PXTools.Statistics`.
+- **Depends on:** `@APIs` (base), `@DynamicCallReferences` (dispatching each statistic's process), `@Menus`. It is triggered by `@TaskManager`; purged through `@TableCleaner`.
 
-## 1. Qué provee
+## 1. What it provides
 
-Un framework para **definir y registrar métricas numéricas por período**: cada estadística se declara (metadato + un proceso que la calcula), y una tarea batch ejecuta esos procesos para poblar una serie temporal de valores, consultable por rango o snapshot.
+A framework for **defining and recording numeric metrics per period**: each statistic is declared (metadata + a process computing it), and a batch task runs those processes to populate a time series of values, queryable by range or as a snapshot.
 
-## 2. Concepto central
+## 2. Core concept
 
-- **`StatisticDefinition`** = metadato: código + descripción + el **proceso** que calcula los valores + una **composición de Ids** que etiqueta la sub-dimensión.
-- **`StatisticLog`** = serie temporal: un valor numérico por **(tipo, sujeto=ReferenceCode, momento=DateTime, sub-métrica=Ids)**.
-- El proceso de cada definición se resuelve **por nombre** (vía @DynamicCallReferences) y lo dispara @TaskManager.
+- **`StatisticDefinition`** = the metadata: code + description + the **process** computing the values + an **Id composition** labelling the sub-dimension.
+- **`StatisticLog`** = the time series: one numeric value per **(type, subject=ReferenceCode, moment=DateTime, sub-metric=Ids)**.
+- Each definition's process is resolved **by name** (through @DynamicCallReferences) and triggered by @TaskManager.
 
-## 3. Transacciones del módulo
+## 3. Module transactions
 
-| Transacción | PK | Rol |
+| Transaction | PK | Role |
 |---|---|---|
-| **StatisticDefinition** | `StatisticDefinitionCode` (+ nivel `IdComposition`) | Metadato: `Description`, `ProcessCode`/`ProcessURL` (proc que registra los valores, referencia dinámica). Nivel `IdComposition` (posición → etiqueta, con su DP). |
-| **StatisticLog** | `StatisticLogCode, StatisticLogReferenceCode, StatisticLogDateTime, StatisticLogIds` | **Valor** (`StatisticLogValue` Numeric(18.4)) por período (granularidad minutos). |
-| **StatisticLogBC** (BC) | (igual) | CRUD programático de logs. |
+| **StatisticDefinition** | `StatisticDefinitionCode` (+ an `IdComposition` level) | Metadata: `Description`, `ProcessCode`/`ProcessURL` (the procedure recording the values, a dynamic reference). The `IdComposition` level (position → label, with its DataProvider). |
+| **StatisticLog** | `StatisticLogCode, StatisticLogReferenceCode, StatisticLogDateTime, StatisticLogIds` | The **value** (`StatisticLogValue`, Numeric(18.4)) per period (minute granularity). |
+| **StatisticLogBC** (BC) | (same) | Programmatic CRUD over the logs. |
 
-Grupo `StatisticLogCode : StatisticDefinitionCode` (Log ⋈ Definition); grupos que integran `ProcessCode`/`IdDataProviderCode` con `DynamicCallReferenceCode`.
+The `StatisticLogCode : StatisticDefinitionCode` group (Log ⋈ Definition); plus groups integrating `ProcessCode`/`IdDataProviderCode` with `DynamicCallReferenceCode`.
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-Todos `Statistic*` → @Statistics (nomenclatura), **root-legacy** (viven en el `#Domains/` raíz):
+All `Statistic*` domains belong to @Statistics (by naming), all **root-legacy** (they live in the root `#Domains/`):
 
-| Dominio | Valores |
+| Domain | Values |
 |---|---|
-| **StatisticType** | Range=`RAN`, Last=`LAS` (modo de consulta en `RetQuery`) |
-| **StatisticDefinitionCode** (Char(50)) | Catálogo **extensible** de tipos de estadística; cada aplicación agrega sus valores. |
-| **StatisticMailAccount** (Numeric(1)) | BothEnabled=`0`, POP3Disabled=`1`, SMTPDisabled=`2`, BothDisabled=`3` — métrica de estado de cuentas de correo. Pese a describir cuentas, es de @Statistics (nomenclatura + uso). |
+| **StatisticType** | Range=`RAN`, Last=`LAS` (the query mode in `RetQuery`) |
+| **StatisticDefinitionCode** (Char(50)) | An **extensible** catalogue of statistic types; each application adds its own values. |
+| **StatisticMailAccount** (Numeric(1)) | BothEnabled=`0`, POP3Disabled=`1`, SMTPDisabled=`2`, BothDisabled=`3` — a metric of mail account state. Despite describing accounts, it belongs to @Statistics (by naming and by use). |
 
-## 5. Mecanismo
+## 5. How it works
 
-### 5.1 Definir una estadística
-1. Agregar el valor al enum `StatisticDefinitionCode`.
-2. Escribir un proc "proceso" (en `Personalized/`) que compute y grabe los logs; registrarlo como `ReferenceType.StatisticLogProcess` en @DynamicCallReferences.
-3. Registrar la fila de `StatisticDefinition` — la declara el DataProvider seed `RetStatisticDefintion` y la inserta `AddStatisticDefinition` (o vía el WW).
-4. Opcional: un DataProvider de composición (→ `SDTComposition`) que da etiquetas legibles a cada `Ids`.
+### 5.1 Defining a statistic
+1. Add the value to the `StatisticDefinitionCode` enum.
+2. Write a "process" procedure (in `Personalized/`) that computes and stores the logs; register it as `ReferenceType.StatisticLogProcess` in @DynamicCallReferences.
+3. Register the `StatisticDefinition` row — the `RetStatisticDefintion` seed DataProvider declares it and `AddStatisticDefinition` inserts it (or do it through the WW).
+4. Optional: a composition DataProvider (→ `SDTComposition`) giving readable labels to each `Ids`.
 
-### 5.2 Registrar un valor (desde el proc-proceso)
-No hay API de "increment" dedicada; el proc acumula y hace un **upsert** sobre `StatisticLog`:
+### 5.2 Recording a value (from the process procedure)
+There is no dedicated "increment" API; the procedure accumulates and **upserts** into `StatisticLog`:
 ```
 New
     StatisticLogReferenceCode = ...
     StatisticLogDateTime      = &ServerNow
     StatisticLogCode          = &StatisticType
-    StatisticLogIds           = &SubMetrica
-    StatisticLogValue         = &Valor
+    StatisticLogIds           = &SubMetric
+    StatisticLogValue         = &Value
 When Duplicate
     For Each
-        StatisticLogValue = &Valor   // update si ya existe
+        StatisticLogValue = &Value   // update if it already exists
 EndNew
 ```
 
-### 5.3 Ejecución — vía @TaskManager
-**`TskStatistics`** (`Parm(in: &TaskManagerId, out: &Error TaskManagerExecutionResponse, out: &ErrorMessage)`) recorre **todas** las `StatisticDefinition` y hace `Call(StatisticDefinitionProcessURL)` (call dinámico) de cada proceso. Se registra como `ReferenceType.TaskManagerExecution`; el scheduler lo dispara. `PrcTableCleanerStatisticDefinition` se engancha a @TableCleaner para purgar logs viejos.
+### 5.3 Execution — through @TaskManager
+**`TskStatistics`** (`Parm(in: &TaskManagerId, out: &Error TaskManagerExecutionResponse, out: &ErrorMessage)`) walks **every** `StatisticDefinition` and issues a `Call(StatisticDefinitionProcessURL)` (dynamic call) for each process. It is registered as `ReferenceType.TaskManagerExecution`; the scheduler triggers it. `PrcTableCleanerStatisticDefinition` hooks into @TableCleaner to purge old logs.
 
-### 5.4 Consultar
-`RetQuery(in: &Query SDTStatisticsQueryIn, out: &Data SDTStatisticsQueryOut)`: filtra por `DefinitionCode`+`ReferenceCode` y según `Type`: `Last` (snapshot más reciente) o `Range` (entre `RangeStart`/`RangeEnd`); enriquece con las etiquetas de Ids (`RetSDTComposition`).
+### 5.4 Querying
+`RetQuery(in: &Query SDTStatisticsQueryIn, out: &Data SDTStatisticsQueryOut)`: filters by `DefinitionCode`+`ReferenceCode` and, depending on `Type`, returns `Last` (most recent snapshot) or `Range` (between `RangeStart`/`RangeEnd`); it enriches the result with the Ids labels (`RetSDTComposition`).
 
 ## 6. APIs vs Personalized
 
-- **`APIs/`** (core): las transacciones, `RetQuery`, `AddStatisticDefinition`, `TskStatistics`, `RetStatisticDefintion` (seed), `PrcTableCleanerStatisticDefinition`, los SDTs.
+- **`APIs/`** (core): the transactions, `RetQuery`, `AddStatisticDefinition`, `TskStatistics`, `RetStatisticDefintion` (seed), `PrcTableCleanerStatisticDefinition`, and the SDTs.
 - **`Personalized/`**:
-  | Objeto | Qué se customiza |
+  | Object | What gets customized |
   |---|---|
-  | `RetDynamicCallReferenceStatisticCodes` (DataProvider) | Registra cada proc-proceso del proyecto (`StatisticLogProcess`). |
-  | `RetDynamicCallReferenceStatistics` (DataProvider) | Registra `TskStatistics` + los DP de composición + el TableCleaner. |
-  | `RetMenusStatistics` (DataProvider) | Menú (Definitions / Logs). |
-  | Proc(s) `Prc…` de proceso + DP(s) de composición + `RetSDTComposition` | **La lógica concreta** de cálculo de métricas y sus etiquetas. |
+  | `RetDynamicCallReferenceStatisticCodes` (DataProvider) | Registers each of the project's process procedures (`StatisticLogProcess`). |
+  | `RetDynamicCallReferenceStatistics` (DataProvider) | Registers `TskStatistics` + the composition DataProviders + the TableCleaner. |
+  | `RetMenusStatistics` (DataProvider) | Menu (Definitions / Logs). |
+  | The `Prc…` process procedure(s) + composition DataProvider(s) + `RetSDTComposition` | **The concrete logic** computing the metrics and their labels. |
 
-## 7. Instancias de patterns
+## 7. Pattern instances
 
-- **PXWorkWithStatisticDefinition** — WW del catálogo (view "General" + sección grid "Id Composition").
-- **PXWorkWithStatisticLog** — WW de la serie de valores (filtros por Code/Reference/rango/Ids/Value).
+- **PXWorkWithStatisticDefinition** — the catalogue WW (a "General" view + an "Id Composition" grid section).
+- **PXWorkWithStatisticLog** — the value series WW (filters by Code/Reference/range/Ids/Value).
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-| Objeto | `Parm()` | Propósito |
+| Object | `Parm()` | Purpose |
 |---|---|---|
-| `RetQuery` | `in: &Query; out: &Data` | Consulta (Last/Range). |
-| `AddStatisticDefinition` | — | Puebla `StatisticDefinition`+IdComposition desde el seed. |
-| `RetSDTComposition` | `in: &IdDataProviderCode; out: &SDTComposition` | Etiquetas de la dimensión Ids. |
-| `TskStatistics` | `in: &TaskManagerId, out…` | Job @TaskManager: ejecuta el proceso de cada definición. |
-| `PrcTableCleanerStatisticDefinition` | `(cleaner)` | Purga logs viejos (hook @TableCleaner). |
+| `RetQuery` | `in: &Query; out: &Data` | Query (Last/Range). |
+| `AddStatisticDefinition` | — | Populates `StatisticDefinition`+IdComposition from the seed. |
+| `RetSDTComposition` | `in: &IdDataProviderCode; out: &SDTComposition` | Labels for the Ids dimension. |
+| `TskStatistics` | `in: &TaskManagerId, out…` | @TaskManager job: runs each definition's process. |
+| `PrcTableCleanerStatisticDefinition` | `(cleaner)` | Purges old logs (@TableCleaner hook). |
 
 **SDTs**: `SDTStatisticDefinition`, `SDTStatisticsQueryIn` (DefinitionCode/ReferenceCode/Type/RangeStart/RangeEnd), `SDTStatisticsQueryOut` (DateTime → Values[Id, Value]), `SDTComposition` (Position/Reference).
 
-> **Flujo end-to-end:** @TaskManager dispara `TskStatistics` → recorre `StatisticDefinition` → `Call()` dinámico de cada `ProcessURL` → los procs hacen upsert en `StatisticLog` → el consumo se hace con `RetQuery` → @TableCleaner limpia históricos.
+> **End-to-end flow:** @TaskManager triggers `TskStatistics` → it walks `StatisticDefinition` → dynamic `Call()` of each `ProcessURL` → the procedures upsert into `StatisticLog` → consumers read through `RetQuery` → @TableCleaner clears the history.
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- [dynamiccallreferences.md](dynamiccallreferences.md) — resuelve el `ProcessCode` → proc.
-- [taskmanager.md](taskmanager.md) — ejecuta `TskStatistics`.
-- Módulo @TableCleaner (purga de logs).
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- [dynamiccallreferences.md](dynamiccallreferences.md) — resolves `ProcessCode` → procedure.
+- [taskmanager.md](taskmanager.md) — runs `TskStatistics`.
+- The @TableCleaner module (log purging).
