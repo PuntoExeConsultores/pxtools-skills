@@ -1,383 +1,383 @@
-# Módulos @PXTools — Funcionalidad Transversal Reutilizable
+# @PXTools Modules — Reusable Cross-Cutting Functionality
 
-## Qué son
+## What they are
 
-Los módulos @PXTools son **paquetes de objetos GeneXus reutilizables** que proveen funcionalidad transversal a cualquier aplicación. Se instalan bajo `Knowledge Base/@PXTools/@<NombreModulo>/` y muchos de ellos incluyen sus propias instancias de patterns PXTools (PXWorkWith para ABMs, PXParameterRequest para formularios, PXComposer para vistas compuestas).
+The @PXTools modules are **reusable packages of GeneXus objects** providing functionality that cuts across any application. They install under `Knowledge Base/@PXTools/@<ModuleName>/` and many of them include their own PXTools pattern instances (PXWorkWith for CRUD screens, PXParameterRequest for forms, PXComposer for composed views).
 
-## Ubicación en la KB
+## Location in the KB
 
 ```
 Knowledge Base/
 └── @PXTools/
-    ├── @APIs/          ← APIs utilitarias del framework
-    ├── @Alerts/        ← Sistema de alertas
-    ├── @Audit/         ← Auditoría
-    ├── @CloudTasks/    ← Tareas en la nube
+    ├── @APIs/          ← the framework's utility APIs
+    ├── @Alerts/        ← alert system
+    ├── @Audit/         ← auditing
+    ├── @CloudTasks/    ← cloud tasks
     ├── ...
-    └── @WebServicesLog/ ← Log de WebServices
+    └── @WebServicesLog/ ← web service log
 ```
 
-## Catálogo de módulos
+## Module catalogue
 
-> Esta página es el **índice** de módulos. Los que tienen documentación de comportamiento en detalle enlazan a su archivo en la subcarpeta [`modulos/`](modulos/) (p. ej. [modulos/security.md](modulos/security.md)).
+> This page is the module **index**. The ones with detailed behaviour documentation link to their file in the [`modules/`](modules/) subfolder (e.g. [modules/security.md](modules/security.md)).
 
-### @APIs — APIs Utilitarias del Framework
+### @APIs — The Framework's Utility APIs
 
-**Propósito**: Módulo base que contiene las APIs internas del framework PXTools. Provee utilidades transversales usadas por todos los demás módulos y por los patterns.
+**Purpose**: the base module holding the PXTools framework's internal APIs. It provides the cross-cutting utilities every other module and every pattern uses.
 
-> 📄 **Documentación detallada del módulo:** [modulos/apis.md](modulos/apis.md)
+> 📄 **Detailed module documentation:** [modules/apis.md](modules/apis.md)
 
-**Submódulos y contenido**:
-- **#Domains**: Dominios base (CallType, GridHandlerColumnVisibility, GridHandlerConfigBoxAttachType, PasswordType)
-- **APIs/Certificate**: Gestión de certificados
-- **APIs/Classes**: 8 procedures para manipulación de clases CSS
-- **APIs/Components**: Componentes UI reutilizables
-- **APIs/Config**: SDTs y Procedures de configuración
-- **APIs/Confirm**: WebPanels de confirmación (`PXParameterRequestConfirm`)
-- **APIs/Context_APIs**: 3 procedures para manejo de contexto
-- **APIs/Controller**: SDTs y Procedures para controladores
-- **APIs/Date**: 8 procedures para operaciones de fecha
-- **APIs/Download**: Utilidades de descarga
-- **APIs/ErrorLog**: Log de errores
-- **APIs/Escape**: 5 procedures para escaping de datos (`PXParameterRequestEncodeUrl`)
-- **APIs/Excel**: SDTs y procedures para operaciones Excel
-- **APIs/File**: Gestión de archivos
-- **APIs/FormState**: Múltiples procedures para estado de formularios
-- **APIs/Message**: Mensajería (`PXWorkWithMessages`)
-- **APIs/StringTools**: Herramientas de texto (`PXParameterRequestNumberToDescription`)
-- **Personalized/SecurityConnector**: Conector de seguridad (`PXParameterRequestLogin`)
+**Submodules and contents**:
+- **#Domains**: base domains (CallType, GridHandlerColumnVisibility, GridHandlerConfigBoxAttachType, PasswordType)
+- **APIs/Certificate**: certificate management
+- **APIs/Classes**: 8 procedures for manipulating CSS classes
+- **APIs/Components**: reusable UI components
+- **APIs/Config**: configuration SDTs and Procedures
+- **APIs/Confirm**: confirmation WebPanels (`PXParameterRequestConfirm`)
+- **APIs/Context_APIs**: 3 procedures for context handling
+- **APIs/Controller**: controller SDTs and Procedures
+- **APIs/Date**: 8 procedures for date operations
+- **APIs/Download**: download utilities
+- **APIs/ErrorLog**: error logging
+- **APIs/Escape**: 5 procedures for data escaping (`PXParameterRequestEncodeUrl`)
+- **APIs/Excel**: SDTs and procedures for Excel operations
+- **APIs/File**: file management
+- **APIs/FormState**: several procedures for form state
+- **APIs/Message**: messaging (`PXWorkWithMessages`)
+- **APIs/StringTools**: text tools (`PXParameterRequestNumberToDescription`)
+- **Personalized/SecurityConnector**: the security connector (`PXParameterRequestLogin`)
 
-**Instances PXTools incluidas**: PXParameterRequestConfirm, PXParameterRequestEncodeUrl, PXWorkWithMessages, PXParameterRequestNumberToDescription, PXParameterRequestLogin
+**PXTools instances included**: PXParameterRequestConfirm, PXParameterRequestEncodeUrl, PXWorkWithMessages, PXParameterRequestNumberToDescription, PXParameterRequestLogin
 
 ---
 
-### @Alerts — Sistema de Alertas y Notificaciones
+### @Alerts — Alert and Notification System
 
-**Propósito**: Sistema completo de alertas programables con soporte para múltiples canales de envío, idiomas, categorías y suscripciones/desuscripciones.
+**Purpose**: a complete system of schedulable alerts supporting several delivery channels, languages, categories and subscriptions/unsubscriptions.
 
-> 📄 **Documentación detallada del módulo:** [modulos/alerts.md](modulos/alerts.md)
+> 📄 **Detailed module documentation:** [modules/alerts.md](modules/alerts.md)
 
-**Contenido**:
+**Contents**:
 - Transactions: SystemAlert, SystemAlertLanguages, SystemAlertCategories, SystemAlertUnsubscriptions
-- Procedures: PrcSystemAlert (procesamiento de alertas)
-- Scheduler para envío programado
+- Procedures: PrcSystemAlert (alert processing)
+- A scheduler for programmed delivery
 
-**Instances PXTools incluidas**:
-- `PXWorkWithSystemAlert` — ABM de alertas
-- `PXWorkWithSystemAlertLanguages` — ABM de idiomas de alertas
-- `PXWorkWithSystemAlertCategories` — ABM de categorías
-- `PXWorkWithSystemAlertUnsubscriptions` — ABM de desuscripciones
-- `PXComposerSystemAlertMessage` — Vista compuesta de mensajes
-- `PXComposerSystemAlertSchedulerView` — Vista del scheduler
-- `PXParameterRequestSystemAlertMessage` — Formulario de mensaje
-- `PXParameterRequestUnsubscriptionConfirmation` — Confirmación de desuscripción
-- `PXParameterRequestPPEXE_PrcSystemAlert` — Procesamiento de alerta
-
----
-
-### @Audit — Auditoría
-
-**Propósito**: Sistema de auditoría para registrar cambios en entidades (pattern PXAudit).
-
-> ⚠️ **No presente en esta KB.** No existe la carpeta `@PXTools/@Audit/`. La auditoría, cuando se usa, se aplica con el pattern **PXAudit** directamente sobre las transacciones del proyecto (no como módulo instalado). Entrada conservada solo como referencia del catálogo PXTools.
+**PXTools instances included**:
+- `PXWorkWithSystemAlert` — alerts CRUD
+- `PXWorkWithSystemAlertLanguages` — alert languages CRUD
+- `PXWorkWithSystemAlertCategories` — categories CRUD
+- `PXWorkWithSystemAlertUnsubscriptions` — unsubscriptions CRUD
+- `PXComposerSystemAlertMessage` — composed message view
+- `PXComposerSystemAlertSchedulerView` — scheduler view
+- `PXParameterRequestSystemAlertMessage` — message form
+- `PXParameterRequestUnsubscriptionConfirmation` — unsubscription confirmation
+- `PXParameterRequestPPEXE_PrcSystemAlert` — alert processing
 
 ---
 
-### @CloudTasks — Tareas Programadas en la Nube
+### @Audit — Auditing
 
-**Propósito**: Gestión y ejecución de tareas programadas. Soporta certificados, monitoreo de procesos, y limpieza de archivos temporales.
+**Purpose**: an auditing system recording changes to entities (the PXAudit pattern).
 
-> 📄 **Documentación detallada del módulo:** [modulos/cloudtasks.md](modulos/cloudtasks.md)
+> ⚠️ **Not present in this KB.** There is no `@PXTools/@Audit/` folder. Auditing, when used, is applied with the **PXAudit** pattern directly over the project's transactions (not as an installed module). This entry is kept only as a reference to the PXTools catalogue.
 
-**Contenido**:
+---
+
+### @CloudTasks — Scheduled Cloud Tasks
+
+**Purpose**: management and execution of scheduled tasks. It supports certificates, process monitoring, and temporary file cleanup.
+
+> 📄 **Detailed module documentation:** [modules/cloudtasks.md](modules/cloudtasks.md)
+
+**Contents**:
 - Transactions: CloudTasks, CloudTasksCertificates, KeyStores, CloudTaskDeleteFiles, CloudTasksProcessMonitor
-- Utilidades de debug y simulación
+- Debug and simulation utilities
 
-**Instances PXTools incluidas**:
-- `PXWorkWithCloudTasks` — ABM de tareas
-- `PXWorkWithCloudTasksCertificates` — ABM de certificados
-- `PXWorkWithKeyStores` — ABM de keystores
-- `PXWorkWithCloudTaskDeleteFiles` — ABM de tareas de eliminación
-- `PXWorkWithSimulateDeleteFiles` — Simulador
-- `PXWorkWithCloudTasksProcessMonitor` — Monitor de procesos
-- `PXParameterRequestCloudTaskStatusMessage` — Mensaje de estado
-- `DebugCloudTaskOnDemand` — Debug bajo demanda
-- `DebugCloudTasksUtils` — Utilidades de debug
-
----
-
-### @ControlPreferences — Preferencias de Controles UI
-
-**Propósito**: Almacenamiento y recuperación de preferencias de controles de usuario (anchos de columna, visibilidad, orden, etc.).
-
-> 📄 **Documentación detallada del módulo:** [modulos/controlpreferences.md](modulos/controlpreferences.md)
+**PXTools instances included**:
+- `PXWorkWithCloudTasks` — tasks CRUD
+- `PXWorkWithCloudTasksCertificates` — certificates CRUD
+- `PXWorkWithKeyStores` — keystores CRUD
+- `PXWorkWithCloudTaskDeleteFiles` — deletion tasks CRUD
+- `PXWorkWithSimulateDeleteFiles` — simulator
+- `PXWorkWithCloudTasksProcessMonitor` — process monitor
+- `PXParameterRequestCloudTaskStatusMessage` — status message
+- `DebugCloudTaskOnDemand` — on-demand debug
+- `DebugCloudTasksUtils` — debug utilities
 
 ---
 
-### @DynamicCallReferences — Referencias de Llamadas Dinámicas
+### @ControlPreferences — UI Control Preferences
 
-**Propósito**: Gestión de referencias dinámicas a objetos GeneXus. Permite invocar objetos por nombre/referencia en runtime sin hardcodear las llamadas.
+**Purpose**: storing and retrieving user control preferences (column widths, visibility, order, and so on).
 
-> 📄 **Documentación detallada del módulo:** [modulos/dynamiccallreferences.md](modulos/dynamiccallreferences.md)
-
-**Instances PXTools incluidas**:
-- `PXWorkWithTDynamicCallReferences` — ABM de referencias
+> 📄 **Detailed module documentation:** [modules/controlpreferences.md](modules/controlpreferences.md)
 
 ---
 
-### @ExportImport — Exportación e Importación de Datos
+### @DynamicCallReferences — Dynamic Call References
 
-**Propósito**: Infraestructura para exportar e importar datos en diferentes formatos.
+**Purpose**: management of dynamic references to GeneXus objects. It allows invoking objects by name/reference at runtime without hard-coding the calls.
 
-> 📄 **Documentación detallada del módulo:** [modulos/exportimport.md](modulos/exportimport.md)
+> 📄 **Detailed module documentation:** [modules/dynamiccallreferences.md](modules/dynamiccallreferences.md)
 
-**Instances PXTools incluidas**:
-- `PXParameterRequestImport` — Formulario de importación
-- `PXReportTemplateRepImportResult` — Reporte de resultados
-
----
-
-### @FileStorage — Almacenamiento de Archivos
-
-**Propósito**: Sistema completo de gestión de archivos con soporte para múltiples servidores de almacenamiento, categorías predefinidas, y operaciones CRUD de archivos.
-
-> 📄 **Documentación detallada del módulo:** [modulos/filestorage.md](modulos/filestorage.md)
-
-**Instances PXTools incluidas**:
-- `PXWorkWithFileStorage` — ABM de archivos
-- `PXWorkWithFileStorageServers` — ABM de servidores
-- `PXWorkWithFileStorageStorage` — ABM de almacenamiento
-- `PXWorkWithPredefinedCategories` — ABM de categorías
-- `PXComposerFileStorage` — Vista compuesta de archivos
+**PXTools instances included**:
+- `PXWorkWithTDynamicCallReferences` — references CRUD
 
 ---
 
-### @MailAccounts — Cuentas de Correo
+### @ExportImport — Data Export and Import
 
-**Propósito**: Gestión de cuentas de correo electrónico para envío y recepción.
+**Purpose**: infrastructure for exporting and importing data in different formats.
 
-> 📄 **Documentación detallada del módulo:** [modulos/mailaccounts.md](modulos/mailaccounts.md)
+> 📄 **Detailed module documentation:** [modules/exportimport.md](modules/exportimport.md)
 
-**Instances PXTools incluidas**:
-- `PXWorkWithMailAccounts` — ABM de cuentas de mail
+**PXTools instances included**:
+- `PXParameterRequestImport` — import form
+- `PXReportTemplateRepImportResult` — results report
 
 ---
 
-### @Menus — Sistema de Menús
+### @FileStorage — File Storage
 
-**Propósito**: Gestión de menús de navegación web (menú básico con items jerárquicos).
+**Purpose**: a complete file management system supporting several storage servers, predefined categories, and file CRUD operations.
 
-> 📄 **Documentación detallada del módulo:** [modulos/menus.md](modulos/menus.md)
+> 📄 **Detailed module documentation:** [modules/filestorage.md](modules/filestorage.md)
 
-**Instances PXTools incluidas**:
-- `PXWorkWithTMnuWeb` — ABM de menús web
+**PXTools instances included**:
+- `PXWorkWithFileStorage` — files CRUD
+- `PXWorkWithFileStorageServers` — servers CRUD
+- `PXWorkWithFileStorageStorage` — storage CRUD
+- `PXWorkWithPredefinedCategories` — categories CRUD
+- `PXComposerFileStorage` — composed file view
+
+---
+
+### @MailAccounts — Mail Accounts
+
+**Purpose**: management of the email accounts used for sending and receiving.
+
+> 📄 **Detailed module documentation:** [modules/mailaccounts.md](modules/mailaccounts.md)
+
+**PXTools instances included**:
+- `PXWorkWithMailAccounts` — mail accounts CRUD
+
+---
+
+### @Menus — Menu System
+
+**Purpose**: management of web navigation menus (a basic menu with hierarchical items).
+
+> 📄 **Detailed module documentation:** [modules/menus.md](modules/menus.md)
+
+**PXTools instances included**:
+- `PXWorkWithTMnuWeb` — web menus CRUD
 
 ---
 
 ### @OAV — Object Attribute Values (Base)
 
-**Propósito**: Infraestructura base para el patrón PXOAV. Provee las transacciones y ABMs para gestionar definiciones de atributos dinámicos y sus valores.
+**Purpose**: the base infrastructure for the PXOAV pattern. It provides the transactions and CRUD screens for managing dynamic attribute definitions and their values.
 
-> 📄 **Documentación detallada del módulo:** [modulos/oav.md](modulos/oav.md)
+> 📄 **Detailed module documentation:** [modules/oav.md](modules/oav.md)
 
-**Instances PXTools incluidas**:
-- `PXWorkWithTOAVAttributes` — ABM de atributos OAV
-- `PXWorkWithTOAVAttributeValues` — ABM de valores
-- `PXWorkWithTSystemObjectOAVAttributes` — ABM de objetos del sistema con OAV
-- `PXParameterRequestSaveOAVSystemObjects` — Guardar objetos OAV
-
----
-
-### @ProcessMonitor — Monitor de Procesos
-
-**Propósito**: Monitoreo de procesos en ejecución con estados, mensajes y servidores de proceso.
-
-> 📄 **Documentación detallada del módulo:** [modulos/processmonitor.md](modulos/processmonitor.md)
-
-**Instances PXTools incluidas**:
-- `PXWorkWithProcessStatus` — ABM de estados de proceso
-- `PXWorkWithProcessStatusMessages` — ABM de mensajes
-- `PXWorkWithProcessServers` — ABM de servidores
-- `PXWorkWithProcessStatusAdvanced` — Vista avanzada
+**PXTools instances included**:
+- `PXWorkWithTOAVAttributes` — OAV attributes CRUD
+- `PXWorkWithTOAVAttributeValues` — values CRUD
+- `PXWorkWithTSystemObjectOAVAttributes` — CRUD for system objects with OAV
+- `PXParameterRequestSaveOAVSystemObjects` — save OAV objects
 
 ---
 
-### @Projects — Gestión de Proyectos
+### @ProcessMonitor — Process Monitor
 
-**Propósito**: Gestión de proyectos con tipos, miembros y roles.
+**Purpose**: monitoring running processes with statuses, messages and process servers.
 
-> 📄 **Documentación detallada del módulo:** [modulos/projects.md](modulos/projects.md)
+> 📄 **Detailed module documentation:** [modules/processmonitor.md](modules/processmonitor.md)
 
-**Instances PXTools incluidas**:
-- `PXWorkWithProjects` — ABM de proyectos
-- `PXWorkWithProjectTypes` — ABM de tipos
-- `PXWorkWithProjectsMembers` — ABM de miembros
-
----
-
-### @ReceiveMails — Recepción de Correos
-
-**Propósito**: Procesamiento de correos entrantes.
-
-> 📄 **Documentación detallada del módulo:** [modulos/receivemails.md](modulos/receivemails.md)
-
-**Instances PXTools incluidas**:
-- `PXWorkWithReceivedMails` — ABM de correos recibidos
+**PXTools instances included**:
+- `PXWorkWithProcessStatus` — process statuses CRUD
+- `PXWorkWithProcessStatusMessages` — messages CRUD
+- `PXWorkWithProcessServers` — servers CRUD
+- `PXWorkWithProcessStatusAdvanced` — advanced view
 
 ---
 
-### @ResponsiveLayout — *(módulo de GeneXus, no PXTools)*
+### @Projects — Project Management
 
-**Propósito**: Posicionamiento responsive de secciones. Es un **módulo de la plataforma GeneXus** (usa el componente responsive nativo), **no un módulo PXTools**; aparece bajo `@PXTools/` solo como glue.
+**Purpose**: managing projects with types, members and roles.
 
-> ℹ️ **No es un módulo PXTools.** Bajo `@PXTools/@ResponsiveLayout/` solo hay **SDTs de parámetros de layout** (`Parameters`, `Panel{Top,Bottom,Left,Right,Center,Container}Properties`) y un DataProvider de ejemplo (`RetLayoutParametersExample`) que dan **soporte a los User Controls de PXTools**. Sin transacciones, procs ni patterns. No se lo cuenta como módulo PXTools.
+> 📄 **Detailed module documentation:** [modules/projects.md](modules/projects.md)
 
----
-
-### @Security — Seguridad
-
-**Propósito**: Sistema completo de seguridad con usuarios, roles, dominios, permisos de acceso a objetos y registros, registro de usuarios, single sign-on silencioso.
-
-> 📄 **Documentación detallada del módulo:** [modulos/security.md](modulos/security.md)
-
-**Instances PXTools incluidas**:
-- `PXWorkWithSecurityUsers` — ABM de usuarios
-- `PXWorkWithSecurityUsersDomains` — ABM de dominios de usuarios
-- `PXWorkWithSecurityRoles` — ABM de roles
-- `PXWorkWithSecurityDomains` — ABM de dominios
-- `PXWorkWithSecurityObjectAccess` — ABM de acceso a objetos
-- `PXWorkWithSecurityObjectRecordsAccess` — ABM de acceso a registros
-- `PXWorkWithSystemObjects` — ABM de objetos del sistema
-- `PXWorkWithRegistrations` — ABM de registros de usuario
-- `PXWorkWithSilentSignOnRequests` — ABM de SSO
-- `PXComposerSecurityObjectAccess` — Vista compuesta de acceso a objetos
-- `PXComposerSecurityObjectRecordAccess` — Vista compuesta de acceso a registros
-- `PXParameterRequestChangePassword` — Cambio de password
-- `PXParameterRequestRegistrationBasic` — Registro básico
-- `PXParameterRequestRegistrationConfirmed` — Registro con confirmación
+**PXTools instances included**:
+- `PXWorkWithProjects` — projects CRUD
+- `PXWorkWithProjectTypes` — types CRUD
+- `PXWorkWithProjectsMembers` — members CRUD
 
 ---
 
-### @SecurityProjects — Seguridad por Proyectos
+### @ReceiveMails — Incoming Mail
 
-**Propósito**: Extensión de @Security para control de acceso por proyecto.
+**Purpose**: processing incoming email.
 
-> ℹ️ **Sin doc dedicada.** El módulo contiene únicamente **grupos de subtipos** (`ProjectMemberSecurityUserId`, `ProjectMemberRolSecurityUserId`, `ProjectMemberRolSecurityRoleId`) que conectan los miembros de [@Projects](modulos/projects.md) con los usuarios/roles de [@Security](modulos/security.md). No aporta transacciones ni patterns propios; su mecánica se describe en [modulos/projects.md](modulos/projects.md).
+> 📄 **Detailed module documentation:** [modules/receivemails.md](modules/receivemails.md)
 
----
-
-### @SendMails — Envío de Correos
-
-**Propósito**: Gestión de envío de correos con outbox, series de envío y seguimiento.
-
-> 📄 **Documentación detallada del módulo:** [modulos/sendmails.md](modulos/sendmails.md)
-
-**Instances PXTools incluidas**:
-- `PXWorkWithSendMailOutbox` — ABM de outbox
-- `PXWorkWithSendMailOutboxSeries` — ABM de series
-- `PXParameterRequestChange` — Formulario de cambio
+**PXTools instances included**:
+- `PXWorkWithReceivedMails` — received mail CRUD
 
 ---
 
-### @SmartMenus — *(módulo de GeneXus, no PXTools)*
+### @ResponsiveLayout — *(a GeneXus module, not a PXTools one)*
 
-**Propósito**: User Control de menú avanzado (búsqueda, favoritos, recientes). Es un **módulo/User Control de la plataforma GeneXus**, **no un módulo PXTools**; aparece bajo `@PXTools/` solo como glue.
+**Purpose**: responsive positioning of sections. It is a **GeneXus platform module** (it uses the native responsive component), **not a PXTools module**; it appears under `@PXTools/` only as glue.
 
-> ℹ️ **No es un módulo PXTools.** Bajo `@PXTools/@SmartMenus/` solo hay los **SDTs de contrato** (`PXToolsSmartMenu`, `PXToolsSmartMenuSelectedItem`) y un DataProvider de ejemplo (`RetSmartMenuExample`) que dan **soporte al User Control de PXTools** que envuelve el SmartMenu de GeneXus. Sin transacciones ni patterns. El menú PXTools en uso está en [modulos/menus.md](modulos/menus.md).
-
----
-
-### @Statistics — Estadísticas
-
-**Propósito**: Definición y registro de estadísticas del sistema.
-
-> 📄 **Documentación detallada del módulo:** [modulos/statistics.md](modulos/statistics.md)
-
-**Instances PXTools incluidas**:
-- `PXWorkWithStatisticDefinition` — ABM de definiciones
-- `PXWorkWithStatisticLog` — ABM de log de estadísticas
+> ℹ️ **Not a PXTools module.** Under `@PXTools/@ResponsiveLayout/` there are only **layout parameter SDTs** (`Parameters`, `Panel{Top,Bottom,Left,Right,Center,Container}Properties`) and an example DataProvider (`RetLayoutParametersExample`) supporting the PXTools User Controls. No transactions, procedures or patterns. It does not count as a PXTools module.
 
 ---
 
-### @System — Sistema
+### @Security — Security
 
-**Propósito**: Funcionalidades core del sistema PXTools. Incluye procedimientos para guardar módulos y objetos del sistema.
+**Purpose**: a complete security system with users, roles, domains, object and record access permissions, user registration, and silent single sign-on.
 
-> 📄 **Documentación detallada del módulo:** [modulos/system.md](modulos/system.md)
+> 📄 **Detailed module documentation:** [modules/security.md](modules/security.md)
 
-**Instances PXTools incluidas**:
-- `PXParameterRequestSaveSystemModules` — Guardar módulos
-- `PXParameterRequestSaveSystemObjects` — Guardar objetos
-
----
-
-### @SystemParameters — Parámetros del Sistema
-
-**Propósito**: Gestión de parámetros globales del sistema (no por entidad, a diferencia de PXEntityParameters).
-
-> 📄 **Documentación detallada del módulo:** [modulos/systemparameters.md](modulos/systemparameters.md)
-
-**Instances PXTools incluidas**:
-- `PXWorkWithSystemParametersPreferences` — ABM de parámetros
-
----
-
-### @TableCleaner — Limpieza de Tablas
-
-**Propósito**: Configuración y ejecución de limpieza programada de tablas (purge de datos antiguos).
-
-> 📄 **Documentación detallada del módulo:** [modulos/tablecleaner.md](modulos/tablecleaner.md)
-
-**Instances PXTools incluidas**:
-- `PXWorkWithTableCleanerConfiguration` — ABM de configuración
+**PXTools instances included**:
+- `PXWorkWithSecurityUsers` — users CRUD
+- `PXWorkWithSecurityUsersDomains` — user domains CRUD
+- `PXWorkWithSecurityRoles` — roles CRUD
+- `PXWorkWithSecurityDomains` — domains CRUD
+- `PXWorkWithSecurityObjectAccess` — object access CRUD
+- `PXWorkWithSecurityObjectRecordsAccess` — record access CRUD
+- `PXWorkWithSystemObjects` — system objects CRUD
+- `PXWorkWithRegistrations` — user registrations CRUD
+- `PXWorkWithSilentSignOnRequests` — SSO CRUD
+- `PXComposerSecurityObjectAccess` — composed object access view
+- `PXComposerSecurityObjectRecordAccess` — composed record access view
+- `PXParameterRequestChangePassword` — password change
+- `PXParameterRequestRegistrationBasic` — basic registration
+- `PXParameterRequestRegistrationConfirmed` — registration with confirmation
 
 ---
 
-### @TaskManager — Gestor de Tareas
+### @SecurityProjects — Per-Project Security
 
-**Propósito**: Sistema de gestión de tareas con colas, ejecución y monitoreo.
+**Purpose**: an extension of @Security for per-project access control.
 
-> 📄 **Documentación detallada del módulo:** [modulos/taskmanager.md](modulos/taskmanager.md)
-
-**Instances PXTools incluidas**:
-- `PXWorkWithTaskManager` — ABM de tareas
-- `PXWorkWithTaskManagerQueues` — ABM de colas
-- `PXParameterRequestExecutionMessage` — Mensaje de ejecución
-- `PXParameterRequestUpdTaskManagerParameters` — Actualizar parámetros
+> ℹ️ **No dedicated doc.** The module contains only **subtype groups** (`ProjectMemberSecurityUserId`, `ProjectMemberRolSecurityUserId`, `ProjectMemberRolSecurityRoleId`) connecting [@Projects](modules/projects.md) members with [@Security](modules/security.md) users/roles. It contributes no transactions or patterns of its own; its mechanics are described in [modules/projects.md](modules/projects.md).
 
 ---
 
-### @WSLayer — Capa de WebServices
+### @SendMails — Outgoing Mail
 
-**Propósito**: Infraestructura para la capa de servicios web, incluyendo whitelist de acceso.
+**Purpose**: managing outgoing mail with an outbox, delivery series and tracking.
 
-> 📄 **Documentación detallada del módulo:** [modulos/wslayer.md](modulos/wslayer.md)
+> 📄 **Detailed module documentation:** [modules/sendmails.md](modules/sendmails.md)
 
-**Instances PXTools incluidas**:
-- `PXWorkWithWSWhiteList` — ABM de whitelist
-
----
-
-### @WebServicesLog — Log de WebServices
-
-**Propósito**: Registro, estadísticas y monitoreo de invocaciones de web services.
-
-> 📄 **Documentación detallada del módulo:** [modulos/webserviceslog.md](modulos/webserviceslog.md)
-
-**Instances PXTools incluidas**:
-- `PXWorkWithWebServicesLog` — ABM de log
-- `PXWorkWithWebServicesStatistics` — ABM de estadísticas
-- `PXWorkWithWebServicesRAStatistics` — Estadísticas de rolling average
-- `PXComposerWebServicesLog` — Vista compuesta de log
-- `PXComposerWebServicesStatisticCounters` — Vista de contadores
-- `PXParameterRequestWebServiceLogView` — Vista detallada de log
+**PXTools instances included**:
+- `PXWorkWithSendMailOutbox` — outbox CRUD
+- `PXWorkWithSendMailOutboxSeries` — series CRUD
+- `PXParameterRequestChange` — change form
 
 ---
 
-## Resumen de instancias PXTools en módulos
+### @SmartMenus — *(a GeneXus module, not a PXTools one)*
 
-| Módulo | PXWorkWith | PXParameterRequest | PXComposer | PXReportTemplate | Total |
-|--------|-----------|-------------------|-----------|-----------------|-------|
+**Purpose**: an advanced menu User Control (search, favorites, recents). It is a **GeneXus platform module/User Control**, **not a PXTools module**; it appears under `@PXTools/` only as glue.
+
+> ℹ️ **Not a PXTools module.** Under `@PXTools/@SmartMenus/` there are only the **contract SDTs** (`PXToolsSmartMenu`, `PXToolsSmartMenuSelectedItem`) and an example DataProvider (`RetSmartMenuExample`) supporting the PXTools User Control that wraps the GeneXus SmartMenu. No transactions or patterns. The PXTools menu actually in use is in [modules/menus.md](modules/menus.md).
+
+---
+
+### @Statistics — Statistics
+
+**Purpose**: defining and recording system statistics.
+
+> 📄 **Detailed module documentation:** [modules/statistics.md](modules/statistics.md)
+
+**PXTools instances included**:
+- `PXWorkWithStatisticDefinition` — definitions CRUD
+- `PXWorkWithStatisticLog` — statistics log CRUD
+
+---
+
+### @System — System
+
+**Purpose**: core PXTools system functionality. It includes procedures for saving system modules and objects.
+
+> 📄 **Detailed module documentation:** [modules/system.md](modules/system.md)
+
+**PXTools instances included**:
+- `PXParameterRequestSaveSystemModules` — save modules
+- `PXParameterRequestSaveSystemObjects` — save objects
+
+---
+
+### @SystemParameters — System Parameters
+
+**Purpose**: managing global system parameters (not per entity, unlike PXEntityParameters).
+
+> 📄 **Detailed module documentation:** [modules/systemparameters.md](modules/systemparameters.md)
+
+**PXTools instances included**:
+- `PXWorkWithSystemParametersPreferences` — parameters CRUD
+
+---
+
+### @TableCleaner — Table Cleanup
+
+**Purpose**: configuring and running scheduled table cleanup (purging old data).
+
+> 📄 **Detailed module documentation:** [modules/tablecleaner.md](modules/tablecleaner.md)
+
+**PXTools instances included**:
+- `PXWorkWithTableCleanerConfiguration` — configuration CRUD
+
+---
+
+### @TaskManager — Task Manager
+
+**Purpose**: a task management system with queues, execution and monitoring.
+
+> 📄 **Detailed module documentation:** [modules/taskmanager.md](modules/taskmanager.md)
+
+**PXTools instances included**:
+- `PXWorkWithTaskManager` — tasks CRUD
+- `PXWorkWithTaskManagerQueues` — queues CRUD
+- `PXParameterRequestExecutionMessage` — execution message
+- `PXParameterRequestUpdTaskManagerParameters` — update parameters
+
+---
+
+### @WSLayer — Web Services Layer
+
+**Purpose**: infrastructure for the web services layer, including the access whitelist.
+
+> 📄 **Detailed module documentation:** [modules/wslayer.md](modules/wslayer.md)
+
+**PXTools instances included**:
+- `PXWorkWithWSWhiteList` — whitelist CRUD
+
+---
+
+### @WebServicesLog — Web Service Log
+
+**Purpose**: logging, statistics and monitoring of web service invocations.
+
+> 📄 **Detailed module documentation:** [modules/webserviceslog.md](modules/webserviceslog.md)
+
+**PXTools instances included**:
+- `PXWorkWithWebServicesLog` — log CRUD
+- `PXWorkWithWebServicesStatistics` — statistics CRUD
+- `PXWorkWithWebServicesRAStatistics` — per-Remote-Address statistics
+- `PXComposerWebServicesLog` — composed log view
+- `PXComposerWebServicesStatisticCounters` — counters view
+- `PXParameterRequestWebServiceLogView` — detailed log view
+
+---
+
+## Summary of PXTools instances across the modules
+
+| Module | PXWorkWith | PXParameterRequest | PXComposer | PXReportTemplate | Total |
+|--------|-----------|--------------------|------------|------------------|-------|
 | @APIs | 1 | 4 | 0 | 0 | 5 |
 | @Alerts | 4 | 3 | 2 | 0 | 9 |
 | @CloudTasks | 6 | 3 | 0 | 0 | 9 |
@@ -400,59 +400,59 @@ Knowledge Base/
 | @WSLayer | 1 | 0 | 0 | 0 | 1 |
 | @WebServicesLog | 3 | 1 | 2 | 0 | 6 |
 
-## Dependencias entre módulos
+## Dependencies between modules
 
-Grafo derivado de la KB (referencias calificadas `, PXTools.<Módulo>` y dominios compartidos) y contrastado con la matriz canónica del manual PXTools. **Capas:** `@APIs` es la **base universal** (todos dependen de él y él de ninguno); `@System` es la segunda capa; sobre ellas se apoyan los módulos de feature.
+A graph derived from the KB (qualified `, PXTools.<Module>` references and shared domains) and cross-checked against the canonical matrix in the PXTools manual. **Layers:** `@APIs` is the **universal base** (everything depends on it, it depends on nothing); `@System` is the second layer; the feature modules sit on top of both.
 
-| Módulo | Depende de (funcionales) |
+| Module | Depends on (functionally) |
 |---|---|
-| **@APIs** | — (base universal) |
+| **@APIs** | — (universal base) |
 | **@System** | @APIs |
 | **@SystemParameters** | @APIs |
 | **@DynamicCallReferences** | @APIs |
-| **@Menus** | @APIs (usa el módulo GeneXus @SmartMenus para el estilo SmartMenu) |
+| **@Menus** | @APIs (it uses the GeneXus @SmartMenus module for the SmartMenu style) |
 | **@ControlPreferences** | @APIs |
 | **@WSLayer** | @APIs |
 | **@ExportImport** | @APIs |
-| **@Statistics** | @APIs, @DynamicCallReferences · dispara @TaskManager |
-| **@TableCleaner** | @APIs, @DynamicCallReferences, @SystemParameters · dispara @TaskManager |
+| **@Statistics** | @APIs, @DynamicCallReferences · triggered by @TaskManager |
+| **@TableCleaner** | @APIs, @DynamicCallReferences, @SystemParameters · triggered by @TaskManager |
 | **@WebServicesLog** | @APIs, @TableCleaner, @SystemParameters |
 | **@OAV** | @APIs, @DynamicCallReferences (+@System) |
 | **@MailAccounts** | @APIs, @System |
 | **@FileStorage** | @APIs, @System |
 | **@Projects** | @APIs, @Security |
 | **@Security** | @APIs, @System, @SystemParameters, @ControlPreferences, @SendMails |
-| **@SendMails** | @APIs, @System, @FileStorage, @MailAccounts (opt @TaskManager) |
+| **@SendMails** | @APIs, @System, @FileStorage, @MailAccounts (optionally @TaskManager) |
 | **@ReceiveMails** | @APIs, @System, @MailAccounts, @FileStorage |
 | **@ProcessMonitor** | @APIs, @System, @SystemParameters, @SendMails, @FileStorage, @TaskManager |
 | **@TaskManager** | @APIs, @System, @DynamicCallReferences, @ProcessMonitor, @SystemParameters |
-| **@Alerts** | @APIs, @SendMails, @SystemParameters (+@FileStorage, @MailAccounts, opt @TaskManager) |
-| **@CloudTasks** | @APIs, @ProcessMonitor, @FileStorage, @Alerts, @SystemParameters · dispara @TaskManager |
+| **@Alerts** | @APIs, @SendMails, @SystemParameters (+@FileStorage, @MailAccounts, optionally @TaskManager) |
+| **@CloudTasks** | @APIs, @ProcessMonitor, @FileStorage, @Alerts, @SystemParameters · triggered by @TaskManager |
 
-> **Nota:** casi todos los módulos referencian además `@Menus` y `@DynamicCallReferences` a través de sus DataProviders `Personalized/RetMenus*` y `RetDynamicCallReference*` (andamiaje de generación), no de su lógica funcional. Se omiten arriba salvo cuando la dependencia es funcional (p.ej. @DynamicCallReferences en @TaskManager/@TableCleaner/@Statistics/@OAV).
+> **Note:** nearly every module also references `@Menus` and `@DynamicCallReferences` through their `Personalized/RetMenus*` and `RetDynamicCallReference*` DataProviders (generation scaffolding), not through their functional logic. Those are omitted above except where the dependency is functional (e.g. @DynamicCallReferences in @TaskManager/@TableCleaner/@Statistics/@OAV).
 >
-> **`@ResponsiveLayout` y `@SmartMenus` NO son módulos PXTools** — son módulos de la plataforma **GeneXus**; bajo `@PXTools/` solo aportan SDTs/APIs de soporte a los User Controls de PXTools. No participan del grafo de dependencias PXTools como módulos.
+> **`@ResponsiveLayout` and `@SmartMenus` are NOT PXTools modules** — they are **GeneXus** platform modules; under `@PXTools/` they only contribute supporting SDTs/APIs to the PXTools User Controls. They take no part in the PXTools dependency graph as modules.
 
-Este grafo es la base de la **atribución de dominios**: un dominio usado por >1 módulo pertenece al módulo común del que todos dependen, o a `@APIs` (ver la §Dominios de cada doc y la regla de nomenclatura).
+This graph is the basis for **domain attribution**: a domain used by more than one module belongs to the common module they all depend on, or to `@APIs` (see the Domains section of each doc and the naming rule).
 
-## Cuándo incorporar cada módulo
+## When to bring each module in
 
-| Necesidad | Módulo recomendado |
-|-----------|-------------------|
-| Autenticación y autorización | @Security |
-| Envío de emails | @SendMails + @MailAccounts |
-| Recepción de emails | @ReceiveMails + @MailAccounts |
-| Tareas programadas (cron) | @CloudTasks |
-| Cola de tareas | @TaskManager |
-| Almacenamiento de archivos | @FileStorage |
-| Alertas/notificaciones | @Alerts |
-| Menús de navegación | @Menus (con el User Control SmartMenus de GeneXus) |
-| Parámetros configurables | @SystemParameters |
-| Atributos dinámicos | @OAV |
-| Auditoría de cambios | pattern PXAudit (no módulo — ver @Audit) |
-| APIs REST/SOAP | @WSLayer + @WebServicesLog |
-| Exportación/importación | @ExportImport |
-| Monitoreo de procesos | @ProcessMonitor |
-| Estadísticas | @Statistics |
-| Limpieza de datos | @TableCleaner |
-| Gestión de proyectos | @Projects |
+| Need | Recommended module |
+|------|--------------------|
+| Authentication and authorization | @Security |
+| Sending email | @SendMails + @MailAccounts |
+| Receiving email | @ReceiveMails + @MailAccounts |
+| Scheduled tasks (cron) | @CloudTasks |
+| Task queue | @TaskManager |
+| File storage | @FileStorage |
+| Alerts/notifications | @Alerts |
+| Navigation menus | @Menus (with the GeneXus SmartMenus User Control) |
+| Configurable parameters | @SystemParameters |
+| Dynamic attributes | @OAV |
+| Change auditing | the PXAudit pattern (not a module — see @Audit) |
+| REST/SOAP APIs | @WSLayer + @WebServicesLog |
+| Export/import | @ExportImport |
+| Process monitoring | @ProcessMonitor |
+| Statistics | @Statistics |
+| Data cleanup | @TableCleaner |
+| Project management | @Projects |
