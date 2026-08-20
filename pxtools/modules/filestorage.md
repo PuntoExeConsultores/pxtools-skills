@@ -1,82 +1,82 @@
-# Módulo @FileStorage — Almacenamiento de Archivos
+# @FileStorage Module — File Storage
 
-> Comportamiento del módulo `@PXTools/@FileStorage`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@FileStorage` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@FileStorage` (`APIs/` core + `Personalized/`).
-- Cualificador: `PXTools.FileStorage`.
-- **Depende de:** `@APIs` (base), `@System`. Infra de generación: `@Menus`, `@SystemParameters`, `@DynamicCallReferences`, `@ControlPreferences`.
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@FileStorage` (`APIs/` core + `Personalized/`).
+- Qualifier: `PXTools.FileStorage`.
+- **Depends on:** `@APIs` (base), `@System`. Generation infrastructure: `@Menus`, `@SystemParameters`, `@DynamicCallReferences`, `@ControlPreferences`.
 
-## 1. Qué provee
+## 1. What it provides
 
-Un framework de **gestión de archivos**: guarda uno o varios archivos bajo una "cabecera" (`FileStorage`), con soporte para **categorías**, **agrupación**, **múltiples tipos de servidor** de almacenamiento, y un **componente de UI reutilizable** (`PXComposerFileStorage`) para subir/ver/descargar. El contenido físico vive en un **Blob**.
+A **file management** framework: it stores one or many files under a "header" (`FileStorage`), with support for **categories**, **grouping**, **several storage server types**, and a **reusable UI component** (`PXComposerFileStorage`) for uploading/viewing/downloading. The physical content lives in a **Blob**.
 
-## 2. Concepto central: cabecera + archivos
+## 2. Core concept: header + files
 
-- **`FileStorage`** = cabecera (descripción, categoría, tipo de uso, servidor).
-- **`FileStorageStorage`** = los **archivos** (1:N con la cabecera); el contenido está en el Blob `FileStorageStorageBlob`. Se pueden agrupar por `FileStorageStorageGroupId`.
-- **`FileStorageType`** define el modo de uso de la cabecera: `Unique` (1 archivo), `Predefined` (archivos organizados por categorías de un catálogo), `Free` (multi-archivo libre).
+- **`FileStorage`** = the header (description, category, usage type, server).
+- **`FileStorageStorage`** = the **files** (1:N with the header); the content sits in the `FileStorageStorageBlob` Blob. They can be grouped by `FileStorageStorageGroupId`.
+- **`FileStorageType`** defines how the header is used: `Unique` (one file), `Predefined` (files organised by categories from a catalogue), `Free` (free multi-file).
 
-## 3. Transacciones del módulo
+## 3. Module transactions
 
-| Transacción | PK | Rol |
+| Transaction | PK | Role |
 |---|---|---|
-| **FileStorage** | `FileStorageId` | **Cabecera**: `Description`, `FileStorageType`, `FileStorageStorageType`, `FileStorageCategory`, `FileStoragePredefinedCategoryId` (FK), `FileStorageServerId` (FK), `FileStorageKeepOriginalNames`. |
-| **FileStorageStorage** | `FileStorageId, FileStorageStorageId` | **Archivos**: `Description`, `Blob` (contenido), `Name`, `Extension`, `DateTime`, `GroupId`. |
-| **FileStorageServers** | `FileStorageServerId` | Servidores de almacenamiento: `Type`, `Name`, `Host`, `User`, `Password` (PswEnc), `Address`, `Port`. |
-| **PredefinedCategories** | `PredefinedCategoryId` (+ nivel `Category`) | Catálogo de categorías predefinidas (2 niveles). |
+| **FileStorage** | `FileStorageId` | **Header**: `Description`, `FileStorageType`, `FileStorageStorageType`, `FileStorageCategory`, `FileStoragePredefinedCategoryId` (FK), `FileStorageServerId` (FK), `FileStorageKeepOriginalNames`. |
+| **FileStorageStorage** | `FileStorageId, FileStorageStorageId` | **Files**: `Description`, `Blob` (content), `Name`, `Extension`, `DateTime`, `GroupId`. |
+| **FileStorageServers** | `FileStorageServerId` | Storage servers: `Type`, `Name`, `Host`, `User`, `Password` (PswEnc), `Address`, `Port`. |
+| **PredefinedCategories** | `PredefinedCategoryId` (+ a `Category` level) | Catalogue of predefined categories (2 levels). |
 
-BCs: `FileStorageBC` (2 niveles) y `FileStorageFirstLevelBC` (solo cabecera, para borrado).
+BCs: `FileStorageBC` (2 levels) and `FileStorageFirstLevelBC` (header only, for deletion).
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-Propios (nombre `FileStorage*`), todos **root-legacy** (viven en el `#Domains/` raíz):
+Its own (named `FileStorage*`), all **root-legacy** (they live in the root `#Domains/`):
 
-| Dominio | Valores |
+| Domain | Values |
 |---|---|
 | **FileStorageType** | Unique, Predefined, Free |
 | **FileStorageStorageType** | Blob, FTP, S3 |
 | **FileStorageServerType** | S3, FTP, FileServer, GoogleDrive |
-| **FileStorageCategory** (Char(3), **enum abierto**) | Clasifica el origen funcional; valores base del framework: General, IssueTracking, SendMail, SystemAlert (cada aplicación extiende con sus categorías). |
+| **FileStorageCategory** (Char(3), **open enum**) | Classifies the functional origin; the framework's base values are General, IssueTracking, SendMail, SystemAlert (each application extends it with its own categories). |
 | **FileStorageExtension** | XML, PFX, ZIP |
 
-## 5. Mecanismo
+## 5. How it works
 
-- **Contenido físico**: siempre en el Blob `FileStorageStorageBlob` (una fila por archivo). El backend real del Blob (disco/BD/nube) lo resuelve el Storage Service del entorno GeneXus. `FileStorageStorageType`/`FileStorageServers` son la capa de descripción multi-servidor; **hoy solo `Blob` está implementado end-to-end** (`RetFileStorageStorageLink` resuelve `Blob` vía `PathToURL`); FTP/S3/cloud son puntos de extensión del modelo.
-- **Elección de servidor**: `FileStorageStorageType` + `FileStorageServerId` (`ValFileStorage` exige `ServerId>0` cuando el tipo ≠ Blob).
-- **SDTs**: `SDTFileStorage` (cabecera + colección `Storage.Item` con `Id/Description/Path/FileName/FileExtension`) — el SDT principal de alta; `SDTFileStorageData` (archivo suelto: Path/Name/Extension); `SDTFileStorageReference` (puntero StorageId + StorageStorageId).
-- **Nombres**: `FileStorageKeepOriginalNames` (renombra al nombre original en lectura) y el parámetro `FileStorageStorageNamePrefix` (nombres únicos `prefijo+Id+StorageId`).
+- **Physical content**: always in the `FileStorageStorageBlob` Blob (one row per file). The Blob's real backend (disk/database/cloud) is resolved by the GeneXus environment's Storage Service. `FileStorageStorageType`/`FileStorageServers` are the multi-server description layer; **today only `Blob` is implemented end to end** (`RetFileStorageStorageLink` resolves `Blob` through `PathToURL`); FTP/S3/cloud are extension points of the model.
+- **Choosing a server**: `FileStorageStorageType` + `FileStorageServerId` (`ValFileStorage` requires `ServerId>0` when the type is not Blob).
+- **SDTs**: `SDTFileStorage` (header + a `Storage.Item` collection with `Id/Description/Path/FileName/FileExtension`) — the main SDT for creation; `SDTFileStorageData` (a standalone file: Path/Name/Extension); `SDTFileStorageReference` (a pointer: StorageId + StorageStorageId).
+- **Names**: `FileStorageKeepOriginalNames` (renames back to the original name on read) and the `FileStorageStorageNamePrefix` parameter (unique names `prefix+Id+StorageId`).
 
 ## 6. APIs vs Personalized
 
-- **`APIs/`** (core): las transacciones, los SDTs, y toda la familia `Add*/Ret*/Del*/Upd*/Val*/Chk*`.
+- **`APIs/`** (core): the transactions, the SDTs, and the whole `Add*/Ret*/Del*/Upd*/Val*/Chk*` family.
 - **`Personalized/`**:
-  | Objeto | Qué se customiza |
+  | Object | What gets customized |
   |---|---|
   | `RetSystemParametersFileStorage` (DataProvider) | `FileStorageStorageNamePrefix`, `FileStorageTempDirectory`. |
-  | `RetMenusFileStorage` (DataProvider) | Ítems de menú (File Storage / Predefined Categories / Servers). |
-  | `RetDynamicCallReferenceFileStorage` (DataProvider) | Registra el Table Cleaner. |
-  | `PrcTableCleanerFileStorage` (Procedure) | Purga por fecha. |
-  | `PXToolsParameterRequestTemplateWithUploadify` (WebPanel) | Plantilla de carga multi-archivo (user control Uploadify). |
+  | `RetMenusFileStorage` (DataProvider) | Menu items (File Storage / Predefined Categories / Servers). |
+  | `RetDynamicCallReferenceFileStorage` (DataProvider) | Registers the Table Cleaner. |
+  | `PrcTableCleanerFileStorage` (Procedure) | Purge by date. |
+  | `PXToolsParameterRequestTemplateWithUploadify` (WebPanel) | Multi-file upload template (Uploadify user control). |
 
-## 7. Instancias de patterns
+## 7. Pattern instances
 
-- **PXWorkWith**: `PXWorkWithFileStorage`, `PXWorkWithFileStorageServers`, `PXWorkWithPredefinedCategories`, `PXWorkWithFileStorageStorage` (genera las vistas de selección que usa el composer).
-- **`PXComposerFileStorage`** — **componente reutilizable principal**, 4 niveles: `CmFileStorageComponent` (orquestador), `WbFileStorageWebPanel`, `PrFileStoragePrompt` (prompt que devuelve el `FileStorageId`), `PuFileStorageDisplay` (popup). `CmFileStorageComponent` recibe Mode + tipo/categoría/servidor, valida (`ValFileStorage`), crea la cabecera (`AddFileStorage`) e instancia la sub-UI según `FileStorageType`.
+- **PXWorkWith**: `PXWorkWithFileStorage`, `PXWorkWithFileStorageServers`, `PXWorkWithPredefinedCategories`, `PXWorkWithFileStorageStorage` (generates the selection views the composer uses).
+- **`PXComposerFileStorage`** — the **main reusable component**, 4 levels: `CmFileStorageComponent` (orchestrator), `WbFileStorageWebPanel`, `PrFileStoragePrompt` (a prompt returning the `FileStorageId`), `PuFileStorageDisplay` (popup). `CmFileStorageComponent` receives Mode + type/category/server, validates (`ValFileStorage`), creates the header (`AddFileStorage`) and instantiates the sub-UI according to `FileStorageType`.
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-**Alta**: `AddFileStorage(in: &SDTFileStorage, out: &FileStorageId)` (**entrada principal**), `AddFileStorageStorage(in: &FileStorageId, in: &Storage, in: &GroupId)`.
+**Creation**: `AddFileStorage(in: &SDTFileStorage, out: &FileStorageId)` (**the main entry point**), `AddFileStorageStorage(in: &FileStorageId, in: &Storage, in: &GroupId)`.
 
-**Lectura**: `RetFileStorage(in: &FileStorageId, in: &GroupId, in: &StorageId, out: &Storage)`, `RetFileStorageFiles(… out: &SDTFileStorageData)`, `RetFileStorageFirstFile`, `RetFileStorageReferenceFile`, `RetFileStorageData` (metadata cabecera), `RetFileStorageStorageLink` (URL de descarga), `RetFileStorageStorageBlobExist`, `RetFileStorageStorageCounter`, `RetLastFileStorageStorageId`.
+**Reading**: `RetFileStorage(in: &FileStorageId, in: &GroupId, in: &StorageId, out: &Storage)`, `RetFileStorageFiles(… out: &SDTFileStorageData)`, `RetFileStorageFirstFile`, `RetFileStorageReferenceFile`, `RetFileStorageData` (header metadata), `RetFileStorageStorageLink` (download URL), `RetFileStorageStorageBlobExist`, `RetFileStorageStorageCounter`, `RetLastFileStorageStorageId`.
 
-**Baja**: `DelFileStorage(in: &FileStorageId, out…)` (cabecera + archivos), `DelFileStorageStorage(… StorageStorageId=0 → todos)`, `…ByGroup`/`…ByName`/`…ByExtension`, bulk `DelFileStorageStorages`/`…TableCleaner`.
+**Deletion**: `DelFileStorage(in: &FileStorageId, out…)` (header + files), `DelFileStorageStorage(… StorageStorageId=0 → all)`, `…ByGroup`/`…ByName`/`…ByExtension`, bulk `DelFileStorageStorages`/`…TableCleaner`.
 
-**Modificación/utilidad**: `UpdFileStorageStorage` (borra+re-agrega), `UpdFileStorageStorageDescription`, `UpdFileStorageCopy(from, to)` (copia entre storages, usa `FileStorageTempDirectory`), `ValFileStorage(…)` (validación), `ChkFileStorageStorageExtension`, `IsFileStorageInstalled`.
+**Modification/utilities**: `UpdFileStorageStorage` (deletes and re-adds), `UpdFileStorageStorageDescription`, `UpdFileStorageCopy(from, to)` (copies between storages, using `FileStorageTempDirectory`), `ValFileStorage(…)` (validation), `ChkFileStorageStorageExtension`, `IsFileStorageInstalled`.
 
-**Uso típico**: cargar `&SDTFileStorage` (Description, Category, FileStorageType; cada `Storage.Item` con `Path`=contenido, FileName, FileExtension) → `AddFileStorage.Call(&SDTFileStorage, &FileStorageId)`; leer con `RetFileStorageFirstFile`/`RetFileStorageFiles` y usar `Item.Path`. Para UI embebida reutilizable, instanciar `CmFileStorageComponent`.
+**Typical use**: fill `&SDTFileStorage` (Description, Category, FileStorageType; each `Storage.Item` with `Path`=content, FileName, FileExtension) → `AddFileStorage.Call(&SDTFileStorage, &FileStorageId)`; read with `RetFileStorageFirstFile`/`RetFileStorageFiles` and use `Item.Path`. For a reusable embedded UI, instantiate `CmFileStorageComponent`.
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- Consumidores: [sendmails.md](sendmails.md) / módulo @ReceiveMails (adjuntos), [cloudtasks.md](cloudtasks.md) (contenido de certificados), [processmonitor.md](processmonitor.md) (salida de procesos).
-- Módulos **@SystemParameters** (prefijo/temp dir), **@TableCleaner** (purga).
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- Consumers: [sendmails.md](sendmails.md) / the @ReceiveMails module (attachments), [cloudtasks.md](cloudtasks.md) (certificate content), [processmonitor.md](processmonitor.md) (process output).
+- The **@SystemParameters** (prefix/temp dir) and **@TableCleaner** (purge) modules.
