@@ -1,100 +1,100 @@
-# Módulo @WebServicesLog — Log y Estadísticas de Web Services
+# @WebServicesLog Module — Web Service Log and Statistics
 
-> Comportamiento del módulo `@PXTools/@WebServicesLog`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@WebServicesLog` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@WebServicesLog` (`APIs/` core + `Personalized/`).
-- Cualificador: `PXTools.WebServicesLog`.
-- **Depende de:** `@APIs` (base), `@TableCleaner` (purga del log, vía `RetCountRowsToDeleteDB`), `@SystemParameters`, `@DynamicCallReferences`, `@Menus`.
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@WebServicesLog` (`APIs/` core + `Personalized/`).
+- Qualifier: `PXTools.WebServicesLog`.
+- **Depends on:** `@APIs` (base), `@TableCleaner` (log purging, through `RetCountRowsToDeleteDB`), `@SystemParameters`, `@DynamicCallReferences`, `@Menus`.
 
-## 1. Qué provee
+## 1. What it provides
 
-Registra **cada invocación entrante a un web service** (request/response, tiempos, estado, IP) en un log crudo, y luego **agrega** esos registros en tablas de estadísticas mediante una tarea batch.
+It records **every inbound web service invocation** (request/response, timings, status, IP) in a raw log, and then **aggregates** those records into statistics tables through a batch task.
 
-## 2. Concepto central: log crudo → estadísticas
+## 2. Core concept: raw log → statistics
 
-- **`WebServicesLog`** = una fila por llamada (con `Duration` calculada por fórmula).
-- Una tarea batch con **cursor incremental** buckea el log por intervalos de N minutos y lo acumula (`counter += 1`) en:
-  - **`WebServicesStatistics`** (por FilterData) — cabecera + detalle por RemoteAddress/WS/Método/Status.
-  - **`WebServicesRAStatistics`** — por **Remote Address** (IP).
+- **`WebServicesLog`** = one row per call (with `Duration` computed by a formula).
+- A batch task with an **incremental cursor** buckets the log into N-minute intervals and accumulates it (`counter += 1`) into:
+  - **`WebServicesStatistics`** (by FilterData) — a header plus a detail per RemoteAddress/WS/Method/Status.
+  - **`WebServicesRAStatistics`** — by **Remote Address** (IP).
 
-> **`RA` = Remote Address** (estadística por IP), **no** "rolling average". El motor es incremental con bucketeo por intervalos fijos, no medias móviles.
+> **`RA` = Remote Address** (per-IP statistics), **not** "rolling average". The engine is incremental with fixed-interval bucketing, not moving averages.
 
-## 3. Transacciones del módulo
+## 3. Module transactions
 
-| Transacción | PK | Rol |
+| Transaction | PK | Role |
 |---|---|---|
-| **WebServicesLog** | `WebServiceLogId` | **Log crudo**: `StartDateTime`/`EndDateTime`, `RemoteAddress` (IP), `WSName`, `MethodName`, `MethodInParameters`/`MethodOutParameters` (MaxMem ~30 KB, JSON), `FilterData` (clave de negocio libre), `Status` (`WebServiceLogStatus`), `Duration` (fórmula `tdiff(End, Start)`). BC: `WebServicesLogBC`. |
-| **WebServicesStatistics** | `FilterData, DateTime` (+ nivel Detail: `RemoteAddress, WSName, MethodName, Status`) | Agregados por FilterData; contadores. |
-| **WebServicesRAStatistics** | `RemoteAddress, DateTime` | Agregados por IP; contador. |
+| **WebServicesLog** | `WebServiceLogId` | **Raw log**: `StartDateTime`/`EndDateTime`, `RemoteAddress` (IP), `WSName`, `MethodName`, `MethodInParameters`/`MethodOutParameters` (MaxMem ~30 KB, JSON), `FilterData` (a free business key), `Status` (`WebServiceLogStatus`), `Duration` (formula `tdiff(End, Start)`). BC: `WebServicesLogBC`. |
+| **WebServicesStatistics** | `FilterData, DateTime` (+ a Detail level: `RemoteAddress, WSName, MethodName, Status`) | Aggregates by FilterData; counters. |
+| **WebServicesRAStatistics** | `RemoteAddress, DateTime` | Aggregates by IP; counter. |
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-Todos `WebService*`/`WebServices*` → @WebServicesLog (nomenclatura). Los de estado son **root-legacy** (`#Domains/` raíz); los tipos de dato y de panel ya son **module-scoped** (`@WebServicesLog/#Domains/`):
+All `WebService*`/`WebServices*` domains belong to @WebServicesLog (by naming). The status ones are **root-legacy** (root `#Domains/`); the data and panel types are already **module-scoped** (`@WebServicesLog/#Domains/`):
 
-| Dominio | Scope | Valores |
+| Domain | Scope | Values |
 |---|---|---|
 | **WebServiceLogStatus** | root-legacy | WithoutResponse=`WOR`, Success=`SUC`, Failed=`FAI` |
-| **WebServiceStatisticDetailStatus** | root-legacy | + Denied=`DEN` (en la agregación) |
+| **WebServiceStatisticDetailStatus** | root-legacy | + Denied=`DEN` (in the aggregation) |
 | **WebServicesStatisticsCounterType** | root-legacy | FilterData=`FDA`, CounterType=`FCO` |
-| **WebServicesStatisticsPanelType** | module | FilterData=`FDA`, RemoteAddress=`RAS` (selector de vista) |
-| **WebServiceFilterData / …MethodName / …RemoteAddress / …WSName** | module | Tipos base VarChar(40) |
-| **WebServiceStatisticCounter** | module | Numeric(10.0) — valor del contador |
-| **StatisticFilterDuring** | module | *(placeholder — dominio declarado sin cuerpo)* |
+| **WebServicesStatisticsPanelType** | module | FilterData=`FDA`, RemoteAddress=`RAS` (view selector) |
+| **WebServiceFilterData / …MethodName / …RemoteAddress / …WSName** | module | Base types, VarChar(40) |
+| **WebServiceStatisticCounter** | module | Numeric(10.0) — the counter's value |
+| **StatisticFilterDuring** | module | *(placeholder — a domain declared with no body)* |
 
-## 5. Mecanismo
+## 5. How it works
 
-### 5.1 Registrar una invocación
-Lo invoca **cada objeto WS consumidor** (NO la capa @WSLayer), típicamente con `Stub`:
+### 5.1 Logging an invocation
+It is invoked by **each consuming WS object** (NOT by the @WSLayer layer), typically with a `Stub`:
 ```
-Stub Metodo(...)
-    &WebServiceLogId = AddWebServiceLog.Udp(&Pgmname, !"Metodo", &in.ToJson(), &filter)
-    ...  // lógica
+Stub Method(...)
+    &WebServiceLogId = AddWebServiceLog.Udp(&Pgmname, !"Method", &in.ToJson(), &filter)
+    ...  // logic
     UpdWebServiceLog.Call(&WebServiceLogId, WebServiceLogStatus.Success, &out.ToJson())
 EndStub
 ```
-- `AddWebServiceLog(in: &WSName, &MethodName, &MethodInParameters, &FilterData; out: &WebServiceLogId)` — `New` con `StartDateTime=ServerNow()`, `RemoteAddress=RetHTTPRemoteAddress()`, inputs, `Status=WithoutResponse`.
-- `UpdWebServiceLog(in: &WebServiceLogId, &Status, &MethodOutParameters)` — `EndDateTime`, outputs y estado final. `Duration` se calcula sola.
-- Variantes: `UpdWebServiceLogWithFilterData`, `UpdWebServiceLogFilterData`. `RetWebServicesLogStatusFromRestCode` mapea código REST → Success/Failed.
+- `AddWebServiceLog(in: &WSName, &MethodName, &MethodInParameters, &FilterData; out: &WebServiceLogId)` — a `New` with `StartDateTime=ServerNow()`, `RemoteAddress=RetHTTPRemoteAddress()`, the inputs, and `Status=WithoutResponse`.
+- `UpdWebServiceLog(in: &WebServiceLogId, &Status, &MethodOutParameters)` — `EndDateTime`, outputs and final status. `Duration` computes itself.
+- Variants: `UpdWebServiceLogWithFilterData`, `UpdWebServiceLogFilterData`. `RetWebServicesLogStatusFromRestCode` maps a REST code → Success/Failed.
 
-### 5.2 Calcular estadísticas — `TskWebServicesLogStatistics`
+### 5.2 Computing statistics — `TskWebServicesLogStatistics`
 `Parm(in: &TaskManagerId, out: &Error, out: &ErrorMessage)`:
-- Gate por SystemParameter `WebServiceLogGenerateStatistics`; período en minutos (`RetWebServiceLogStatisticCounterPeriod`, default 60); **cursor incremental** `WebServiceLogLastStatisticId`.
-- `For Each WebServicesLog Where Id > lastId` (solo lo nuevo). **Bucketeo temporal**: minutos desde medianoche / período, redondeado, de vuelta a DateTime.
-- Upsert (`When None New`) de la cabecera `WebServicesStatistics` (FilterData+bucket), el `Detail` (RemoteAddress/WS/Método/Status, mapeando a `Denied`/Failed/Success/WithoutResponse) y `WebServicesRAStatistics` (RemoteAddress+bucket); `counter += 1`.
-- Guarda el nuevo `LastStatisticId`. Auxiliares: `RetWebServices[RA]StatisticsOtherColumns` (hasta 20 períodos previos para el "historial en columnas"). Limpieza: `PrcTableCleanerWebServicesLog`/`…Statistics`.
+- Gated by the `WebServiceLogGenerateStatistics` SystemParameter; the period in minutes comes from `RetWebServiceLogStatisticCounterPeriod` (default 60); the **incremental cursor** is `WebServiceLogLastStatisticId`.
+- `For Each WebServicesLog Where Id > lastId` (new rows only). **Time bucketing**: minutes since midnight / period, rounded, converted back to a DateTime.
+- Upsert (`When None New`) of the `WebServicesStatistics` header (FilterData+bucket), the `Detail` (RemoteAddress/WS/Method/Status, mapped to `Denied`/Failed/Success/WithoutResponse) and `WebServicesRAStatistics` (RemoteAddress+bucket); `counter += 1`.
+- It stores the new `LastStatisticId`. Helpers: `RetWebServices[RA]StatisticsOtherColumns` (up to 20 previous periods for the "history in columns"). Cleanup: `PrcTableCleanerWebServicesLog`/`…Statistics`.
 
 ## 6. APIs vs Personalized
 
-- **`APIs/`** (core): las transacciones, `Add/UpdWebServiceLog`, `TskWebServicesLogStatistics`, los `Ret*`/`PrcTableCleaner*`.
+- **`APIs/`** (core): the transactions, `Add/UpdWebServiceLog`, `TskWebServicesLogStatistics`, the `Ret*`/`PrcTableCleaner*` procedures.
 - **`Personalized/`** (3 DataProviders):
-  | Objeto | Qué se customiza |
+  | Object | What gets customized |
   |---|---|
-  | `RetDynamicCallReferenceWebServicesLog` | Registra en @TaskManager: Task de estadísticas + 2 Table Cleaners. |
-  | `RetMenusWebServicesLog` | Menú (Logs / Statistics / Counters by Filter Data). |
+  | `RetDynamicCallReferenceWebServicesLog` | Registers in @TaskManager: the statistics task + 2 Table Cleaners. |
+  | `RetMenusWebServicesLog` | Menu (Logs / Statistics / Counters by Filter Data). |
   | `RetSystemParametersWebServicesStatistics` | `WebServiceLogGenerateStatistics`, `WebServiceLogLastStatisticId`, `WebServiceLogStatisticCounterPeriod`. |
 
-## 7. Instancias de patterns
+## 7. Pattern instances
 
-- **PXWorkWithWebServicesLog** — grilla del log (filtros por fecha/FilterData/Status/Método + búsqueda en parámetros). Acción **View** → `PXParameterRequestWebServiceLogView`.
-- **PXParameterRequestWebServiceLogView** — popup con In/Out Parameters.
-- **PXComposerWebServicesLog** — layout selección + vista de parámetros embebida.
-- **PXWorkWithWebServicesStatistics** / **PXWorkWithWebServicesRAStatistics** — grillas de agregados (por FilterData / por IP), con "historial en columnas" y cross-link entre ambas.
-- **PXComposerWebServicesStatisticCounters** — embebe el nivel de counters.
+- **PXWorkWithWebServicesLog** — the log grid (filters by date/FilterData/Status/Method + search inside the parameters). The **View** action → `PXParameterRequestWebServiceLogView`.
+- **PXParameterRequestWebServiceLogView** — popup with the In/Out Parameters.
+- **PXComposerWebServicesLog** — a layout with the selection plus the embedded parameter view.
+- **PXWorkWithWebServicesStatistics** / **PXWorkWithWebServicesRAStatistics** — aggregate grids (by FilterData / by IP), with "history in columns" and cross-links between the two.
+- **PXComposerWebServicesStatisticCounters** — embeds the counters level.
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-| Proc | `Parm()` | Propósito |
+| Proc | `Parm()` | Purpose |
 |---|---|---|
-| `AddWebServiceLog` | `in: &WSName, &MethodName, &MethodInParameters, &FilterData; out: &WebServiceLogId` | Abre el log al iniciar la llamada. |
-| `UpdWebServiceLog` | `in: &WebServiceLogId, &Status, &MethodOutParameters` | Cierra la llamada (fin, output, estado). |
-| `UpdWebServiceLogWithFilterData` | `+ &FilterData` | Igual + FilterData. |
-| `RetWebServicesLogStatusFromRestCode` | `in: &RestCode; out: &Status` | Mapea código REST → Success/Failed. |
-| `TskWebServicesLogStatistics` | `in: &TaskManagerId; out…` | Batch de agregación. |
-| `PrcTableCleanerWebServicesLog` / `…Statistics` | `(cleaner)` | Purga log / estadísticas por fecha. |
+| `AddWebServiceLog` | `in: &WSName, &MethodName, &MethodInParameters, &FilterData; out: &WebServiceLogId` | Opens the log entry when the call starts. |
+| `UpdWebServiceLog` | `in: &WebServiceLogId, &Status, &MethodOutParameters` | Closes the call (end time, output, final status). |
+| `UpdWebServiceLogWithFilterData` | `+ &FilterData` | The same plus FilterData. |
+| `RetWebServicesLogStatusFromRestCode` | `in: &RestCode; out: &Status` | Maps a REST code → Success/Failed. |
+| `TskWebServicesLogStatistics` | `in: &TaskManagerId; out…` | The aggregation batch. |
+| `PrcTableCleanerWebServicesLog` / `…Statistics` | `(cleaner)` | Purges the log / the statistics by date. |
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- [taskmanager.md](taskmanager.md) — ejecuta `TskWebServicesLogStatistics`.
-- Módulo **@WSLayer** — capa de web services (whitelist); el logging es **ortogonal** (lo llama cada objeto WS, no @WSLayer).
-- Módulo **@SystemParameters** (config de agregación).
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- [taskmanager.md](taskmanager.md) — runs `TskWebServicesLogStatistics`.
+- The **@WSLayer** module — the web services layer (whitelist); logging is **orthogonal** to it (each WS object calls it, not @WSLayer).
+- The **@SystemParameters** module (aggregation configuration).

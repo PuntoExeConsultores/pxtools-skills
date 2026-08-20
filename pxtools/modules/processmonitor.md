@@ -1,99 +1,99 @@
-# Módulo @ProcessMonitor — Monitor de Procesos
+# @ProcessMonitor Module — Process Monitor
 
-> Comportamiento del módulo `@PXTools/@ProcessMonitor`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@ProcessMonitor` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@ProcessMonitor` (`APIs/Basic/`, `APIs/Advanced/`, `Personalized/`).
-- Cualificador: `PXTools.ProcessMonitor`.
-- El **lock/kill** de procesos colgados vive en el módulo hermano `@TaskManager` (que es el consumidor principal).
-- **Depende de:** `@APIs` (base), `@System`, `@SystemParameters`, `@SendMails`, `@FileStorage`, `@TaskManager` (kill-process). Infra: `@Menus`.
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@ProcessMonitor` (`APIs/Basic/`, `APIs/Advanced/`, `Personalized/`).
+- Qualifier: `PXTools.ProcessMonitor`.
+- The **lock/kill** of hung processes lives in the sibling module `@TaskManager` (its main consumer).
+- **Depends on:** `@APIs` (base), `@System`, `@SystemParameters`, `@SendMails`, `@FileStorage`, `@TaskManager` (kill-process). Infrastructure: `@Menus`.
 
-## 1. Qué provee
+## 1. What it provides
 
-Un **registro de procesos en ejecución** que sirve de **mutex de concurrencia**, **log persistente** de avance, **detección y kill de procesos colgados**, y particionado por **servidor/nodo**. Es la base sobre la que los runners batch (p. ej. el de @TaskManager) evitan doble ejecución, reportan progreso y pueden cancelarse/matarse.
+A **registry of running processes** serving as a **concurrency mutex**, a persistent **progress log**, **detection and killing of hung processes**, and partitioning by **server/node**. It is the foundation batch runners (the @TaskManager one, for instance) use to avoid double execution, report progress, and be cancelled or killed.
 
-## 2. Concepto central: `ProcessStatus` como mutex
+## 2. Core concept: `ProcessStatus` as a mutex
 
-`ProcessStatus` = "un proceso en ejecución". Su PK (`UserCode + Code`) identifica el proceso; solo **uno** con la misma PK puede estar en `Running` a la vez → es el **lock**. Cada proceso lleva su log (`ProcessStatusMessages`) y opcionalmente un `ServerId`.
+`ProcessStatus` = "one running process". Its PK (`UserCode + Code`) identifies the process; only **one** row with that PK can be `Running` at a time → that is the **lock**. Each process carries its own log (`ProcessStatusMessages`) and optionally a `ServerId`.
 
 ```
-Ciclo de vida (ProcessStatusStatus):
+Life cycle (ProcessStatusStatus):
   [New] ─Start─▶ Running
    Running ─End────────────▶ Ended      ─Dlt▶
    Running ─Cancel─────────▶ Cancelled  ─Dlt▶
    Running ─RequestKill────▶ KillRequested ─Kill(async)▶ Killed ─Dlt▶
-   Running ─Verificación (proceso no vivo en el SO)─▶ Ended (forzado)
+   Running ─Verification (process not alive in the OS)─▶ Ended (forced)
 ```
 
-## 3. Transacciones del módulo
+## 3. Module transactions
 
-| Transacción | PK | Rol |
+| Transaction | PK | Role |
 |---|---|---|
-| **ProcessStatus** | `ProcessStatusUserCode, ProcessStatusCode` (UserCode vacío = global) | El **mutex**. `ObjectName`/`Description` (subtipos de `SystemObjectName`), `Status` (`ProcessStatusStatus`), `ChangeStatusDateTime` (base para detectar cuelgues), `URL` (salida), `IsCommandLine`, `AllowCancelationRequest`, `Parameters`, `ServerId` (FK), `FileStorageId` (salida en blob, Advanced). |
-| **ProcessStatusMessages** | `UserCode, Code, MessageId` | Log persistente (1:N): `DateTime`, `Description` (MaxMem). |
-| **ProcessServers** | `ProcessServerId` | Catálogo de servidores/nodos de ejecución (colas por servidor). `ProcessServerName`. |
+| **ProcessStatus** | `ProcessStatusUserCode, ProcessStatusCode` (empty UserCode = global) | The **mutex**. `ObjectName`/`Description` (subtypes of `SystemObjectName`), `Status` (`ProcessStatusStatus`), `ChangeStatusDateTime` (the basis for detecting hangs), `URL` (output), `IsCommandLine`, `AllowCancelationRequest`, `Parameters`, `ServerId` (FK), `FileStorageId` (blob output, Advanced). |
+| **ProcessStatusMessages** | `UserCode, Code, MessageId` | Persistent log (1:N): `DateTime`, `Description` (MaxMem). |
+| **ProcessServers** | `ProcessServerId` | Catalogue of execution servers/nodes (per-server queues). `ProcessServerName`. |
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-Propios (nombre `ProcessStatus*`), ambos **root-legacy** (viven en el `#Domains/` raíz). No existe dominio `ProcessServer*` — `ProcessServers` es una transacción:
+Its own (named `ProcessStatus*`), both **root-legacy** (they live in the root `#Domains/`). There is no `ProcessServer*` domain — `ProcessServers` is a transaction:
 
-| Dominio | Valores |
+| Domain | Values |
 |---|---|
-| **ProcessStatusStatus** | Running=`RUN`, Ended=`END`, Cancelled=`CAN`, Killed=`KIL`, KillRequested=`KRQ` (finales: END, KIL) |
-| **ProcessStatusErrorCode** | ProcessNotFoundRunning=`NFR`, CannotKillProcess=`CKP`, Other=`OTH` (también lo consume @TaskManager) |
+| **ProcessStatusStatus** | Running=`RUN`, Ended=`END`, Cancelled=`CAN`, Killed=`KIL`, KillRequested=`KRQ` (final states: END, KIL) |
+| **ProcessStatusErrorCode** | ProcessNotFoundRunning=`NFR`, CannotKillProcess=`CKP`, Other=`OTH` (also consumed by @TaskManager) |
 
-## 5. Mecanismo
+## 5. How it works
 
-### 5.1 Registro + lock — `StartProcessStatus[SDT]`
-Al arrancar, el runner llama `StartProcessStatus`/`StartProcessStatusSDT`:
-- Verifica `ChkProcessStatusFinalized`: si existe un registro previo NO finalizado, la variante `_SDT` rechaza (`Result=False`, "Duplicate process running") — **es el mutex**.
-- Da de alta/actualiza a `Running`, sella `ChangeStatusDateTime`, limpia URL y **purga los mensajes anteriores** (log limpio). `…SDT` guarda además ObjectName, Parameters, IsCommandLine, ServerId, y registra el objeto (`AddSystemObject`).
+### 5.1 Registration + lock — `StartProcessStatus[SDT]`
+On startup, the runner calls `StartProcessStatus`/`StartProcessStatusSDT`:
+- It checks `ChkProcessStatusFinalized`: if a previous, non-finalised record exists, the `_SDT` variant refuses (`Result=False`, "Duplicate process running") — **that is the mutex**.
+- It creates/updates the row to `Running`, stamps `ChangeStatusDateTime`, clears the URL and **purges the previous messages** (a clean log). `…SDT` additionally stores ObjectName, Parameters, IsCommandLine and ServerId, and registers the object (`AddSystemObject`).
 
-### 5.2 Avance (log) y cierre
-- `AddProcessStatusMessage(UserCode, Code, texto)` — agrega una línea al log persistente.
-- `EndProcessStatus(UserCode, Code, URL)` → `Ended`, calcula duración, agrega mensaje de cierre y **envía mail** al usuario. `CancelProcessStatus` → `Cancelled` (sin mail).
+### 5.2 Progress (log) and closing
+- `AddProcessStatusMessage(UserCode, Code, text)` — appends a line to the persistent log.
+- `EndProcessStatus(UserCode, Code, URL)` → `Ended`, computes the duration, adds a closing message and **sends mail** to the user. `CancelProcessStatus` → `Cancelled` (no mail).
 
-### 5.3 Cancelación/kill de colgados (vive en @TaskManager)
-- **Cooperativa**: el runner consulta `ChkProcessStatusCanceled` en sus iteraciones y sale solo.
-- **Detección de colgados**: `PrcProcessMonitorVerification` (Main, CommandLine) recorre los `Running` `IsCommandLine` del server, verifica en el SO (Linux `ps -aux | grep java`) si el proceso vive; si no, fuerza `Ended` + `PrcProcessMonitorAfterEnds`.
-- **Kill explícito (2 fases, async)**:
-  1. `RequestKillProcess` (@TaskManager) → marca `KillRequested` y encola `TskProcessMonitorKillProcess` (cola `ServerProcesses` si hay ServerId, si no `Infrastructure`).
-  2. `KillProcessStatus` (@TaskManager, corre en el server) → localiza el PID (`ps -aux`), `kill -9`, reverifica, marca `Killed`; usa `ProcessStatusErrorCode`.
+### 5.3 Cancelling/killing hung processes (lives in @TaskManager)
+- **Cooperative**: the runner checks `ChkProcessStatusCanceled` on each iteration and exits on its own.
+- **Hang detection**: `PrcProcessMonitorVerification` (Main, CommandLine) walks the server's `Running` `IsCommandLine` rows, checks in the OS (Linux `ps -aux | grep java`) whether the process is alive; if it is not, it forces `Ended` + `PrcProcessMonitorAfterEnds`.
+- **Explicit kill (2 phases, async)**:
+  1. `RequestKillProcess` (@TaskManager) → marks `KillRequested` and enqueues `TskProcessMonitorKillProcess` (the `ServerProcesses` queue if there is a ServerId, otherwise `Infrastructure`).
+  2. `KillProcessStatus` (@TaskManager, running on the server) → locates the PID (`ps -aux`), `kill -9`, re-checks, marks `Killed`; it uses `ProcessStatusErrorCode`.
 
-### 5.4 Cómo lo usa el runner de @TaskManager
-`PrcTaskManagerExecution` arma `SDTProcessStatus` con `Code = RetTaskManagerProcessStatusCode(objeto, queue)`, `IsCommandLine=True`, `ServerId = RetTaskManagerQueueProcessServerId(queue)`; `StartProcessStatusSDT` → si `Result` procesa la cola (reporta con `AddProcessStatusMessage`), al terminar `EndProcessStatus`; si `Result=False` loguea "is running yet" (evita doble runner sobre la misma cola).
+### 5.4 How the @TaskManager runner uses it
+`PrcTaskManagerExecution` builds an `SDTProcessStatus` with `Code = RetTaskManagerProcessStatusCode(object, queue)`, `IsCommandLine=True`, `ServerId = RetTaskManagerQueueProcessServerId(queue)`; `StartProcessStatusSDT` → if `Result` it processes the queue (reporting through `AddProcessStatusMessage`) and calls `EndProcessStatus` when done; if `Result=False` it logs "is running yet" (preventing a second runner over the same queue).
 
 ## 6. APIs vs Personalized
 
-- **`APIs/Basic/`** + **`APIs/Advanced/`** (core): las transacciones, `Start/End/Cancel/Del`, `AddProcessStatusMessage`, los `Chk*`, y las variantes `…WithStorage` (salida a @FileStorage).
+- **`APIs/Basic/`** + **`APIs/Advanced/`** (core): the transactions, `Start/End/Cancel/Del`, `AddProcessStatusMessage`, the `Chk*` procedures, and the `…WithStorage` variants (output to @FileStorage).
 - **`Personalized/`**:
-  | Objeto | Qué se customiza |
+  | Object | What gets customized |
   |---|---|
-  | `PrcProcessMonitorAfterEnds` (Procedure) | **Hook** invocado cuando la verificación fuerza un proceso a `Ended`. Default: `TestAndKillTaskManager` (reintegra al TaskManager). |
-  | `RetMenusProcessMonitor` (DataProvider) | Ítems de menú (Servers / Monitor). |
+  | `PrcProcessMonitorAfterEnds` (Procedure) | **Hook** invoked when the verification forces a process to `Ended`. Default: `TestAndKillTaskManager` (hands it back to the TaskManager). |
+  | `RetMenusProcessMonitor` (DataProvider) | Menu items (Servers / Monitor). |
 
-## 7. Instancias de patterns
+## 7. Pattern instances
 
-| Instancia | Qué es |
+| Instance | What it is |
 |---|---|
-| **PXWorkWithProcessStatus** | WW sobre ProcessStatus. |
-| **PXWorkWithProcessStatusMessages** | Popup (`PuProcessStatusMessages`) — visor del log de un proceso. |
-| **PXWorkWithProcessServers** | WW de servers. |
-| **PXWorkWithProcessStatusAdvanced** | **Monitor operativo**: grid con filtro My/Global (Global solo admin, `PIsAdministrator`), acciones OpenDocument (descarga la salida), ViewMessages, y **CancelProcess** polimórfica (Cancel / RequestKill / End / Delete según estado+tipo+permiso). |
+| **PXWorkWithProcessStatus** | WW over ProcessStatus. |
+| **PXWorkWithProcessStatusMessages** | Popup (`PuProcessStatusMessages`) — viewer for a process's log. |
+| **PXWorkWithProcessServers** | WW for the servers. |
+| **PXWorkWithProcessStatusAdvanced** | The **operational monitor**: a grid with a My/Global filter (Global for admins only, `PIsAdministrator`), OpenDocument (downloads the output) and ViewMessages actions, and a polymorphic **CancelProcess** (Cancel / RequestKill / End / Delete depending on status, type and permission). |
 
-## 8. APIs clave
+## 8. Key APIs
 
-**Basic**: `StartProcessStatus(UserCode, Code, ObjectName, ObjectDescription, out &Result)`, `StartProcessStatusSDT(in &SDTProcessStatus, out &Result)` (**recomendada**), `EndProcessStatus(UserCode, Code, URL)`, `CancelProcessStatus`, `AddProcessStatusMessage`, `ChkProcessStatusCanceled` (cancelación cooperativa), `ChkProcessStatusFinalized`, `DltProcessStatus`.
+**Basic**: `StartProcessStatus(UserCode, Code, ObjectName, ObjectDescription, out &Result)`, `StartProcessStatusSDT(in &SDTProcessStatus, out &Result)` (**recommended**), `EndProcessStatus(UserCode, Code, URL)`, `CancelProcessStatus`, `AddProcessStatusMessage`, `ChkProcessStatusCanceled` (cooperative cancellation), `ChkProcessStatusFinalized`, `DltProcessStatus`.
 
-**Advanced**: `StartProcessStatusSDTWithStorage`, `EndProcessStatusWithStorage(… &StorageItemCollection)` (salida a @FileStorage), `ChkProcessStatusHasMessages`, `RetProcessStatusFileStorageCount`.
+**Advanced**: `StartProcessStatusSDTWithStorage`, `EndProcessStatusWithStorage(… &StorageItemCollection)` (output to @FileStorage), `ChkProcessStatusHasMessages`, `RetProcessStatusFileStorageCount`.
 
-**En @TaskManager**: `RequestKillProcess(UserCode, Code, out &SDTProcessStatusResponse)`, `KillProcessStatus(…)`, `RetTaskManagerProcessStatusCode(ProgramName, Queue, out &Code)`.
+**In @TaskManager**: `RequestKillProcess(UserCode, Code, out &SDTProcessStatusResponse)`, `KillProcessStatus(…)`, `RetTaskManagerProcessStatusCode(ProgramName, Queue, out &Code)`.
 
-**SDTs**: `SDTProcessStatus` (Code, ObjectName, Parameters, IsCommandLine, AllowCancelationRequest, ServerId) — DTO de arranque; `SDTProcessStatusResponse` (HasError, ErrorCode, ErrorDescription).
+**SDTs**: `SDTProcessStatus` (Code, ObjectName, Parameters, IsCommandLine, AllowCancelationRequest, ServerId) — the startup DTO; `SDTProcessStatusResponse` (HasError, ErrorCode, ErrorDescription).
 
-> Los procs `Sample*`/`ProcessIterationSample` son **ejemplos de referencia** del patrón runner (global/usuario, con/sin CommandLine, cancelable), no producción.
+> The `Sample*`/`ProcessIterationSample` procedures are **reference examples** of the runner pattern (global/per-user, with/without CommandLine, cancellable), not production code.
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- [taskmanager.md](taskmanager.md) — su runner usa `StartProcessStatusSDT`/`EndProcessStatus` como lock por cola; el kill (`RequestKillProcess`/`KillProcessStatus`) vive ahí.
-- Módulos **@FileStorage** (salida en blob), **@SystemParameters**, y `modulos/system.md` (`SystemObjectName`).
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- [taskmanager.md](taskmanager.md) — its runner uses `StartProcessStatusSDT`/`EndProcessStatus` as a per-queue lock; the kill (`RequestKillProcess`/`KillProcessStatus`) lives there.
+- The **@FileStorage** (blob output) and **@SystemParameters** modules, and `modules/system.md` (`SystemObjectName`).
