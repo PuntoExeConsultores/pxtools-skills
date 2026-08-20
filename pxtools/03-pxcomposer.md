@@ -1,81 +1,81 @@
-# PXComposer — Pattern de Composicion de Pantallas
+# PXComposer — Screen Composition Pattern
 
-## Que es y para que sirve
+## What it is and what it is for
 
-PXComposer es un pattern de PXTools que genera **WebPanels compuestos** (tipo dashboard) embebiendo otros patterns y objetos GeneXus como WebComponents. A diferencia de PXWorkWith o PXParameterRequest, PXComposer **no tiene Parent Object** — es siempre standalone (`ParentObject Type="(None)"`).
+PXComposer is a PXTools pattern generating **composed WebPanels** (dashboard-style) by embedding other patterns and GeneXus objects as WebComponents. Unlike PXWorkWith or PXParameterRequest, PXComposer **has no Parent Object** — it is always standalone (`ParentObject Type="(None)"`).
 
-Su proposito principal es permitir la construccion declarativa de pantallas que combinan multiples componentes visuales: grillas de PXWorkWith, formularios de PXParameterRequest, otros PXComposer anidados, controles de usuario o HTML crudo, todo definido en XML sin escribir codigo manual.
+Its main purpose is to allow the declarative construction of screens combining several visual components: PXWorkWith grids, PXParameterRequest forms, other nested PXComposers, user controls or raw HTML, all defined in XML without writing code by hand.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  PXComposer: WbDashboardVentas                          │
+│  PXComposer: WbSalesDashboard                           │
 │                                                         │
 │  ┌─────────────────────┐  ┌──────────────────────────┐  │
-│  │  WebComponent        │  │  WebComponent             │  │
-│  │  PXWorkWith          │  │  PXWorkWith               │  │
-│  │  Selection: Facturas │  │  Selection: Clientes      │  │
+│  │  WebComponent       │  │  WebComponent            │  │
+│  │  PXWorkWith         │  │  PXWorkWith              │  │
+│  │  Selection: Invoices│  │  Selection: Customers    │  │
 │  └─────────────────────┘  └──────────────────────────┘  │
 │                                                         │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │  WebComponent                                     │   │
-│  │  PXParameterRequest: FiltroReporte               │   │
+│  │  WebComponent                                    │   │
+│  │  PXParameterRequest: ReportFilter                │   │
 │  └──────────────────────────────────────────────────┘   │
 │                                                         │
 │  ┌─────────────────────┐  ┌──────────────────────────┐  │
-│  │  HTML                │  │  UserControl              │  │
-│  │  <div>info</div>     │  │  GraficoBarras            │  │
+│  │  HTML               │  │  UserControl             │  │
+│  │  <div>info</div>    │  │  BarChart                │  │
 │  └─────────────────────┘  └──────────────────────────┘  │
 └─────────────────────────────────────────────────────────┘
 ```
 
-## Objetos que genera
+## Objects it generates
 
-PXComposer genera exactamente **dos objetos** por cada level de la instancia, uno para cada plataforma web:
+PXComposer generates exactly **two objects** per instance level, one per web platform:
 
-| Object ID | Tipo GeneXus | Patron de nombre | Element | Descripcion |
-|-----------|-------------|------------------|---------|-------------|
-| `Level` | WebPanel | `Wb{Istance.Name}` | `instance/level` | Panel compuesto para Web Desktop (layout HTML) |
-| `LevelResponsive` | WebPanel | `RWb{Istance.Name}` | `instance/level` | Panel compuesto para Web Responsive (layout abstracto) |
+| Object ID | GeneXus type | Name pattern | Element | Description |
+|-----------|--------------|--------------|---------|-------------|
+| `Level` | WebPanel | `Wb{Istance.Name}` | `instance/level` | The composed panel for Web Desktop (HTML layout) |
+| `LevelResponsive` | WebPanel | `RWb{Istance.Name}` | `instance/level` | The composed panel for Web Responsive (abstract layout) |
 
-> **Nota sobre nomenclatura:** El patron de nombre usa `{Istance.Name}` (con "I" mayuscula y sin la "n" — "Istance" en vez de "Instance"). Esto es un typo historico en el archivo `.Pattern` original, pero es el naming real utilizado por el generador.
+> **A note on the naming:** the name pattern uses `{Istance.Name}` (capital "I", missing the "n" — "Istance" instead of "Instance"). That is a historical typo in the original `.Pattern` file, but it is the real naming the generator uses.
 
-### Ejemplos de nombres generados
+### Examples of generated names
 
-| Nombre de instancia | Desktop | Responsive |
-|---------------------|---------|------------|
-| `DashboardVentas` | `WbDashboardVentas` | `RWbDashboardVentas` |
+| Instance name | Desktop | Responsive |
+|---------------|---------|------------|
+| `SalesDashboard` | `WbSalesDashboard` | `RWbSalesDashboard` |
 | `FileStorage` | `WbFileStorage` | `RWbFileStorage` |
 | `SecurityObjectAccess` | `WbSecurityObjectAccess` | `RWbSecurityObjectAccess` |
 
-### Control de generacion
+### Generation control
 
-Cada level tiene propiedades booleanas que controlan que plataformas se generan:
+Each level has boolean properties controlling which platforms are generated:
 
-| Propiedad | Default | Efecto |
-|-----------|---------|--------|
-| `generateWeb` | `true` | Genera el WebPanel Desktop (`Wb{Istance.Name}`) |
-| `generateWebResponsive` | `true` | Genera el WebPanel Responsive (`RWb{Istance.Name}`) |
-| `generateSD` | `false` | Reservado para Smart Devices (no implementado actualmente) |
+| Property | Default | Effect |
+|----------|---------|--------|
+| `generateWeb` | `true` | Generates the Desktop WebPanel (`Wb{Istance.Name}`) |
+| `generateWebResponsive` | `true` | Generates the Responsive WebPanel (`RWb{Istance.Name}`) |
+| `generateSD` | `false` | Reserved for Smart Devices (not currently implemented) |
 
-## Estructura XML de la instancia
+## XML structure of the instance
 
-La instancia de PXComposer sigue el schema definido en `PXComposerInstance.xml` (108KB). Estructura completa:
+A PXComposer instance follows the schema defined in `PXComposerInstance.xml` (108KB). The complete structure:
 
 ```xml
 <instance>
   <level>
-    <!-- Propiedades del level -->
-    <name>MiDashboard</name>
-    <description>Panel principal de ventas</description>
+    <!-- Level properties -->
+    <name>MyDashboard</name>
+    <description>Main sales panel</description>
     <masterPage>PXMasterPage</masterPage>
     <theme>PXTheme</theme>
 
-    <!-- Control de generacion -->
+    <!-- Generation control -->
     <generateWeb>true</generateWeb>
     <generateWebResponsive>true</generateWebResponsive>
     <generateSD>false</generateSD>
 
-    <!-- Forms con componentes (seccion principal) -->
+    <!-- Forms with components (the main section) -->
     <forms>
       <form>
         <name>FormDefault</name>
@@ -94,82 +94,82 @@ La instancia de PXComposer sigue el schema definido en `PXComposerInstance.xml` 
       </form>
     </forms>
 
-    <!-- Acciones disponibles -->
+    <!-- Available actions -->
     <actions>
       <action>
-        <name>Volver</name>
-        <gxobject>MenuPrincipal</gxobject>
+        <name>Back</name>
+        <gxobject>MainMenu</gxobject>
         <!-- ... -->
       </action>
     </actions>
 
-    <!-- Eventos personalizados -->
+    <!-- Custom events -->
     <events>
       <event>
-        <name>MiEvento</name>
-        <code>/* codigo GeneXus */</code>
+        <name>MyEvent</name>
+        <code>/* GeneXus code */</code>
       </event>
     </events>
 
-    <!-- Hooks de codigo -->
+    <!-- Code hooks -->
     <codes>
       <code>
         <name>Start</name>
-        <code>/* codigo en evento Start */</code>
+        <code>/* code in the Start event */</code>
       </code>
       <code>
         <name>Refresh</name>
-        <code>/* codigo en evento Refresh */</code>
+        <code>/* code in the Refresh event */</code>
       </code>
       <code>
         <name>Load</name>
-        <code>/* codigo en evento Load */</code>
+        <code>/* code in the Load event */</code>
       </code>
       <code>
         <name>Subroutine</name>
-        <code>/* subrutina reutilizable */</code>
+        <code>/* a reusable subroutine */</code>
       </code>
     </codes>
 
-    <!-- Parametros del WebPanel -->
+    <!-- WebPanel parameters -->
     <parameters>
       <parameter>
-        <name>ClienteId</name>
+        <name>CustomerId</name>
         <domain>Numeric</domain>
       </parameter>
     </parameters>
 
-    <!-- Variables adicionales -->
+    <!-- Extra variables -->
     <variables>
       <variable>
-        <name>MiVariable</name>
+        <name>MyVariable</name>
         <domain>Character</domain>
       </variable>
     </variables>
 
-    <!-- Condiciones/reglas -->
+    <!-- Conditions/rules -->
     <conditions>...</conditions>
 
-    <!-- Documentacion -->
-    <documentation>Descripcion para desarrolladores</documentation>
+    <!-- Documentation -->
+    <documentation>A description for developers</documentation>
   </level>
 </instance>
 ```
 
-### Arbol jerarquico resumido
+### The hierarchy, summarised
 
 ```
 instance
-└── level (puede haber multiples)
+└── level (there can be several)
     ├── name, description
     ├── masterPage, theme
     ├── generateWeb, generateWebResponsive, generateSD
     ├── forms
-    │   └── form* (multiples forms para distintas plataformas)
+    │   └── form* (several forms for different platforms)
     │       ├── name
     │       ├── platform: {Any|Web Desktop|Web Responsive|Smart Devices}
     │       └── components
-    │           └── component* (cada pieza embebida)
+    │           └── component* (each embedded piece)
     │               ├── type: {WebComponent|UserControl|HTML|Action|...}
     │               ├── [WebComponent] callType, gxObject, instanceObject...
     │               ├── [UserControl] controlName, properties
@@ -188,63 +188,63 @@ instance
     └── documentation
 ```
 
-## Sistema de forms y componentes
+## The form and component system
 
-### Concepto de form
+### The concept of a form
 
-Cada level contiene un nodo `<forms>` que agrupa uno o mas `<form>`. Cada form define un layout de componentes para una plataforma especifica. Esto permite que un mismo PXComposer genere layouts diferentes segun la plataforma destino.
+Each level contains a `<forms>` node grouping one or more `<form>` entries. Each form defines a component layout for a specific platform. That lets one PXComposer generate different layouts depending on the target platform.
 
 ```
 forms
-├── form (platform="Any")           --> usado si no hay form especifico
-├── form (platform="Web Desktop")   --> layout solo para Desktop
-├── form (platform="Web Responsive")--> layout solo para Responsive
-└── form (platform="Smart Devices") --> layout solo para SD
+├── form (platform="Any")            --> used when there is no specific form
+├── form (platform="Web Desktop")    --> layout for Desktop only
+├── form (platform="Web Responsive") --> layout for Responsive only
+└── form (platform="Smart Devices")  --> layout for SD only
 ```
 
-### Resolucion de form por plataforma
+### Resolving the form per platform
 
-El generador selecciona el form a usar con esta logica:
+The generator picks the form with this logic:
 
 ```
-Al generar Wb{Name} (Desktop):
-  1. Buscar form con platform="Web Desktop"
-  2. Si no existe, usar form con platform="Any"
+When generating Wb{Name} (Desktop):
+  1. Look for a form with platform="Web Desktop"
+  2. If there is none, use the form with platform="Any"
 
-Al generar RWb{Name} (Responsive):
-  1. Buscar form con platform="Web Responsive"
-  2. Si no existe, usar form con platform="Any"
+When generating RWb{Name} (Responsive):
+  1. Look for a form with platform="Web Responsive"
+  2. If there is none, use the form with platform="Any"
 ```
 
-### Componentes dentro de un form
+### Components inside a form
 
-Cada form contiene un nodo `<components>` con multiples `<component>`. Los componentes se renderizan en el WebPanel generado en el orden en que aparecen en el XML.
+Each form holds a `<components>` node with several `<component>` entries. The components are rendered in the generated WebPanel in the order they appear in the XML.
 
-## Tipos de componentes
+## Component types
 
 ### WebComponent
 
-El tipo mas comun e importante. Embebe un WebPanel como WebComponent dentro del panel compuesto.
+The most common and most important type. It embeds a WebPanel as a WebComponent inside the composed panel.
 
 ```xml
 <component>
   <type>WebComponent</type>
 
-  <!-- Opcion A: referencia directa a un objeto GeneXus -->
+  <!-- Option A: a direct reference to a GeneXus object -->
   <callType>GXObject</callType>
-  <gxObject>WWFactura</gxObject>
+  <gxObject>WWInvoice</gxObject>
 
-  <!-- Opcion B: referencia a una instancia de pattern -->
+  <!-- Option B: a reference to a pattern instance -->
   <callType>PXInstance</callType>
-  <instanceObject>PXWorkWithFactura</instanceObject>
-  <instanceLevel>Factura</instanceLevel>
+  <instanceObject>PXWorkWithInvoice</instanceObject>
+  <instanceLevel>Invoice</instanceLevel>
   <instanceLevelNode>Selection</instanceLevelNode>
 
-  <!-- Parametros opcionales para el WebComponent -->
+  <!-- Optional parameters for the WebComponent -->
   <parameters>
     <parameter>
-      <name>ClienteId</name>
-      <value>&amp;ClienteId</value>
+      <name>CustomerId</name>
+      <value>&amp;CustomerId</value>
     </parameter>
   </parameters>
 </component>
@@ -252,33 +252,33 @@ El tipo mas comun e importante. Embebe un WebPanel como WebComponent dentro del 
 
 #### callType: GXObject vs PXInstance
 
-| callType | Uso | Ventaja |
-|----------|-----|---------|
-| `GXObject` | Referencia directa a un WebPanel existente | Simple, funciona con cualquier WebPanel |
-| `PXInstance` | Referencia a un pattern PXWorkWith, PXParameterRequest o PXComposer | Se resuelve automaticamente al objeto generado correcto segun la plataforma |
+| callType | Use | Advantage |
+|----------|-----|-----------|
+| `GXObject` | A direct reference to an existing WebPanel | Simple, it works with any WebPanel |
+| `PXInstance` | A reference to a PXWorkWith, PXParameterRequest or PXComposer pattern | It resolves automatically to the right generated object per platform |
 
-Cuando se usa `PXInstance`, el generador resuelve automaticamente el nombre del objeto segun la plataforma:
+When `PXInstance` is used, the generator resolves the object's name per platform automatically:
 
 ```
-PXInstance: PXWorkWithFactura / level=Factura / node=Selection
-  → Desktop genera:    WebComponent = WWFactura
-  → Responsive genera: WebComponent = RWWFactura
+PXInstance: PXWorkWithInvoice / level=Invoice / node=Selection
+  → Desktop generates:    WebComponent = WWInvoice
+  → Responsive generates: WebComponent = RWWInvoice
 ```
 
-Esto es fundamental para la generacion dual-platform: una sola definicion produce referencias correctas en ambas plataformas.
+This is essential for dual-platform generation: one definition produces correct references on both platforms.
 
 ### UserControl
 
-Embebe un User Control de GeneXus dentro del panel.
+Embeds a GeneXus User Control inside the panel.
 
 ```xml
 <component>
   <type>UserControl</type>
-  <controlName>MiGrafico</controlName>
+  <controlName>MyChart</controlName>
   <properties>
     <property>
       <name>DataSource</name>
-      <value>&amp;DatosGrafico</value>
+      <value>&amp;ChartData</value>
     </property>
   </properties>
 </component>
@@ -286,15 +286,15 @@ Embebe un User Control de GeneXus dentro del panel.
 
 ### HTML
 
-Inserta contenido HTML crudo directamente en el WebPanel generado.
+Inserts raw HTML content directly into the generated WebPanel.
 
 ```xml
 <component>
   <type>HTML</type>
   <html><![CDATA[
     <div class="info-panel">
-      <h3>Resumen de ventas</h3>
-      <p>Informacion adicional aqui</p>
+      <h3>Sales summary</h3>
+      <p>Additional information here</p>
     </div>
   ]]></html>
 </component>
@@ -302,53 +302,53 @@ Inserta contenido HTML crudo directamente en el WebPanel generado.
 
 ### Action
 
-Embebe un boton o enlace de accion.
+Embeds an action button or link.
 
 ```xml
 <component>
   <type>Action</type>
-  <name>VerReporte</name>
-  <gxobject>ReporteVentas</gxobject>
-  <!-- propiedades de accion -->
+  <name>ViewReport</name>
+  <gxobject>SalesReport</gxobject>
+  <!-- action properties -->
 </component>
 ```
 
-## Embedding de otros patterns (PXInstance)
+## Embedding other patterns (PXInstance)
 
-La capacidad mas potente de PXComposer es embeber instancias de otros patterns de forma declarativa. Cuando `callType="PXInstance"`, se configuran tres propiedades que identifican exactamente que objeto embeber:
+PXComposer's most powerful capability is embedding instances of other patterns declaratively. With `callType="PXInstance"`, three properties identify exactly which object to embed:
 
-### Nodos embebibles por pattern
+### Embeddable nodes per pattern
 
-| Pattern origen | instanceLevelNode validos | Objeto resuelto (Desktop) | Objeto resuelto (Responsive) |
-|---------------|--------------------------|--------------------------|------------------------------|
+| Source pattern | Valid instanceLevelNode | Resolved object (Desktop) | Resolved object (Responsive) |
+|----------------|-------------------------|---------------------------|------------------------------|
 | PXWorkWith | `Selection` | `WW{Name}` | `RWW{Name}` |
 | PXWorkWith | `View` | `View{Name}` | `RView{Name}` |
 | PXWorkWith | `Prompt` | `Pr{Name}` | `RPr{Name}` |
 | PXParameterRequest | `Level` | `Wb{Name}` | `RWb{Name}` |
-| PXComposer | (level completo) | `Wb{Name}` | `RWb{Name}` |
+| PXComposer | (the whole level) | `Wb{Name}` | `RWb{Name}` |
 
-### Ejemplo de composicion con PXInstance
+### A composition example with PXInstance
 
 ```xml
-<!-- Embeber la Selection de PXWorkWith de Facturas -->
+<!-- Embed the Selection of the Invoices PXWorkWith -->
 <component>
   <type>WebComponent</type>
   <callType>PXInstance</callType>
-  <instanceObject>PXWorkWithFactura</instanceObject>
-  <instanceLevel>Factura</instanceLevel>
+  <instanceObject>PXWorkWithInvoice</instanceObject>
+  <instanceLevel>Invoice</instanceLevel>
   <instanceLevelNode>Selection</instanceLevelNode>
 </component>
 
-<!-- Embeber un PXParameterRequest de filtros -->
+<!-- Embed a filters PXParameterRequest -->
 <component>
   <type>WebComponent</type>
   <callType>PXInstance</callType>
-  <instanceObject>PXParameterRequestFiltroReporte</instanceObject>
-  <instanceLevel>FiltroReporte</instanceLevel>
+  <instanceObject>PXParameterRequestReportFilter</instanceObject>
+  <instanceLevel>ReportFilter</instanceLevel>
   <instanceLevelNode>Level</instanceLevelNode>
 </component>
 
-<!-- Embeber otro PXComposer (anidamiento) -->
+<!-- Embed another PXComposer (nesting) -->
 <component>
   <type>WebComponent</type>
   <callType>PXInstance</callType>
@@ -357,222 +357,222 @@ La capacidad mas potente de PXComposer es embeber instancias de otros patterns d
 </component>
 ```
 
-### Diagrama de composicion
+### Composition diagram
 
 ```
-PXComposer (WbMiDashboard)
+PXComposer (WbMyDashboard)
 │
 ├── WebComponent [PXInstance]
-│   └── PXWorkWith:Factura:Selection ──► WWFactura / RWWFactura
+│   └── PXWorkWith:Invoice:Selection ──► WWInvoice / RWWInvoice
 │
 ├── WebComponent [PXInstance]
-│   └── PXWorkWith:Cliente:Selection ──► WWCliente / RWWCliente
+│   └── PXWorkWith:Customer:Selection ──► WWCustomer / RWWCustomer
 │
 ├── WebComponent [PXInstance]
-│   └── PXParameterRequest:Filtro:Level ──► WbFiltro / RWbFiltro
+│   └── PXParameterRequest:Filter:Level ──► WbFilter / RWbFilter
 │
 ├── WebComponent [GXObject]
-│   └── MiWebPanelCustom (directo, no pattern)
+│   └── MyCustomWebPanel (direct, not a pattern)
 │
 ├── HTML
-│   └── <div>contenido estatico</div>
+│   └── <div>static content</div>
 │
 └── UserControl
-    └── GraficoVentas
+    └── SalesChart
 ```
 
-## Forms por plataforma
+## Forms per platform
 
-PXComposer soporta definir layouts completamente diferentes por plataforma dentro de la misma instancia. Esto es util cuando el layout responsive requiere una disposicion distinta al desktop.
+PXComposer supports defining completely different layouts per platform within the same instance. That is useful when the responsive layout needs a different arrangement from the desktop one.
 
-### Escenario: layout diferente por plataforma
+### Scenario: a different layout per platform
 
 ```xml
 <forms>
-  <!-- Layout Desktop: dos columnas lado a lado -->
+  <!-- Desktop layout: two columns side by side -->
   <form>
     <name>FormDesktop</name>
     <platform>Web Desktop</platform>
     <components>
-      <component><!-- Panel izquierdo: lista --></component>
-      <component><!-- Panel derecho: detalle --></component>
+      <component><!-- Left panel: the list --></component>
+      <component><!-- Right panel: the detail --></component>
     </components>
   </form>
 
-  <!-- Layout Responsive: componentes apilados -->
+  <!-- Responsive layout: stacked components -->
   <form>
     <name>FormResponsive</name>
     <platform>Web Responsive</platform>
     <components>
-      <component><!-- Lista (ancho completo) --></component>
-      <component><!-- Detalle (ancho completo, debajo) --></component>
+      <component><!-- The list (full width) --></component>
+      <component><!-- The detail (full width, below) --></component>
     </components>
   </form>
 </forms>
 ```
 
-### Escenario: mismo layout para todas las plataformas
+### Scenario: the same layout for every platform
 
 ```xml
 <forms>
   <form>
-    <name>FormUnico</name>
+    <name>SingleForm</name>
     <platform>Any</platform>
     <components>
-      <component><!-- Se usa para Desktop y Responsive --></component>
+      <component><!-- Used for both Desktop and Responsive --></component>
     </components>
   </form>
 </forms>
 ```
 
-## Hooks de codigo
+## Code hooks
 
-PXComposer permite inyectar codigo GeneXus personalizado en puntos especificos del WebPanel generado mediante el nodo `<codes>`:
+PXComposer lets you inject custom GeneXus code at specific points of the generated WebPanel through the `<codes>` node:
 
-| Hook | Momento de ejecucion | Uso tipico |
-|------|---------------------|------------|
-| `Start` | Evento Start del WebPanel | Inicializacion de variables, carga de datos iniciales, validaciones de acceso |
-| `Refresh` | Evento Refresh del WebPanel | Recarga de datos, actualizacion de componentes |
-| `Load` | Evento Load del WebPanel | Logica de carga por registro |
-| `Subroutine` | Subrutina reutilizable | Logica compartida entre eventos |
+| Hook | When it runs | Typical use |
+|------|--------------|-------------|
+| `Start` | The WebPanel's Start event | Initialising variables, loading initial data, access validations |
+| `Refresh` | The WebPanel's Refresh event | Reloading data, updating components |
+| `Load` | The WebPanel's Load event | Per-record loading logic |
+| `Subroutine` | A reusable subroutine | Logic shared between events |
 
-### Ejemplo de hooks
+### A hooks example
 
 ```xml
 <codes>
   <code>
     <name>Start</name>
     <code>
-      // Validar permisos
+      // Check permissions
       if not PXCheckAccess.Udp("Dashboard")
         Return
       endif
-      // Inicializar variables
-      &amp;FechaDesde = Today() - 30
-      &amp;FechaHasta = Today()
+      // Initialise variables
+      &amp;DateFrom = Today() - 30
+      &amp;DateTo = Today()
     </code>
   </code>
   <code>
     <name>Refresh</name>
     <code>
-      // Recargar datos del dashboard
-      PXDashboardData.Call(&amp;FechaDesde, &amp;FechaHasta, &amp;DatosResumen)
+      // Reload the dashboard's data
+      PXDashboardData.Call(&amp;DateFrom, &amp;DateTo, &amp;SummaryData)
     </code>
   </code>
 </codes>
 ```
 
-### Eventos personalizados
+### Custom events
 
-Ademas de los hooks predefinidos, se pueden agregar eventos arbitrarios:
+Beyond the predefined hooks, arbitrary events can be added:
 
 ```xml
 <events>
   <event>
-    <name>ClienteSeleccionado</name>
+    <name>CustomerSelected</name>
     <code>
-      // Manejar seleccion de cliente desde un WebComponent
-      &amp;ClienteId = ClienteId.FromString(&amp;Data)
-      // Refrescar componentes dependientes
+      // Handle the customer selection coming from a WebComponent
+      &amp;CustomerId = CustomerId.FromString(&amp;Data)
+      // Refresh the dependent components
     </code>
   </event>
 </events>
 ```
 
-## Capacidad dual-platform
+## Dual-platform capability
 
-PXComposer genera simultaneamente versiones Desktop y Responsive del mismo panel compuesto. Esta es una caracteristica compartida con PXWorkWith y PXParameterRequest.
+PXComposer generates the Desktop and Responsive versions of the same composed panel simultaneously. This is a characteristic shared with PXWorkWith and PXParameterRequest.
 
-### Flujo de generacion
+### The generation flow
 
 ```
-Instancia PXComposer
+PXComposer instance
 │
 ├── generateWeb = true
-│   └── Genera: Wb{Istance.Name}
+│   └── Generates: Wb{Istance.Name}
 │       ├── WebForm (HTML layout)
 │       ├── Variables
-│       ├── Events (con hooks)
+│       ├── Events (with the hooks)
 │       └── Rules
 │
 ├── generateWebResponsive = true
-│   └── Genera: RWb{Istance.Name}
-│       ├── AbstractForm (layout abstracto GeneXus)
+│   └── Generates: RWb{Istance.Name}
+│       ├── AbstractForm (GeneXus abstract layout)
 │       ├── Variables
-│       ├── Events (con hooks)
+│       ├── Events (with the hooks)
 │       └── Rules
 │
-└── generateSD = false (reservado)
+└── generateSD = false (reserved)
 ```
 
-### Resolucion automatica de referencias
+### Automatic reference resolution
 
-Cuando un componente usa `callType="PXInstance"`, el generador resuelve automaticamente la referencia al objeto correcto segun la plataforma que esta generando:
+When a component uses `callType="PXInstance"`, the generator automatically resolves the reference to the right object for the platform it is generating:
 
 ```
-Instancia: PXComposerMiDashboard
-  └── component: PXInstance → PXWorkWithFactura / Selection
+Instance: PXComposerMyDashboard
+  └── component: PXInstance → PXWorkWithInvoice / Selection
 
-Generacion Desktop (WbMiDashboard):
-  └── WebComponent → WWFactura          (prefijo WW)
+Desktop generation (WbMyDashboard):
+  └── WebComponent → WWInvoice          (WW prefix)
 
-Generacion Responsive (RWbMiDashboard):
-  └── WebComponent → RWWFactura         (prefijo RWW)
+Responsive generation (RWbMyDashboard):
+  └── WebComponent → RWWInvoice         (RWW prefix)
 ```
 
-Esto garantiza que la version Desktop embeba componentes Desktop y la version Responsive embeba componentes Responsive, sin configuracion manual adicional.
+This guarantees that the Desktop version embeds Desktop components and the Responsive version embeds Responsive ones, with no additional manual configuration.
 
-## Ejemplos de uso real
+## Real-world usage examples
 
-### Instancias en modulos @PXTools
+### Instances in the @PXTools modules
 
-| Modulo | Instancia PXComposer | Proposito |
-|--------|---------------------|-----------|
-| @Alerts | `PXComposerSystemAlertMessage` | Panel de mensajes de alertas del sistema |
-| @Alerts | `PXComposerSystemAlertSchedulerView` | Vista del scheduler de alertas |
-| @FileStorage | `PXComposerFileStorage` | Panel de gestion de archivos almacenados |
-| @Security | `PXComposerSecurityObjectAccess` | Panel de control de acceso a objetos |
-| @Security | `PXComposerSecurityObjectRecordAccess` | Panel de acceso a nivel de registro |
-| @WebServicesLog | `PXComposerWebServicesLog` | Panel de logs de web services |
-| @WebServicesLog | `PXComposerWebServicesStatisticCounters` | Panel de contadores estadisticos de WS |
+| Module | PXComposer instance | Purpose |
+|--------|---------------------|---------|
+| @Alerts | `PXComposerSystemAlertMessage` | System alert messages panel |
+| @Alerts | `PXComposerSystemAlertSchedulerView` | The alert scheduler view |
+| @FileStorage | `PXComposerFileStorage` | Stored file management panel |
+| @Security | `PXComposerSecurityObjectAccess` | Object access control panel |
+| @Security | `PXComposerSecurityObjectRecordAccess` | Record-level access panel |
+| @WebServicesLog | `PXComposerWebServicesLog` | Web service logs panel |
+| @WebServicesLog | `PXComposerWebServicesStatisticCounters` | WS statistical counters panel |
 
-### Uso típico en aplicaciones
+### Typical use in applications
 
-PXComposer se usa típicamente para dashboards y pantallas compuestas que combinan varias instancias (Selection/View de PXWorkWith, etc.) en una sola vista.
+PXComposer is typically used for dashboards and composed screens combining several instances (a PXWorkWith Selection/View, and so on) in a single view.
 
-### Ubicaciones típicas de instancias
+### Typical instance locations
 
-| Ubicacion | Instancias |
-|-----------|-----------|
-| `@<Modulo>/Formularios` | Formularios compuestos del frontend |
-| `@<Modulo>/Inicio` | Pantalla de inicio con multiples paneles |
+| Location | Instances |
+|----------|-----------|
+| `@<Module>/Forms` | Composed front-end forms |
+| `@<Module>/Home` | A home screen with several panels |
 
-### Patron tipico: panel maestro-detalle compuesto
+### The typical pattern: a composed master-detail panel
 
 ```xml
-<!-- Instancia comun: dashboard con filtros + grilla + detalle -->
+<!-- A common instance: a dashboard with filters + grid + detail -->
 <instance>
   <level>
-    <name>GestionClientes</name>
+    <name>CustomerManagement</name>
     <forms>
       <form>
-        <name>FormPrincipal</name>
+        <name>MainForm</name>
         <platform>Any</platform>
         <components>
-          <!-- Filtros via PXParameterRequest -->
+          <!-- Filters through PXParameterRequest -->
           <component>
             <type>WebComponent</type>
             <callType>PXInstance</callType>
-            <instanceObject>PXParameterRequestFiltroClientes</instanceObject>
-            <instanceLevel>FiltroClientes</instanceLevel>
+            <instanceObject>PXParameterRequestCustomerFilter</instanceObject>
+            <instanceLevel>CustomerFilter</instanceLevel>
             <instanceLevelNode>Level</instanceLevelNode>
           </component>
-          <!-- Grilla de clientes via PXWorkWith -->
+          <!-- The customers grid through PXWorkWith -->
           <component>
             <type>WebComponent</type>
             <callType>PXInstance</callType>
-            <instanceObject>PXWorkWithCliente</instanceObject>
-            <instanceLevel>Cliente</instanceLevel>
+            <instanceObject>PXWorkWithCustomer</instanceObject>
+            <instanceLevel>Customer</instanceLevel>
             <instanceLevelNode>Selection</instanceLevelNode>
           </component>
         </components>
@@ -582,18 +582,18 @@ PXComposer se usa típicamente para dashboards y pantallas compuestas que combin
 </instance>
 ```
 
-## Relacion con otros patterns
+## Relationship with the other patterns
 
-### PXComposer como consumidor
+### PXComposer as a consumer
 
-PXComposer es el principal **consumidor** de los demas patterns de UI. Embebe sus objetos generados como WebComponents:
+PXComposer is the main **consumer** of the other UI patterns. It embeds their generated objects as WebComponents:
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│                    PXComposer                         │
-│                  (CONSUMIDOR)                         │
+│                    PXComposer                        │
+│                   (THE CONSUMER)                     │
 │                                                      │
-│   Puede embeber:                                     │
+│   It can embed:                                      │
 │                                                      │
 │   ┌──────────────┐  ┌───────────────────┐            │
 │   │ PXWorkWith   │  │ PXParameterRequest│            │
@@ -603,30 +603,30 @@ PXComposer es el principal **consumidor** de los demas patterns de UI. Embebe su
 │   └──────────────┘  └───────────────────┘            │
 │                                                      │
 │   ┌──────────────┐  ┌───────────────────┐            │
-│   │ PXComposer   │  │ WebPanel GeneXus  │            │
-│   │ (anidado)    │  │ (cualquiera)      │            │
+│   │ PXComposer   │  │ GeneXus WebPanel  │            │
+│   │ (nested)     │  │ (any of them)     │            │
 │   └──────────────┘  └───────────────────┘            │
 └──────────────────────────────────────────────────────┘
 ```
 
-### PXComposer como embebible
+### PXComposer as something embeddable
 
-PXComposer a su vez puede ser embebido por:
+PXComposer can in turn be embedded by:
 
-| Pattern que embebe | Como lo referencia |
-|--------------------|--------------------|
-| Otro PXComposer | `callType="PXInstance"` con `instanceObject` apuntando al PXComposer |
-| PXFlowController | Como accion de navegacion o paso del flujo |
-| PXWorkWith | Como tab component dentro de un View |
+| Embedding pattern | How it references it |
+|-------------------|----------------------|
+| Another PXComposer | `callType="PXInstance"` with `instanceObject` pointing at the PXComposer |
+| PXFlowController | As a navigation action or a step of the flow |
+| PXWorkWith | As a tab component inside a View |
 
-### Diferencias clave con otros patterns
+### Key differences from the other patterns
 
-| Caracteristica | PXWorkWith | PXParameterRequest | PXComposer |
-|---------------|------------|-------------------|------------|
-| Parent Object | Transaction / (None) | WebPanel / Procedure / Transaction / (None) | Solo (None) |
-| Genera grids | Si | No | No (los embebe) |
-| Genera formularios | Si (View/Edit) | Si | No (los embebe) |
-| Compone otros patterns | No | No | **Si** |
-| Navegacion integrada | Selection↔View↔Edit | Modal/Popup | Via componentes embebidos |
-| Generacion dual | Desktop + Responsive + SD | Desktop + Responsive | Desktop + Responsive |
-| Cantidad de objetos | Muchos (Selection, View, Prompt, Controller, Tabs...) | 2 (Desktop + Responsive) | 2 por level (Desktop + Responsive) |
+| Characteristic | PXWorkWith | PXParameterRequest | PXComposer |
+|----------------|------------|--------------------|------------|
+| Parent Object | Transaction / (None) | WebPanel / Procedure / Transaction / (None) | (None) only |
+| Generates grids | Yes | No | No (it embeds them) |
+| Generates forms | Yes (View/Edit) | Yes | No (it embeds them) |
+| Composes other patterns | No | No | **Yes** |
+| Built-in navigation | Selection↔View↔Edit | Modal/Popup | Through the embedded components |
+| Dual generation | Desktop + Responsive + SD | Desktop + Responsive | Desktop + Responsive |
+| Number of objects | Many (Selection, View, Prompt, Controller, Tabs…) | 2 (Desktop + Responsive) | 2 per level (Desktop + Responsive) |
