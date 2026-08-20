@@ -1,76 +1,76 @@
-# Módulo @MailAccounts — Cuentas de Correo
+# @MailAccounts Module — Mail Accounts
 
-> Comportamiento del módulo `@PXTools/@MailAccounts`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@MailAccounts` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@MailAccounts` (`APIs/` core + `Personalized/`).
-- Cualificador: `PXTools.MailAccounts`.
-- **Depende de:** `@APIs` (base), `@System`. Infra de generación: `@SystemParameters`, `@Menus`, `@DynamicCallReferences`; acoplamientos reales: `@SendMails` (acción FullTest) y `@ProcessMonitor` (`UpdMailAccountNotVerified`).
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@MailAccounts` (`APIs/` core + `Personalized/`).
+- Qualifier: `PXTools.MailAccounts`.
+- **Depends on:** `@APIs` (base), `@System`. Generation infrastructure: `@SystemParameters`, `@Menus`, `@DynamicCallReferences`; real couplings: `@SendMails` (the FullTest action) and `@ProcessMonitor` (`UpdMailAccountNotVerified`).
 
-## 1. Qué provee
+## 1. What it provides
 
-La **configuración de las cuentas de correo** (SMTP para envío, POP3 para recepción) que consumen @SendMails y @ReceiveMails. Modela cuentas **Main** y **Alias** (una Alias apunta a su Main), con credenciales cifradas, contadores de error y auto-deshabilitado.
+The **configuration of mail accounts** (SMTP for sending, POP3 for receiving) consumed by @SendMails and @ReceiveMails. It models **Main** and **Alias** accounts (an Alias points at its Main), with encrypted credentials, error counters and auto-disabling.
 
-## 2. Concepto central: Main / Alias y "default = global"
+## 2. Core concept: Main / Alias and "default = global"
 
-- Una cuenta **Main** tiene su propia config SMTP/POP3. Una **Alias** reutiliza la Main (y agrega su dirección como `ReplyTo`); solo se permite si su dominio (`@…`) coincide con el de la Main.
-- No hay "cuenta por defecto" única. Los flags `SMTPDefault`/`POP3Default` significan **"heredar la config global"** (System Parameters SMTP*/POP3*); en False, se usan los host/port/secure/… propios de la fila.
+- A **Main** account has its own SMTP/POP3 configuration. An **Alias** reuses the Main's (and adds its own address as `ReplyTo`); it is only allowed if its domain (`@…`) matches the Main's.
+- There is no single "default account". The `SMTPDefault`/`POP3Default` flags mean **"inherit the global configuration"** (System Parameters SMTP*/POP3*); when False, the row's own host/port/secure/… are used.
 
-## 3. Transacción `MailAccounts`
+## 3. The `MailAccounts` transaction
 
-Un solo nivel; `MailAccountId` = `IdFirstLevel` (autonum).
+A single level; `MailAccountId` = `IdFirstLevel` (autonumbered).
 
 - **PK** `MailAccountId`; candidate key `MailAccountName`.
-- **Auto-FK**: `MailAccountMainAccountId → MailAccountId` (Alias → Main; trae inferidos nombre/verified/disabled de la Main).
-- **Identidad**: `Name`, `Type` (`MailAccountType`), `Disabled`, `Address` (`PXToolsEmail`, guardado en minúsculas), `User`, `Password` (`PswEnc`), `Suggest` (fórmula "Name (Address)").
+- **Self-FK**: `MailAccountMainAccountId → MailAccountId` (Alias → Main; it infers the Main's name/verified/disabled).
+- **Identity**: `Name`, `Type` (`MailAccountType`), `Disabled`, `Address` (`PXToolsEmail`, stored lowercase), `User`, `Password` (`PswEnc`), `Suggest` (a formula: "Name (Address)").
 - **POP3**: `POP3Default`, `POP3Host/Port/Secure/AttachsDirectory`, `POP3AlternativeUser`/`POP3User`/`POP3Password`, `POP3Verified`, `POP3Disabled`, `POP3Counter`, `POP3LastExecution`, `POP3Message`.
 - **SMTP**: `SMTPDefault`, `SMTPHost/Port/Authentication/Timeout/Secure/Log`, `SMTPVerified`, `SMTPAlternativeUser`/`SMTPUser`/`SMTPPassword`, `SMTPDisabled`, `SMTPCounter`, `SMTPMessage`, `SMTPLastExecution`.
-- **Límites**: `ReceiveMailsLimit`, `SendMailsLimit`.
+- **Limits**: `ReceiveMailsLimit`, `SendMailsLimit`.
 
-**Cifrado**: al guardar, la password se cifra con `PPEXE_DePsw01` (de la var `PswIng` al atributo `PswEnc`); al leer se descifra con `PPEXE_DePsw02`. Reglas: `Default(Type, Main)`; SMTP/POP3 solo visibles/editables para `Type=Main`; botones VerifyPOP3/VerifySMTP/FullTest.
+**Encryption**: on save the password is encrypted with `PPEXE_DePsw01` (from the `PswIng` variable into the `PswEnc` attribute); on read it is decrypted with `PPEXE_DePsw02`. Rules: `Default(Type, Main)`; SMTP/POP3 are visible/editable only for `Type=Main`; VerifyPOP3/VerifySMTP/FullTest buttons.
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-**Propio** (root-legacy, en el `#Domains/` raíz): **`MailAccountType`** — Main=`MAI`, Alias=`ALI`. Es el único dominio `MailAccount*`.
+**Its own** (root-legacy, in the root `#Domains/`): **`MailAccountType`** — Main=`MAI`, Alias=`ALI`. It is the only `MailAccount*` domain.
 
-**Usa de otros módulos:** `PXToolsConnectionType` (SMTP/POP3), `PXToolsEmail`, `PswEnc` (@APIs base); `SystemParameterCode.*` (@SystemParameters).
+**Used from other modules:** `PXToolsConnectionType` (SMTP/POP3), `PXToolsEmail`, `PswEnc` (@APIs base); `SystemParameterCode.*` (@SystemParameters).
 
-> ⚠️ **No confundir:** `StatisticMailAccount` (BothEnabled=`0`, POP3Disabled=`1`, SMTPDisabled=`2`, BothDisabled=`3`), pese a describir el estado de una cuenta, es un dominio de **[@Statistics](statistics.md)** (nomenclatura `Statistic*`) y solo lo usa @Statistics.
+> ⚠️ **Do not confuse:** `StatisticMailAccount` (BothEnabled=`0`, POP3Disabled=`1`, SMTPDisabled=`2`, BothDisabled=`3`), despite describing an account's state, is a **[@Statistics](statistics.md)** domain (`Statistic*` naming) and is used only by @Statistics.
 
-## 5. Mecanismo
+## 5. How it works
 
-- **Config global** (System Parameters, categorías SMTP/POP3/MailAccounts): host/port/user/pass/secure/timeout genéricos, leídos con `RetSystemParameterPreference…(SystemParameterCode.SMTPHost | …)`. Los códigos los declaran los DataProviders Personalized (§6).
-- **Resolución de cuenta en @SendMails** (`SendMail`/`SendMailSessionLogin`): sin `MailAccountId` ni email → config global; con email explícito → ad-hoc; con `MailAccountId` → lee la cuenta (Alias → resuelve Main + ReplyTo), y si `not SMTPDefault` sobreescribe host/port/etc. Al enviar actualiza contadores (`UpdMailAccountSMTPCounter` / `…Reset…`; `ChkMailAccountErrorToRetry` decide si reintentar vs deshabilitar).
-- **Consumo en @ReceiveMails** (`LoadMails`): análogo con POP3 (`POP3Default` → global; `RetMailAccountByAddress` resuelve destinatarios a cuenta; respeta `ReceiveMailsLimit`; actualiza `POP3LastExecution`/`POP3Counter`).
-- **Test de conexión**: `ChkConnectionSMTP(...)` (`SMTPSession.Login()`) y `ChkConnectionPOP3(...)` (`POP3Session.Login()`), partiendo de la global y sobreescribiendo con la cuenta.
+- **Global configuration** (System Parameters, SMTP/POP3/MailAccounts categories): generic host/port/user/pass/secure/timeout, read with `RetSystemParameterPreference…(SystemParameterCode.SMTPHost | …)`. The codes are declared by the Personalized DataProviders (§6).
+- **Account resolution in @SendMails** (`SendMail`/`SendMailSessionLogin`): with neither `MailAccountId` nor email → the global configuration; with an explicit email → ad-hoc; with a `MailAccountId` → it reads the account (Alias → resolves the Main + ReplyTo), and if `not SMTPDefault` it overrides host/port/etc. On send it updates the counters (`UpdMailAccountSMTPCounter` / `…Reset…`; `ChkMailAccountErrorToRetry` decides retry vs disable).
+- **Consumption in @ReceiveMails** (`LoadMails`): the same, over POP3 (`POP3Default` → global; `RetMailAccountByAddress` resolves recipients to an account; it honours `ReceiveMailsLimit`; it updates `POP3LastExecution`/`POP3Counter`).
+- **Connection test**: `ChkConnectionSMTP(...)` (`SMTPSession.Login()`) and `ChkConnectionPOP3(...)` (`POP3Session.Login()`), starting from the global configuration and overriding it with the account's.
 
 ## 6. APIs vs Personalized
 
-- **`APIs/`** (core): la transacción, los `Ret*/Chk*/Upd*/Add*` y la tarea batch.
+- **`APIs/`** (core): the transaction, the `Ret*/Chk*/Upd*/Add*` procedures and the batch task.
 - **`Personalized/`**:
-  | Objeto | Qué se customiza |
+  | Object | What gets customized |
   |---|---|
-  | `RetSystemParametersSMTP` / `…POP3` / `…MailAccounts` (DataProviders) | Declaran los `SystemParameterCode` de la config global (host/user/pass/port/secure/timeout/retries/attachDir…). |
-  | `RetMenuMailAccounts` (DataProvider) | Entrada de menú del módulo. |
-  | `RetDynamicCallReferenceMailAccounts` (DataProvider) | Registra `TskMailAccountAutomaticEnabled` en @TaskManager. |
-  | `PrcMailAccountDisabledNotificationByType` (Procedure) | **Hook**: cuando una cuenta queda deshabilitada, resuelve el dueño y le envía una alerta. Punto donde el proyecto conecta "cuenta deshabilitada" con su lógica de notificación. |
+  | `RetSystemParametersSMTP` / `…POP3` / `…MailAccounts` (DataProviders) | Declare the `SystemParameterCode` values of the global configuration (host/user/pass/port/secure/timeout/retries/attachDir…). |
+  | `RetMenuMailAccounts` (DataProvider) | The module's menu entry. |
+  | `RetDynamicCallReferenceMailAccounts` (DataProvider) | Registers `TskMailAccountAutomaticEnabled` in @TaskManager. |
+  | `PrcMailAccountDisabledNotificationByType` (Procedure) | **Hook**: when an account becomes disabled, it resolves the owner and sends them an alert. This is where the project connects "account disabled" to its own notification logic. |
 
-## 7. Instancia de pattern
+## 7. Pattern instance
 
-**PXWorkWithMailAccounts** — WW de cuentas. Selection con filtros por Verified/Disabled y "Main with Alias"; acciones VerifyAccounts / EnablePOP3SMTP / EnableAccount; View con grid de cuentas Alias de la Main abierta; form con Test POP3/SMTP/Full Test y selección Combo/Suggest de la Main.
+**PXWorkWithMailAccounts** — the accounts WW. Selection with Verified/Disabled and "Main with Alias" filters; VerifyAccounts / EnablePOP3SMTP / EnableAccount actions; View with a grid of the open Main's Alias accounts; a form with Test POP3/SMTP/Full Test and Combo/Suggest selection of the Main.
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-**Lectura/resolución**: `RetMailAccountData(...)` (carga completa, passwords descifradas), `RetMailAccountByAddress(in: &Address, out: &MailAccountId)`, `RetMailAccountName`, `RetMailAccountIdType`, `RetMailAccountSuggest`, `RetMailAccountMains(out: &Ids)`, `RetMailAccountSendMailsLimit`/`…ReceiveMailsLimit` (fallback global), `RetMailAccountMessagesToRetry`, `RetValidationMainAccountFQDN` (valida dominio Alias↔Main).
+**Reading/resolution**: `RetMailAccountData(...)` (full load, passwords decrypted), `RetMailAccountByAddress(in: &Address, out: &MailAccountId)`, `RetMailAccountName`, `RetMailAccountIdType`, `RetMailAccountSuggest`, `RetMailAccountMains(out: &Ids)`, `RetMailAccountSendMailsLimit`/`…ReceiveMailsLimit` (with a global fallback), `RetMailAccountMessagesToRetry`, `RetValidationMainAccountFQDN` (validates the Alias↔Main domain).
 
-**Chequeos**: `ChkConnectionSMTP`/`ChkConnectionPOP3` (test), `ChkMailAccountErrorToRetry`, `ChkMailAccountMainWithAlias`.
+**Checks**: `ChkConnectionSMTP`/`ChkConnectionPOP3` (test), `ChkMailAccountErrorToRetry`, `ChkMailAccountMainWithAlias`.
 
-**Alta/estado**: `AddMailAccountAlias(in: &MainAccountId, &Name, &Address, inout: &MailAccountId)`, `UpdMailAccountDisabled`, `UpdMailAccountEnableAccount`, `UpdMailAccountEnablePOP3SMTP`, `UpdMailAccountSMTPCounter`/`…Reset…`, `UpdMailAccountPOP3Counter`/`…LastExecution`.
+**Creation/state**: `AddMailAccountAlias(in: &MainAccountId, &Name, &Address, inout: &MailAccountId)`, `UpdMailAccountDisabled`, `UpdMailAccountEnableAccount`, `UpdMailAccountEnablePOP3SMTP`, `UpdMailAccountSMTPCounter`/`…Reset…`, `UpdMailAccountPOP3Counter`/`…LastExecution`.
 
-**Batch**: `TskMailAccountAutomaticEnabled(in: &TaskManagerId, out…)` — re-habilita cuentas SMTP deshabilitadas cuyo error fue un límite temporal del proveedor (throttling).
+**Batch**: `TskMailAccountAutomaticEnabled(in: &TaskManagerId, out…)` — re-enables disabled SMTP accounts whose error was a temporary provider limit (throttling).
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- [sendmails.md](sendmails.md) — consume la cuenta SMTP (`SendMailOutBoxFromMailAccountId`).
-- Módulo **@ReceiveMails** — consume la cuenta POP3.
-- Módulos **@SystemParameters** (config global SMTP/POP3), **@Alerts** (notificación de cuenta deshabilitada), **@TaskManager** (`TskMailAccountAutomaticEnabled`).
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- [sendmails.md](sendmails.md) — consumes the SMTP account (`SendMailOutBoxFromMailAccountId`).
+- The **@ReceiveMails** module — consumes the POP3 account.
+- The **@SystemParameters** (global SMTP/POP3 configuration), **@Alerts** (disabled-account notification) and **@TaskManager** (`TskMailAccountAutomaticEnabled`) modules.
