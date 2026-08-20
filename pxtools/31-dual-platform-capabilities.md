@@ -1,41 +1,41 @@
-# Capacidades Dual-Platform — Migración Desktop → Responsiva
+# Dual-Platform Capabilities — Desktop → Responsive Migration
 
-## Visión general
+## Overview
 
-PXTools permite generar **simultáneamente** dos versiones de cada WebPanel:
-1. **Web Desktop** — Layout HTML clásico (tablas, divs, posicionamiento absoluto)
-2. **Web Responsive** — Layout Abstracto de GeneXus (responsive, mobile-first)
+PXTools can generate **two versions of each WebPanel at the same time**:
+1. **Web Desktop** — classic HTML layout (tables, divs, absolute positioning)
+2. **Web Responsive** — GeneXus Abstract Layout (responsive, mobile-first)
 
-Y opcionalmente:
-3. **Smart Devices** — Layout para aplicaciones móviles nativas
+And optionally:
+3. **Smart Devices** — layout for native mobile applications
 
-Esto se logra desde **una única instancia de pattern** (.gxPattern), sin duplicar la definición.
+All of it from **a single pattern instance** (.gxPattern), with no duplicated definition.
 
-## Mecanismo de generación dual
+## How dual generation works
 
-### En el .Pattern
+### In the .Pattern
 
-Cada objeto generado tiene dos versiones:
+Every generated object has two versions:
 
 ```xml
-<!-- Versión Desktop: usa WebForm template (HTML layout) -->
+<!-- Desktop version: uses the WebForm template (HTML layout) -->
 <Object Type="WebPanel" Id="Selection" Name="WW{Instance.Name}"
         Element="instance/level/selection">
   <Part Type="WebForm" Template="Templates\SelectionWebForm.dll" />
-  <!-- ... mismas Variables, Events, Rules, Conditions -->
+  <!-- ... the same Variables, Events, Rules, Conditions -->
 </Object>
 
-<!-- Versión Responsive: usa AbstractForm template (layout abstracto) -->
+<!-- Responsive version: uses the AbstractForm template (abstract layout) -->
 <Object Type="WebPanel" Id="SelectionResponsive" Name="RWW{Instance.Name}"
         Element="instance/level/selection">
   <Part Type="WebForm" Template="Templates\SelectionAbstractForm.dll" />
-  <!-- ... mismas Variables, Events, Rules, Conditions -->
+  <!-- ... the same Variables, Events, Rules, Conditions -->
 </Object>
 ```
 
-**Punto clave**: Ambas versiones comparten exactamente la misma lógica (Variables, Events, Rules, Conditions). Solo el **generador de Form** (DLL) es diferente: uno produce layout HTML (Desktop) y otro layout abstracto (Responsive). Además, cada versión puede usar un **Template de UI** distinto (`templateObject` para Desktop, `templateResponsiveObject` para Responsive) permitiendo diseños visuales diferentes por plataforma.
+**Key point**: both versions share exactly the same logic (Variables, Events, Rules, Conditions). Only the **Form generator** (DLL) differs: one produces an HTML layout (Desktop) and the other an abstract layout (Responsive). On top of that, each version can use a different **UI Template** (`templateObject` for Desktop, `templateResponsiveObject` for Responsive), allowing different visual designs per platform.
 
-### Prefijos de nomenclatura
+### Naming prefixes
 
 | Pattern | Desktop | Responsive |
 |---------|---------|------------|
@@ -48,121 +48,121 @@ Cada objeto generado tiene dos versiones:
 | PXParameterRequest | `Wb{Name}` | `Wb{Name}` * |
 | PXFlowController | `Ct{Name}` | `Ct{Name}` * |
 
-\* PXParameterRequest y PXFlowController usan el **mismo nombre** para ambas versiones.
+\* PXParameterRequest and PXFlowController use the **same name** for both versions.
 
-## Propiedades de control
+## Control properties
 
-Cada level/nodo de la instancia tiene 3 propiedades de generación:
-
-```xml
-<level name="Factura"
-       generateWeb="True"              <!-- Generar versión Desktop -->
-       generateWebResponsive="True"    <!-- Generar versión Responsive -->
-       generateSD="False">             <!-- Generar versión Smart Devices -->
-```
-
-Valores posibles:
-- `<default>` — usa el valor definido en Settings
-- `True` — genera esta versión
-- `False` — no genera esta versión
-
-### Platform (en PXParameterRequest)
-
-PXParameterRequest tiene una propiedad adicional `platform`:
+Every level/node of the instance has three generation properties:
 
 ```xml
-<level platform="Any">          <!-- Genera para todas las plataformas -->
-<level platform="Web Desktop">  <!-- Solo genera para Desktop -->
+<level name="Invoice"
+       generateWeb="True"              <!-- Generate the Desktop version -->
+       generateWebResponsive="True"    <!-- Generate the Responsive version -->
+       generateSD="False">             <!-- Generate the Smart Devices version -->
 ```
 
-### Platform en forms (en PXComposer)
+Possible values:
+- `<default>` — use the value defined in Settings
+- `True` — generate this version
+- `False` — do not generate this version
 
-PXComposer permite definir **forms diferentes por plataforma**:
+### Platform (in PXParameterRequest)
+
+PXParameterRequest has an extra `platform` property:
+
+```xml
+<level platform="Any">          <!-- Generates for every platform -->
+<level platform="Web Desktop">  <!-- Generates for Desktop only -->
+```
+
+### Platform in forms (in PXComposer)
+
+PXComposer can define **different forms per platform**:
 
 ```xml
 <forms>
   <form name="Desktop" platform="Web Desktop">
     <components>
-      <!-- Layout específico Desktop -->
+      <!-- Desktop-specific layout -->
     </components>
   </form>
   <form name="Responsive" platform="Web Responsive">
     <components>
-      <!-- Layout diferente para Responsive -->
+      <!-- A different layout for Responsive -->
     </components>
   </form>
 </forms>
 ```
 
-## Estrategia de migración progresiva
+## Progressive migration strategy
 
-### Fase 1: Convivencia
+### Phase 1: coexistence
 ```
-Instancia PXWorkWith "Factura"
-├── generateWeb = True           ← Desktop sigue funcionando
-├── generateWebResponsive = True ← Se genera la versión Responsive en paralelo
+PXWorkWith instance "Invoice"
+├── generateWeb = True           ← Desktop keeps working
+├── generateWebResponsive = True ← the Responsive version is generated alongside
 │
-├── WW Factura (Desktop)         ← Usuarios actuales siguen usando esto
-└── RWWFactura (Responsive)      ← Se puede probar y validar
+├── WWInvoice (Desktop)          ← current users stay on this
+└── RWWInvoice (Responsive)      ← can be tested and validated
 ```
 
-### Fase 2: Transición
-- Redirigir usuarios a las versiones Responsive
-- Validar que toda la funcionalidad está cubierta
-- Ajustar templates/themes responsive si es necesario
+### Phase 2: transition
+- Redirect users to the Responsive versions
+- Verify that all functionality is covered
+- Adjust responsive templates/themes if needed
 
-### Fase 3: Apagado Desktop
+### Phase 3: switching Desktop off
 ```
-Instancia PXWorkWith "Factura"
-├── generateWeb = False          ← Se desactiva Desktop
-├── generateWebResponsive = True ← Solo Responsive
+PXWorkWith instance "Invoice"
+├── generateWeb = False          ← Desktop is turned off
+├── generateWebResponsive = True ← Responsive only
 │
-└── RWWFactura (Responsive)      ← Única versión
+└── RWWInvoice (Responsive)      ← the only version
 ```
 
-## Ventajas de la generación dual
+## Advantages of dual generation
 
-1. **Cero duplicación de lógica**: Variables, Events, Rules, Conditions son los mismos
-2. **Migración sin riesgo**: ambas versiones coexisten simultáneamente
-3. **Rollback instantáneo**: si algo falla en Responsive, Desktop sigue disponible
-4. **Misma fuente de verdad**: un solo .gxPattern controla ambas versiones
-5. **Validación A/B**: se puede comparar el comportamiento de ambas versiones
+1. **Zero logic duplication**: Variables, Events, Rules and Conditions are the same
+2. **Risk-free migration**: both versions coexist
+3. **Instant rollback**: if something fails in Responsive, Desktop is still there
+4. **One source of truth**: a single .gxPattern drives both versions
+5. **A/B validation**: the behaviour of both versions can be compared
 
-## Qué cambia entre versiones
+## What differs between versions
 
-| Aspecto | Desktop | Responsive |
-|---------|---------|------------|
-| Layout | HTML (tablas, posicionamiento absoluto) | Abstracto (responsive, flexbox) |
-| MasterPage | MasterPage Desktop | MasterPage Responsive |
-| Theme | Theme Desktop | Theme Responsive |
-| Controles | Controles web estándar | Controles responsive |
-| Tamaño | Fijo | Adaptable a pantalla |
-| Touch | No | Sí |
+| Aspect | Desktop | Responsive |
+|--------|---------|------------|
+| Layout | HTML (tables, absolute positioning) | Abstract (responsive, flexbox) |
+| MasterPage | Desktop MasterPage | Responsive MasterPage |
+| Theme | Desktop Theme | Responsive Theme |
+| Controls | Standard web controls | Responsive controls |
+| Size | Fixed | Adapts to the screen |
+| Touch | No | Yes |
 
-## Qué NO cambia entre versiones
+## What does NOT differ between versions
 
-- Reglas de negocio (Rules)
-- Eventos (Events code)
+- Business rules (Rules)
+- Events (Events code)
 - Variables
-- Condiciones de filtro
-- Órdenes
-- Acciones (structure)
-- Parámetros
-- Seguridad
+- Filter conditions
+- Orders
+- Actions (structure)
+- Parameters
+- Security
 
-## ResponsiveLayout — Control del posicionamiento responsive
+## ResponsiveLayout — controlling responsive positioning
 
-Para el generador Responsive, PXTools incorpora la propiedad **ResponsiveLayout** que utiliza el mismo componente nativo de GeneXus para definir cómo se posicionan los subelementos de una sección según el tamaño de pantalla. Esto permite:
+For the Responsive generator, PXTools exposes the **ResponsiveLayout** property, which uses the same native GeneXus component to define how a section's sub-elements are positioned depending on screen size. It lets you:
 
-- Definir **breakpoints** (puntos de quiebre) por tamaño de pantalla
-- Configurar la **disposición de elementos** para cada breakpoint (horizontal, vertical, columnas)
-- Adaptar la visualización de filtros, campos de formulario, acciones y cualquier subelemento
-- Todo declarativamente desde la instancia del pattern
+- Define **breakpoints** by screen size
+- Configure the **arrangement of elements** for each breakpoint (horizontal, vertical, columns)
+- Adapt the display of filters, form fields, actions and any sub-element
+- All declaratively, from the pattern instance
 
-Combinado con los **Templates de UI** (que dan libertad total para el diseño visual), el layout responsive es completamente personalizable sin necesidad de código CSS manual.
+Combined with the **UI Templates** (which give full freedom over the visual design), the responsive layout is entirely customizable without writing CSS by hand.
 
-## Consideraciones de la generación dual
+## Things to keep in mind with dual generation
 
-- Controles custom de terceros pueden no tener equivalente responsive
-- UserControls específicos de Desktop no funcionan en layout abstracto
-- El MasterPage y Theme deben existir en ambas versiones
+- Custom third-party controls may have no responsive equivalent
+- Desktop-specific UserControls do not work in an abstract layout
+- The MasterPage and Theme must exist for both versions

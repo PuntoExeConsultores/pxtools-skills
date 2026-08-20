@@ -1,143 +1,143 @@
-# Semantica de Grids en WebPanels — Para Reconocimiento de Patterns
+# Grid Semantics in WebPanels — For Pattern Recognition
 
-Este documento describe **como interpretar la presencia de grids en un WebPanel** para determinar a que pattern de PXTools migrar. La existencia de un grid no siempre implica PXWorkWith — hay matices importantes que aprender.
+This document describes **how to read the presence of grids in a WebPanel** in order to decide which PXTools pattern to migrate it to. A grid does not always mean PXWorkWith — there are important distinctions to learn.
 
-## Aplica a
+## Applies to
 
-- Reconocimiento de patrones para migracion de WebPanels manuales (proceso PuntoExe)
-- Decisiones de diseno cuando se modela una nueva pantalla con PXTools
-- Analisis de codigo legacy de GeneXus Evolution 1 / 2 / 3
+- Pattern recognition when migrating hand-written WebPanels (the PuntoExe process)
+- Design decisions when modelling a new screen with PXTools
+- Analysis of legacy GeneXus Evolution 1 / 2 / 3 code
 
-## Tipos de grids segun proposito
+## Kinds of grid by purpose
 
-### 1. Grid de listado / seleccion (UI principal)
+### 1. Listing / selection grid (the main UI)
 
-**Proposito**: mostrar al usuario una lista de registros para que vea, filtre, busque, ordene, seleccione o ejecute acciones sobre ellos.
+**Purpose**: show the user a list of records to view, filter, search, sort, select, or run actions on.
 
-**Senales**:
-- Es el elemento visual dominante del form
-- Tiene `MaxRows` (paginacion)
-- Tiene boton/imagen de busqueda
-- Carga registros con un `For Each` sobre BD o iteracion de SDT
-- El usuario interactua con el (clic en filas, scroll, paginacion)
+**Signals**:
+- It is the dominant visual element of the form
+- It has `MaxRows` (paging)
+- It has a search button/image
+- It loads records with a `For Each` over the database, or by iterating an SDT
+- The user interacts with it (clicking rows, scrolling, paging)
 
-**Pattern destino**:
-- Si tiene Parm `out:` + Event Enter que retorna -> **PXWorkWith Prompt**
-- Si tiene acciones CRUD (Insert/Update/Delete) -> **PXWorkWith Selection**
-- Si tiene grilla readonly como visor con navegacion por fila -> **PXWorkWith Selection (visor)**
+**Target pattern**:
+- If it has a `Parm out:` + an Enter event that returns → **PXWorkWith Prompt**
+- If it has CRUD actions (Insert/Update/Delete) → **PXWorkWith Selection**
+- If it is a read-only grid used as a viewer with per-row navigation → **PXWorkWith Selection (viewer)**
 
-### 2. Grid auxiliar dentro de un Data Entry
+### 2. Auxiliary grid inside a Data Entry
 
-**Proposito**: complementar un formulario tabular con una lista de items (detalle de factura, items seleccionados, errores a mostrar, etc.).
+**Purpose**: complement a tabular form with a list of items (invoice detail, selected items, errors to display, etc.).
 
-**Senales**:
-- El elemento principal del form ES un formulario tabular con campos editables
-- El grid es una zona acotada dentro del form, no domina visualmente
-- Suele estar acoplado al form: cambios en campos del form afectan el grid o viceversa
-- La accion principal (Aceptar/Confirmar) procesa los datos del form Y los del grid
+**Signals**:
+- The main element of the form IS a tabular form with editable fields
+- The grid is a bounded area inside the form; it does not dominate visually
+- It is usually coupled to the form: changes in form fields affect the grid or vice versa
+- The main action (Accept/Confirm) processes the data of BOTH the form and the grid
 
-**Pattern destino**: **PXParameterRequest** (con grid auxiliar dentro del nodo `grid`)
+**Target pattern**: **PXParameterRequest** (with an auxiliary grid inside the `grid` node)
 
-Ejemplo: `WnNewFactura` — cabecera de factura como form + detalle de items como grid.
+Example: `WnNewInvoice` — invoice header as a form + item detail as a grid.
 
-### 3. Grid "fantasma" para perdurar variables SDT (legacy GeneXus)
+### 3. "Phantom" grid used to persist SDT variables (legacy GeneXus)
 
-**Proposito originario**: en versiones antiguas de GeneXus (Evolution 1 y anteriores) la **unica forma de perdurar el estado de un SDT/coleccion entre eventos** dentro del mismo WebPanel era declarar las variables como columnas de un grid, normalmente oculto.
+**Original purpose**: in older GeneXus versions (Evolution 1 and earlier), the **only way to persist the state of an SDT/collection between events** within the same WebPanel was to declare the variables as columns of a grid, usually hidden.
 
-**Senales**:
-- El grid esta **oculto al usuario** — usa `Class="Hidden"` o se setea `Grid.Visible = 0` / `Grid.Visible = False` en `Event Start`
-- Las "columnas" del grid son variables de tipo SDT, coleccion, o tipos primitivos sin display real
-- El usuario no interactua con el — no hay scroll, no hay boton de busqueda, no hay paginacion
-- El codigo accede a esas variables como estado del panel (por ejemplo en For Each Line para iterar)
+**Signals**:
+- The grid is **hidden from the user** — it uses `Class="Hidden"`, or `Grid.Visible = 0` / `Grid.Visible = False` is set in `Event Start`
+- Its "columns" are SDT variables, collections, or primitive types with no real display
+- The user does not interact with it — no scrolling, no search button, no paging
+- The code accesses those variables as panel state (for instance in a For Each Line to iterate them)
 
-**Importante**: en versiones modernas de GeneXus las variables del panel ya conservan estado entre eventos sin necesidad de un grid. **Un grid fantasma de SDT-persistencia es codigo legacy que NO debe contarse como un grid funcional al clasificar el WebPanel**.
+**Important**: in modern GeneXus versions, panel variables already keep their state between events without a grid. **A phantom SDT-persistence grid is legacy code and must NOT be counted as a functional grid when classifying the WebPanel.**
 
-**Implicancia para clasificacion**:
-- Un WebPanel con un solo grid fantasma + form de campos editables -> **PXParameterRequest** (NO PXWorkWith Prompt)
-- Un WebPanel con varios grids donde algunos son fantasmas -> contar solo los reales para decidir Selection vs auxiliar
+**Consequence for classification**:
+- A WebPanel with a single phantom grid + a form of editable fields → **PXParameterRequest** (NOT PXWorkWith Prompt)
+- A WebPanel with several grids where some are phantoms → count only the real ones to decide Selection vs auxiliary
 
-### 4. Grid solo para layout / contenedor
+### 4. Grid used only as layout / container
 
-**Proposito**: usar la estructura tabular de un grid solo como contenedor visual de otros controles (mucho menos comun).
+**Purpose**: using a grid's tabular structure purely as a visual container for other controls (far less common).
 
-Estos casos tipicamente no tienen filas de datos. Se ignoran a efectos de clasificacion del pattern.
+These usually have no data rows. Ignore them when classifying the pattern.
 
-## Como detectar un grid fantasma
+## How to spot a phantom grid
 
-### Senales en el `.gxForm`
+### Signals in the `.gxForm`
 
 ```xml
 <grid name="GridSDT" class="Hidden" ...>
-   <!-- columnas que son variables SDT -->
+   <!-- columns that are SDT variables -->
    <columns>
      <column ...>
-       <variable name="MiSDT" ... />
+       <variable name="MySDT" ... />
      </column>
    </columns>
 </grid>
 ```
 
-O bien: `class` que en el theme corresponde a una clase con `display:none` / `visibility:hidden`.
+Or: a `class` that in the theme maps to `display:none` / `visibility:hidden`.
 
-### Senales en el `.gxSource`
+### Signals in the `.gxSource`
 
 ```genexus
 Event Start
-    Grid1.Visible = False    // o Visible = 0
+    Grid1.Visible = False    // or Visible = 0
 EndEvent
 ```
 
-> **CRITICO — distinguir phantom de visibilidad condicional**: un grid `phantom` (puro SDT-persistence) tiene `.Visible = False` y **NUNCA** `.Visible = True` en el codigo. Si el grid tiene **ambos patrones** (`= False` en algunas condiciones y `= True` en otras), se trata de un grid con **visibilidad condicional** — el usuario lo ve a veces, NO es phantom. Debe contarse como real grid.
+> **CRITICAL — tell a phantom apart from conditional visibility**: a `phantom` grid (pure SDT persistence) has `.Visible = False` and **NEVER** `.Visible = True` anywhere in the code. If a grid shows **both patterns** (`= False` under some conditions and `= True` under others), it is a grid with **conditional visibility** — the user does see it sometimes, so it is NOT a phantom. It counts as a real grid.
 >
-> **Ejemplo phantom (filtrar)**:
+> **Phantom example (filter it out)**:
 > ```genexus
 > Event Start
 >     GridSDT.Visible = False
 > EndEvent
 > ```
 >
-> **Ejemplo condicional (NO filtrar — es real grid)**:
+> **Conditional example (do NOT filter — it is a real grid)**:
 > ```genexus
 > Event Start
->     If &Modo = "Edicion"
->         Documentos.Visible = True
+>     If &Mode = "Edit"
+>         Documents.Visible = True
 >     Else
->         Documentos.Visible = False
+>         Documents.Visible = False
 >     EndIf
 > EndEvent
 > ```
 >
-> El detector debe strippear comentarios (`//`, `/* */`) antes de buscar los patrones de Visible para no contar codigo comentado.
+> The detector must strip comments (`//`, `/* */`) before looking for the Visible patterns, so commented-out code is not counted.
 
-### Heuristica final
+### Final heuristic
 
-Un grid es fantasma si **TODAS** las siguientes condiciones se cumplen:
+A grid is a phantom if **ALL** of these hold:
 
-1. Esta oculto via `class="Hidden"` (o similar) o `Visible = False`/`= 0` en Start
-2. Sus columnas son **variables de panel** (no atributos de transaccion) y la mayoria son SDT/coleccion
-3. NO tiene `MaxRows`, paginacion ni boton de busqueda asociado
-4. NO hay `For Each` sobre BD que cargue el grid
+1. It is hidden via `class="Hidden"` (or similar), or `Visible = False`/`= 0` in Start
+2. Its columns are **panel variables** (not transaction attributes) and most of them are SDTs/collections
+3. It has NO `MaxRows`, no paging and no associated search button
+4. There is NO `For Each` over the database loading it
 
-Si alguna de estas condiciones no se cumple, probablemente sea un grid real.
+If any of these fails, it is probably a real grid.
 
-## Patron For Each Line
+## The For Each Line pattern
 
-`For Each Line` (o `For each line in <Grid>`) es una construccion de GeneXus que itera sobre las filas del grid en codigo. Su presencia tiene implicancias fuertes para la clasificacion.
+`For Each Line` (or `For each line in <Grid>`) is a GeneXus construct that iterates the grid's rows in code. Its presence carries strong implications for classification.
 
-### Que indica
+### What it indicates
 
-`For Each Line` se usa cuando el desarrollador necesita **leer/escribir valores de las filas del grid programaticamente**. Tipicamente sucede con grids editables: el usuario edita valores en las filas y el codigo los recolecta en un evento (ej: Aceptar) recorriendo el grid.
+`For Each Line` is used when the developer needs to **read/write row values programmatically**. That typically happens with editable grids: the user edits values in the rows and the code collects them in an event (e.g. Accept) by walking the grid.
 
-### Implicancias para el pattern destino
+### Implications for the target pattern
 
-| Contexto | Pattern recomendado |
-|----------|--------------------|
-| For Each Line + grid editable + form de campos editables fuera del grid | **PXParameterRequest** con grid auxiliar (data entry mixto) |
-| For Each Line + grid editable como elemento principal + accion de guardado | **PXWorkWith Selection** con grid editable y `modes/updateGridRows` |
-| For Each Line sobre grid fantasma SDT-persistencia | Ignorar — es legacy. Reclasificar como si el grid no existiera |
-| For Each Line sin grid visual (grid fantasma) | El grid es fantasma -> determinar pattern por el resto del form |
+| Context | Recommended pattern |
+|---------|---------------------|
+| For Each Line + editable grid + a form of editable fields outside the grid | **PXParameterRequest** with an auxiliary grid (mixed data entry) |
+| For Each Line + editable grid as the main element + a save action | **PXWorkWith Selection** with an editable grid and `modes/updateGridRows` |
+| For Each Line over a phantom SDT-persistence grid | Ignore it — it is legacy. Reclassify as if the grid did not exist |
+| For Each Line with no visual grid (phantom grid) | The grid is a phantom → determine the pattern from the rest of the form |
 
-### Como detectar For Each Line en el codigo
+### How to spot For Each Line in the code
 
 ```genexus
 For each line in Grid1
@@ -148,69 +148,69 @@ For each line in Grid1
 EndFor
 ```
 
-O variantes:
-- `For each line` (sin nombre de grid)
-- `For each line in <NombreGrid>`
+Or its variants:
+- `For each line` (without a grid name)
+- `For each line in <GridName>`
 
-## Multiples grids en un WebPanel
+## Several grids in one WebPanel
 
-### Casos posibles
+### Possible cases
 
-1. **Multiples grids reales y visibles**: panel complejo con varias secciones de datos. Suele indicar un PXComposer (composicion) o un caso especial de migracion compleja.
+1. **Several real, visible grids**: a complex panel with multiple data sections. Usually points to a PXComposer (composition) or to a special, complex migration case.
 
-2. **Un grid principal + grids auxiliares de datos asociados**: estructura mixta de Selection con grids embebidos. PXComposer puede ser la respuesta, o PXWorkWith con tabs en View.
+2. **One main grid + auxiliary grids of related data**: a mixed Selection structure with embedded grids. PXComposer may be the answer, or PXWorkWith with tabs in View.
 
-3. **Un grid real + grids fantasma de SDT-persistencia**: contar SOLO los reales. Si solo queda 1 grid real, es PXWorkWith / PXParameterRequest segun caso.
+3. **One real grid + phantom SDT-persistence grids**: count ONLY the real ones. If a single real grid remains, it is PXWorkWith / PXParameterRequest depending on the case.
 
-4. **Todos los grids son fantasma**: es codigo legacy, el pattern se determina por el resto del form (no por los grids).
+4. **All grids are phantoms**: it is legacy code; the pattern is determined by the rest of the form, not by the grids.
 
-### Implicancia para complejidad
+### Effect on complexity
 
-Multiples grids reales **incrementan el score de complejidad** porque:
-- Mas codigo de carga (For Each multiples)
-- Mas eventos (uno por grid tipicamente)
-- Mas dependencias (cambios en uno pueden afectar otros)
+Several real grids **raise the complexity score**, because they mean:
+- More loading code (multiple For Each)
+- More events (typically one per grid)
+- More dependencies (a change in one can affect the others)
 
-Sin embargo, multiples grids fantasma **NO suben la complejidad real** — son simplemente legacy que se reescribe en hooks modernos.
+Several phantom grids, however, **do not raise real complexity** — they are simply legacy, rewritten as modern hooks.
 
-## Resumen para clasificacion automatica
+## Summary for automatic classification
 
-Al analizar un WebPanel con grids, seguir esta logica:
+When analysing a WebPanel with grids, follow this logic:
 
 ```
-1. Contar todos los <grid> en el .gxForm
-2. Para cada grid: determinar si es fantasma (oculto + variables SDT + sin MaxRows + sin search)
-3. Calcular grids_reales = total - fantasmas
-4. Si grids_reales == 0:
-     -> Tratar como WebPanel sin grid (PXParameterRequest puro o Manual)
-5. Si grids_reales == 1:
-     -> Aplicar criterios estandar (Selection / Prompt / PR con grid aux)
-6. Si grids_reales > 1:
-     -> Marcar como "multi-grid" para revision
-     -> Posibles destinos: PXComposer, PXWorkWith con tabs, o caso complejo
-7. Adicional: si hay For Each Line:
-     -> Indica grid editable
-     -> Combinado con form externo -> PXParameterRequest con grid
-     -> Solo grid -> PXWorkWith Selection con grid editable
+1. Count every <grid> in the .gxForm
+2. For each grid: decide whether it is a phantom (hidden + SDT variables + no MaxRows + no search)
+3. Compute real_grids = total - phantoms
+4. If real_grids == 0:
+     -> Treat as a WebPanel without a grid (pure PXParameterRequest, or Manual)
+5. If real_grids == 1:
+     -> Apply the standard criteria (Selection / Prompt / PR with an auxiliary grid)
+6. If real_grids > 1:
+     -> Flag as "multi-grid" for review
+     -> Possible targets: PXComposer, PXWorkWith with tabs, or a complex case
+7. Additionally: if For Each Line is present:
+     -> It indicates an editable grid
+     -> Combined with an external form -> PXParameterRequest with a grid
+     -> Grid only -> PXWorkWith Selection with an editable grid
 ```
 
-## Indicadores numericos utiles para complejidad
+## Useful numeric indicators for complexity
 
-Al analizar el codigo del `.gxSource`, estos contadores son utiles para el score de complejidad:
+When analysing the `.gxSource` code, these counters help build the complexity score:
 
-| Indicador | Significado |
-|-----------|-------------|
-| Lineas totales en eventos (Event ... EndEvent) | Volumen de logica del panel |
-| Cantidad de eventos | Cantidad de puntos de extension |
-| Cantidad de subrutinas | Granularidad de la logica |
-| Cantidad de For Each (BD) | Loops sobre BD |
-| Cantidad de For Each Line (grids) | Iteracion sobre UI |
-| Cantidad de llamadas a Procedures | Acoplamiento con logica externa |
-| Cantidad de IFs | Complejidad condicional |
-| Cantidad de Do Case | Decisiones multi-rama |
-| Variables tipo SDT | Manipulacion de estructuras |
-| Variables tipo coleccion | Manejo de listas en memoria |
-| Referencias a WebSession | Estado entre pantallas |
-| Operaciones XML/JSON | Serializacion |
-| Cantidad total de variables | Alcance del panel |
-| Cantidad de grids (reales) | Complejidad UI |
+| Indicator | Meaning |
+|-----------|---------|
+| Total lines inside events (Event … EndEvent) | Volume of panel logic |
+| Number of events | Number of extension points |
+| Number of subroutines | Granularity of the logic |
+| Number of For Each (database) | Loops over the database |
+| Number of For Each Line (grids) | Iteration over the UI |
+| Number of Procedure calls | Coupling with external logic |
+| Number of IFs | Conditional complexity |
+| Number of Do Case | Multi-branch decisions |
+| SDT variables | Structure manipulation |
+| Collection variables | In-memory list handling |
+| WebSession references | State across screens |
+| XML/JSON operations | Serialization |
+| Total number of variables | Scope of the panel |
+| Number of (real) grids | UI complexity |
