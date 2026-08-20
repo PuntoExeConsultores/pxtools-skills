@@ -1,71 +1,71 @@
-# Módulo @TaskManager — Gestor de Tareas de PXTools
+# @TaskManager Module — The PXTools Task Manager
 
-> Comportamiento del módulo `@PXTools/@TaskManager`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@TaskManager` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@TaskManager/`
-  - `APIs/` — framework (transacciones, runner, procs). **Intocable.**
-  - `Personalized/` — customización del proyecto (colas habilitadas, tareas invocables, menú, table cleaner).
-  - `#Domains/` — un dominio propio (`FindSubjectIn`); el resto de los dominios `TaskManager*` y `Cycle*` están en el `#Domains/` **raíz** de la KB.
-- El objeto compilado del runner es `APrcTaskManagerExecution` (de `PrcTaskManagerExecution`).
-- **Depende de:** `@APIs` (base), `@DynamicCallReferences` (resolución `code → objeto`), `@ProcessMonitor` (lock/log), `@SystemParameters` (bloqueos por cola), `@Menus` (`RetMenusTaskManager`), `@SendMails` (referencia calificada en esta KB). En el grafo canónico también `@System`.
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@TaskManager/`
+  - `APIs/` — the framework (transactions, runner, procedures). **Not to be touched.**
+  - `Personalized/` — the project's customization (enabled queues, invocable tasks, menu, table cleaner).
+  - `#Domains/` — one domain of its own (`FindSubjectIn`); the rest of the `TaskManager*` and `Cycle*` domains live in the KB's **root** `#Domains/`.
+- The runner's compiled object is `APrcTaskManagerExecution` (from `PrcTaskManagerExecution`).
+- **Depends on:** `@APIs` (base), `@DynamicCallReferences` (`code → object` resolution), `@ProcessMonitor` (lock/log), `@SystemParameters` (per-queue blocks), `@Menus` (`RetMenusTaskManager`), `@SendMails` (a qualified reference in this KB). In the canonical graph also `@System`.
 
-## 1. Qué provee
+## 1. What it provides
 
-Un **planificador/ejecutor de tareas por cola** (job scheduler + runner). Permite:
+A **per-queue task scheduler and runner** (job scheduler + runner). It lets you:
 
-- Definir **tareas** puntuales (una vez) o **cíclicas** (Daily/Weekly/Monthly, con repetición intra-ciclo).
-- **Encolar** ejecuciones y que un **runner de línea de comandos** (uno por cola) las dispare cuando vencen.
-- Resolver **qué objeto GeneXus ejecutar** de forma desacoplada, vía un **código** (`DynamicCallReferenceCode`) que el módulo `DynamicCallReferences` mapea al objeto real.
-- **Reintentos**, **ciclos**, **repeticiones**, **estados**, **jerarquía padre/hijo** y **logging por ejecución** (integrado con `@ProcessMonitor`).
+- Define **one-off** tasks or **cyclic** ones (Daily/Weekly/Monthly, with intra-cycle repetition).
+- **Enqueue** executions and have a **command-line runner** (one per queue) fire them when they fall due.
+- Resolve **which GeneXus object to run** in a decoupled way, through a **code** (`DynamicCallReferenceCode`) that the `DynamicCallReferences` module maps to the real object.
+- **Retries**, **cycles**, **repetitions**, **statuses**, a **parent/child hierarchy** and **per-execution logging** (integrated with `@ProcessMonitor`).
 
-Es la infraestructura sobre la que corren los **procesos batch** de la aplicación (envío/recepción de correos, tareas programadas, limpieza de datos, integraciones con servicios externos, etc.).
+It is the infrastructure the application's **batch processes** run on (sending/receiving mail, scheduled tasks, data cleanup, integrations with external services, and so on).
 
-## 2. Concepto central: tarea → ejecuciones, y código → objeto
+## 2. Core concept: task → executions, and code → object
 
-Dos ideas clave:
+Two key ideas:
 
-1. **Una tarea (`TaskManager`) genera N ejecuciones (`TaskManagerExecutions`).** La tarea es la *definición* (qué, con qué parámetros, en qué cola, con qué ciclo/reintentos); cada corrida concreta es una fila de ejecución con su estado, fechas y mensaje. La PK de la ejecución es compuesta: `(TaskManagerId, CycleId, RepeatId, ExecutionId)` — modela ciclos y repeticiones dentro del ciclo.
+1. **One task (`TaskManager`) generates N executions (`TaskManagerExecutions`).** The task is the *definition* (what, with which parameters, in which queue, with which cycle/retries); each concrete run is an execution row with its status, dates and message. The execution's PK is composite: `(TaskManagerId, CycleId, RepeatId, ExecutionId)` — it models cycles and repetitions within a cycle.
 
-2. **El objeto a ejecutar NO está hardcodeado**: la tarea guarda un `TaskManagerExecutionCode` (dominio `DynamicCallReferenceCode`); el runner lo resuelve al objeto GeneXus real vía el módulo **`DynamicCallReferences`** (`PPEXE_DeDynamicCallReferenceURL`), que se alimenta de DataProviders `RetDynamicCallReference*` — el del framework es `Personalized/RetDynamicCallReferenceTaskManager` y cada aplicación agrega el suyo con sus propias tareas.
+2. **The object to run is NOT hard-coded**: the task stores a `TaskManagerExecutionCode` (domain `DynamicCallReferenceCode`); the runner resolves it into the real GeneXus object through the **`DynamicCallReferences`** module (`PPEXE_DeDynamicCallReferenceURL`), which is fed by `RetDynamicCallReference*` DataProviders — the framework's own is `Personalized/RetDynamicCallReferenceTaskManager`, and each application adds its own with its own tasks.
 
-> **Contrato de toda tarea invocable:** `Parm(in: &TaskManagerId, out: &Error TaskManagerExecutionResponse, out: &ErrorMessage)`. El runner llama al objeto con el `TaskManagerId` y espera de vuelta un `TaskManagerExecutionResponse` (`Succeed`/`Retry`/`Fail`) + un mensaje. El objeto lee sus parámetros con `RetTaskManagerParameter*`.
+> **The contract of every invocable task:** `Parm(in: &TaskManagerId, out: &Error TaskManagerExecutionResponse, out: &ErrorMessage)`. The runner calls the object with the `TaskManagerId` and expects back a `TaskManagerExecutionResponse` (`Succeed`/`Retry`/`Fail`) plus a message. The object reads its parameters with `RetTaskManagerParameter*`.
 
-### 2.1 Tipos de tarea: Once, Cíclica y A demanda
+### 2.1 Kinds of task: Once, Cyclic and On demand
 
-Hay tres formas de usar una tarea, según **cómo y quién** la crea:
+There are three ways to use a task, depending on **how and who** creates it:
 
-- **Una sola vez (`Once`)** — se agenda para una fecha/hora y se ejecuta una única vez. Se crea **desde la interfaz gráfica** (el WW de tareas): se ingresa una vez y luego se evalúa/monitorea desde su ejecución.
-- **Cíclica** — se repite según un patrón de calendario. También se crea **desde la interfaz gráfica**, donde se define todo el proceso de repetición de las ejecuciones (tipo de ciclo, días/semanas/meses, repetición intra-ciclo, vencimiento). **El diseño de esa configuración se basó en el formato del *Programador de tareas de Windows* (Task Scheduler).**
-- **A demanda** — la crea **el propio programa**, llamando a la API `AddTaskManagerSDT` (§5.1). Ahí se define qué objeto ejecutar (`ExecutionCode`), qué parámetros pasar, cuándo ejecutarla (`Date`), y la cantidad de reintentos y el tiempo entre reintentos si falla. Es la forma de "disparar trabajo en background" desde el código.
+- **Once** — scheduled for a date/time and executed a single time. It is created **through the UI** (the tasks WW): entered once and then evaluated/monitored through its execution.
+- **Cyclic** — repeats following a calendar pattern. Also created **through the UI**, where the whole execution repetition scheme is defined (cycle type, days/weeks/months, intra-cycle repetition, expiry). **That configuration's design was modelled on the *Windows Task Scheduler* format.**
+- **On demand** — created by **the program itself**, calling the `AddTaskManagerSDT` API (§5.1). There you define which object to run (`ExecutionCode`), which parameters to pass, when to run it (`Date`), and how many retries and how long between them if it fails. This is how you "fire background work" from code.
 
-> Las tareas **Once** y **cíclicas** se dan de alta y administran por **UI**; las tareas **a demanda** nacen del **código** y su seguimiento se hace desde el mismo WW (por cola, estado y — clave — por `FilterData`, ver §2.2).
+> **Once** and **cyclic** tasks are created and administered through the **UI**; **on demand** tasks are born in **code** and are tracked from the same WW (by queue, by status and — crucially — by `FilterData`, see §2.2).
 
-### 2.2 `FilterData` — identificar tareas a demanda por entidad
+### 2.2 `FilterData` — identifying on-demand tasks by entity
 
-`TaskManagerFilterData` (`VarChar(40)`) es un campo pensado para **buscar tareas a demanda dirigidas a una entidad concreta** del sistema. Como una misma tarea (mismo `ExecutionCode`) suele encolarse muchas veces —una por cada registro/entidad—, **el programador que invoca `AddTaskManagerSDT` debe setear el `FilterData`** con un valor que identifique la entidad destino de esa ejecución. Así, los administradores pueden luego **filtrar en el WW** y diferenciar las N instancias de la misma tarea asociadas a distintas entidades/registros del sistema.
+`TaskManagerFilterData` (`VarChar(40)`) is a field meant for **finding on-demand tasks aimed at a specific entity** of the system. Since the same task (the same `ExecutionCode`) is usually enqueued many times — once per record/entity — **the programmer calling `AddTaskManagerSDT` should set `FilterData`** to a value identifying that execution's target entity. Administrators can then **filter in the WW** and tell apart the N instances of the same task associated with different entities/records.
 
-> (La cola `ServerProcesses` usa además el `FilterData` para el `ProcessServerId`; ver §5.2.)
+> (The `ServerProcesses` queue additionally uses `FilterData` for the `ProcessServerId`; see §5.2.)
 
-## 3. Transacciones del módulo
+## 3. Module transactions
 
-| Transacción | PK | Rol en el modelo |
+| Transaction | PK | Role in the model |
 |---|---|---|
-| **TaskManager** | `TaskManagerId` (autonum) | **Tabla maestra de tareas.** Definición: subject, execution/visualization code + parámetros (JSON), config de reintentos, config de ciclo, cola, filter data, estado agregado, jerarquía (`TaskManagerParentId` auto-FK). |
-| **TaskManagerExecutions** | `TaskManagerId, TaskManagerExecutionCycleId, TaskManagerExecutionRepeatId, TaskManagerExecutionId` | **Bitácora de ejecuciones** (subordinada). Estado, tipo (Task/Retry/Cycle/Repeat), fechas planned/start/end, `TaskManagerExecutionMessage` (log), cola. |
-| **TaskManagerQueues** | `TaskManagerQueueId` (dom. `TaskManagerQueue`) | **Registro de colas.** Asocia cada cola a un `ProcessServer` (`TaskManagerQueueProcessServerId`, subtype group → `@ProcessMonitor`). |
-| **TaskManagerReferences** | `TaskManagerId, TaskManagerReferenceId` | Pares **id/valor** adjuntos a una tarea (API `AddTaskManagerReferenceValue` / `RetTaskManagerReferenceValue`). |
-| **TaskManagerBC** / **TaskManagerExecutionsBC** | (BC) | Business Components sobre las **mismas tablas físicas**, con niveles anidados; se usan para insert/delete programático (p. ej. desde `PrcTableCleanerTaskManager`). |
+| **TaskManager** | `TaskManagerId` (autonumbered) | **The master task table.** The definition: subject, execution/visualization code + parameters (JSON), retry configuration, cycle configuration, queue, filter data, aggregate status, hierarchy (`TaskManagerParentId` self-FK). |
+| **TaskManagerExecutions** | `TaskManagerId, TaskManagerExecutionCycleId, TaskManagerExecutionRepeatId, TaskManagerExecutionId` | **The execution log** (subordinate level). Status, type (Task/Retry/Cycle/Repeat), planned/start/end dates, `TaskManagerExecutionMessage` (the log), queue. |
+| **TaskManagerQueues** | `TaskManagerQueueId` (domain `TaskManagerQueue`) | **The queue registry.** It associates each queue with a `ProcessServer` (`TaskManagerQueueProcessServerId`, subtype group → `@ProcessMonitor`). |
+| **TaskManagerReferences** | `TaskManagerId, TaskManagerReferenceId` | **id/value** pairs attached to a task (the `AddTaskManagerReferenceValue` / `RetTaskManagerReferenceValue` API). |
+| **TaskManagerBC** / **TaskManagerExecutionsBC** | (BC) | Business Components over the **same physical tables**, with nested levels; used for programmatic insert/delete (from `PrcTableCleanerTaskManager`, for instance). |
 
-### 3.1 Atributos relevantes de `TaskManager`
+### 3.1 Relevant `TaskManager` attributes
 
-- **Ejecución:** `TaskManagerExecutionCode` (`DynamicCallReferenceCode` → objeto a correr), `TaskManagerExecutionParameters` (`MaxStr`, JSON de parámetros). Análogos `…Visualization…` para el objeto de "ver resultado".
-- **Reintentos:** `TaskManagerRetry` (Boolean), `TaskManagerRetryDay/Hour/Minute/Second` (lapso), `TaskManagerRetryTimes` (máx.).
-- **Ciclo:** `TaskManagerCycleType` (`CycleType` Once/Daily/Weekly/Monthly), `…CycleTimes`, `…CycleWeekDays/Months/MonthDays/MonthsWeeks` (JSON), `…CycleRepeat` + `…CycleRepeatEveryMinutes/EveryHours/ForMinutes/ForHours` (repetición intra-ciclo), `…CycleExpire`.
-- **Encolado/estado:** `TaskManagerQueue` (Nullable; **null = Main**), `TaskManagerFilterData` (`VarChar(40)`; identifica la **entidad destino** de una tarea a demanda para poder buscarla — ver §2.2), `TaskManagerStatus`, `TaskManagerEnable`, `TaskManagerCreatedBy` (System/User), formulas `TaskManagerExecuting`/`…CountExecuting`.
-- **Histórico:** `TaskManagerHistoryClear`, `…HistoryWithMessage`/`…WithoutMessage` (días de retención, default 90).
+- **Execution:** `TaskManagerExecutionCode` (`DynamicCallReferenceCode` → the object to run), `TaskManagerExecutionParameters` (`MaxStr`, a JSON of parameters). Their `…Visualization…` counterparts serve the "view result" object.
+- **Retries:** `TaskManagerRetry` (Boolean), `TaskManagerRetryDay/Hour/Minute/Second` (the interval), `TaskManagerRetryTimes` (the maximum).
+- **Cycle:** `TaskManagerCycleType` (`CycleType` Once/Daily/Weekly/Monthly), `…CycleTimes`, `…CycleWeekDays/Months/MonthDays/MonthsWeeks` (JSON), `…CycleRepeat` + `…CycleRepeatEveryMinutes/EveryHours/ForMinutes/ForHours` (intra-cycle repetition), `…CycleExpire`.
+- **Queueing/status:** `TaskManagerQueue` (Nullable; **null = Main**), `TaskManagerFilterData` (`VarChar(40)`; identifies the **target entity** of an on-demand task so it can be found — see §2.2), `TaskManagerStatus`, `TaskManagerEnable`, `TaskManagerCreatedBy` (System/User), the `TaskManagerExecuting`/`…CountExecuting` formulas.
+- **History:** `TaskManagerHistoryClear`, `…HistoryWithMessage`/`…WithoutMessage` (retention days, default 90).
 
-### 3.2 Diagrama de relaciones
+### 3.2 Relationship diagram
 
 ```
    DynamicCallReferences (DynamicCallReferenceCode)
@@ -83,140 +83,140 @@ Hay tres formas de usar una tarea, según **cómo y quién** la crea:
  PK(Id,CycleId,RepeatId,ExecId)   PK(Id,ReferenceId)
 ```
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-Enum = **valor almacenado**. **Nota (legacy):** salvo `FindSubjectIn` (module-scoped), todos los dominios propios viven en el `#Domains/` **raíz** de la KB — legacy de versiones GeneXus (Evo1/2/3) previas a los dominios asociados a módulo; conceptualmente pertenecen a @TaskManager (solo objetos de @TaskManager los referencian vía `DataType`).
+Enum = **the stored value**. **Note (legacy):** except for `FindSubjectIn` (module-scoped), every domain of its own lives in the KB's **root** `#Domains/` — a legacy of GeneXus versions (Evo1/2/3) predating module-scoped domains; conceptually they belong to @TaskManager (only @TaskManager objects reference them through `DataType`).
 
-**Propios — enumerados:**
+**Its own — enumerated:**
 
-| Dominio | Tipo | Valores |
+| Domain | Type | Values |
 |---|---|---|
-| **TaskManagerExecutionResponse** | Char(20) | `Succeed=SUC`, `Retry=RET`, `Fail=FAI` — **contrato de retorno de toda tarea**. Lo consumen los ~10 módulos que implementan tareas (todos dependen de @TaskManager); la ref en `@APIs/…/PDummy` es un *dummy* de tipos, no ownership. |
-| **TaskManagerStatus** | Char(3) | Active=`ACT`, Suspended=`SUS`, Succeed=`SUC`, Fail=`FAI` (estado agregado de la tarea) |
+| **TaskManagerExecutionResponse** | Char(20) | `Succeed=SUC`, `Retry=RET`, `Fail=FAI` — **the return contract of every task**. The ~10 modules implementing tasks consume it (all of them depend on @TaskManager); the reference in `@APIs/…/PDummy` is a type *dummy*, not ownership. |
+| **TaskManagerStatus** | Char(3) | Active=`ACT`, Suspended=`SUS`, Succeed=`SUC`, Fail=`FAI` (the task's aggregate status) |
 | **TaskManagerExecutionStatus** | Char(3) | Executing=`EXE`, Suspended=`SUS`, Succeed=`SUC`, Fail=`FAI`, KillRequested=`KIR` |
-| **TaskManagerExecutionType** | Char(3) | Task=`TSK`, Retry=`RTY`, Cycle=`CYC`, Repeat=`REP` (no hay valor "OnDemand": *a demanda* mapea a `Task`) |
+| **TaskManagerExecutionType** | Char(3) | Task=`TSK`, Retry=`RTY`, Cycle=`CYC`, Repeat=`REP` (there is no "OnDemand" value: *on demand* maps to `Task`) |
 | **TaskManagerCreatedBy** | Char(3) | SystemTask=`SYS`, UserTask=`USR` |
 | **TaskManagerParameterType** | Char(3) | Execution=`EXE`, Visualization=`VIS` |
 | **TaskManagerTime** | VarChar(40) | Day=`DAY`, Hour=`HRS`, Minute=`MIN`, Second=`SEC` |
 | **CycleType** | Char(3) | Once=`ONE`, Daily=`DAI`, Weekly=`WEE`, Monthly=`MON` |
-| **CycleMonthsWeeksOrDays** | Char(3) | Days=`DAY`, Weeks=`WEE` (modo del ciclo mensual: día fijo vs. semana-ordinal + día) |
+| **CycleMonthsWeeksOrDays** | Char(3) | Days=`DAY`, Weeks=`WEE` (monthly cycle mode: a fixed day vs. week-ordinal + day) |
 | **CycleDays** | Num(1) | Sunday=`1` … Saturday=`7` |
-| **CycleWeeks** | Num(1) | First=`1` … Latest=`5` (ordinal de semana del mes) |
+| **CycleWeeks** | Num(1) | First=`1` … Latest=`5` (week ordinal within the month) |
 | **CycleMonths** | Num(2) | January=`1` … December=`12` |
-| **CycleMonthsDays** | Num(2) | `1` … `31`, Last_Day=`33` (día del mes, incl. "último día") |
-| **FindSubjectIn** *(module-scoped)* | Char(20) | `Task`, `Execution` — el WW busca el texto en el subject de la tarea o en el mensaje |
-| **TaskManagerQueue** | Char(20) | Conjunto de colas disponibles. Estándar del framework: `Main`, `SendMails`, `ReceiveMails` (+ `…WithAlias`/`…WithoutAlias`), `Statistics`, `TableCleaner`, `Infrastructure`, `Auxiliary`, `ImportExport`, `ServerProcesses`, `Free`; más las colas propias de cada aplicación (las habilita el DataProvider `RetTaskManagerQueues`, ver §6). |
+| **CycleMonthsDays** | Num(2) | `1` … `31`, Last_Day=`33` (day of the month, including "last day") |
+| **FindSubjectIn** *(module-scoped)* | Char(20) | `Task`, `Execution` — the WW searches the text in the task's subject or in the message |
+| **TaskManagerQueue** | Char(20) | The set of available queues. Framework standard: `Main`, `SendMails`, `ReceiveMails` (+ `…WithAlias`/`…WithoutAlias`), `Statistics`, `TableCleaner`, `Infrastructure`, `Auxiliary`, `ImportExport`, `ServerProcesses`, `Free`; plus each application's own queues (the `RetTaskManagerQueues` DataProvider enables them, see §6). |
 
-**Propios — de valor (sin enum):**
+**Its own — value domains (no enum):**
 
-| Dominio | Tipo | Rol |
+| Domain | Type | Role |
 |---|---|---|
-| **TaskManagerLog** | LongVarChar(2M) | Texto del log/mensaje de una ejecución. |
+| **TaskManagerLog** | LongVarChar(2M) | The text of an execution's log/message. |
 
-**Usa dominios de otros módulos** (documentados en el doc de su dueño):
+**Domains used from other modules** (documented in their owner's doc):
 
-| Dominio | Dueño | Rol en @TaskManager |
+| Domain | Owner | Role in @TaskManager |
 |---|---|---|
-| **DynamicCallReferenceParameters** | [@DynamicCallReferences](dynamiccallreferences.md) | Valor de parámetro pasado a una tarea llamada dinámicamente. Por nomenclatura `DynamicCallReference*` es de @DynamicCallReferences (aunque en esta KB solo lo consuma @TaskManager). |
-| **ReferenceType** | [@DynamicCallReferences](dynamiccallreferences.md) | Categoría de la referencia dinámica (`TaskManagerExecution`, `TaskManagerVisualization`, …). |
-| **DynamicCallReferenceCode** | [@DynamicCallReferences](dynamiccallreferences.md) | Código lógico del objeto a ejecutar (`ExecutionCode`/`VisualizationCode`). |
-| **ProcessStatusErrorCode** | [@ProcessMonitor](processmonitor.md) | Códigos de error del lock de concurrencia. |
-| **SystemParameterCode** | [@SystemParameters](systemparameters.md) | Códigos de los parámetros de bloqueo (`TaskManagerBlocked…`). |
-| **PXToolsDate** | @APIs | Dominio de fecha (formato largo). Prefijo `PXTools*` = namespace del framework → base @APIs. |
-| *(base)* `Boolean`, `MaxStr`, `VarLen`, `IdFirstLevel`, `Links`, `Name`, `Path`, … | @APIs | Tipos base del framework. |
+| **DynamicCallReferenceParameters** | [@DynamicCallReferences](dynamiccallreferences.md) | Parameter value passed to a dynamically called task. By naming, `DynamicCallReference*` belongs to @DynamicCallReferences (even though in this KB only @TaskManager consumes it). |
+| **ReferenceType** | [@DynamicCallReferences](dynamiccallreferences.md) | Category of the dynamic reference (`TaskManagerExecution`, `TaskManagerVisualization`, …). |
+| **DynamicCallReferenceCode** | [@DynamicCallReferences](dynamiccallreferences.md) | Logical code of the object to run (`ExecutionCode`/`VisualizationCode`). |
+| **ProcessStatusErrorCode** | [@ProcessMonitor](processmonitor.md) | Error codes of the concurrency lock. |
+| **SystemParameterCode** | [@SystemParameters](systemparameters.md) | Codes of the blocking parameters (`TaskManagerBlocked…`). |
+| **PXToolsDate** | @APIs | Date domain (long format). The `PXTools*` prefix = the framework's namespace → base @APIs. |
+| *(base)* `Boolean`, `MaxStr`, `VarLen`, `IdFirstLevel`, `Links`, `Name`, `Path`, … | @APIs | The framework's base types. |
 
-## 5. Modelo de ejecución (el núcleo)
+## 5. The execution model (the core)
 
-### 5.1 Encolar — `AddTaskManagerSDT`
+### 5.1 Enqueueing — `AddTaskManagerSDT`
 
-`Parm(in: &SDTTaskManager, out: &TaskManagerId)`. Hace `New` sobre `TaskManager` (status `Suspended`, `CreatedBy=SystemTask`), serializa parámetros y colecciones de ciclo a JSON, normaliza `Queue` (Main→null), y crea la **primera ejecución** con `AddTaskManagerExecution(&TaskManagerId, 1, 1, &Date, TaskManagerExecutionType.Task, &Date, &Queue)`.
+`Parm(in: &SDTTaskManager, out: &TaskManagerId)`. It does a `New` on `TaskManager` (status `Suspended`, `CreatedBy=SystemTask`), serializes the parameters and cycle collections into JSON, normalises `Queue` (Main→null), and creates the **first execution** with `AddTaskManagerExecution(&TaskManagerId, 1, 1, &Date, TaskManagerExecutionType.Task, &Date, &Queue)`.
 
-El **SDT `SDTTaskManager`** es la API de encolado: `Id, Date, Subject, ExecutionCode, ExecutionParameters` (colección), `VisualizationCode/…Parameters`, `RetryDay/Hour/Minute/Second/Times`, `ParentId`, `CycleType/…`, `Queue, FilterData`.
+The **`SDTTaskManager` SDT** is the enqueueing API: `Id, Date, Subject, ExecutionCode, ExecutionParameters` (a collection), `VisualizationCode/…Parameters`, `RetryDay/Hour/Minute/Second/Times`, `ParentId`, `CycleType/…`, `Queue, FilterData`.
 
-`AddTaskManagerExecution` materializa una fila `TaskManagerExecutions` en `Suspended`; si ya hay una `Suspended`, adelanta su fecha si la nueva es mayor.
+`AddTaskManagerExecution` materialises a `TaskManagerExecutions` row as `Suspended`; if one is already `Suspended`, it brings its date forward when the new one is later.
 
 ### 5.2 Runner / daemon — `PrcTaskManagerExecution`
 
-`[IsMain='True', CallProtocol='CommandLine']`, `Parm(in: &TaskManagerExecutionQueue, in: &ProcessServerId)`. Un scheduler externo (cron/servicio) lo invoca **una instancia por cola**, típicamente **cada minuto** — de ahí que la granularidad mínima de agendado sea de 1 minuto. Ciclo:
+`[IsMain='True', CallProtocol='CommandLine']`, `Parm(in: &TaskManagerExecutionQueue, in: &ProcessServerId)`. An external scheduler (cron/service) invokes it **one instance per queue**, typically **every minute** — which is why the minimum scheduling granularity is one minute. The cycle:
 
-1. **Bloqueos**: SystemParameter `TaskManagerBlocked` (global) y `TaskManagerBlocked<Cola>` (por cola). Si activo, no procesa.
-2. **Lock de concurrencia**: `StartProcessStatusSDT` (`@ProcessMonitor`); si ya corre, aborta.
-3. **Selección**: `For Each` TaskManager⋈Executions ordenado por `Queue, Status, PlannedDate`, filtrando la cola (Main = `Queue.IsNull()`; `ServerProcesses` además por `FilterData = &ProcessServerId`), `Enable = True`, `ExecutionStatus = Suspended`, `PlannedDate <= ServerNow` (solo lo vencido).
-4. **Marca en curso**: status tarea → `Active`, ejecución → `Executing`.
-5. **Resuelve el objeto**: `&Process = PPEXE_DeDynamicCallReferenceURL.Udp(TaskManagerExecutionCode)`.
-6. **Invoca** (en try/catch): `Call(&Process, TaskManagerId, &Error, &ErrorMessage)`.
-7. **Interpreta** `Do Case &Error`: `Succeed` → marca Succeed y agenda **próxima ejecución** (`RetTaskManagerNextExecution`); `Retry` o excepción → `'Retry Execution'`; `Fail` → marca Fail.
-8. **Reintento**: si `RetTaskManagerExecutionCount < TaskManagerRetryTimes`, agenda una ejecución `Retry` a `ServerNow + Retry…`.
-9. **Persiste + loguea**: `UpdTaskManagerExecutionStatus` (estado + mensaje + fechas), `ChkTaskManagerStatus` (recalcula estado agregado y propaga al padre), `AddProcessStatusMessage` (log persistente en ProcessMonitor).
+1. **Blocks**: the `TaskManagerBlocked` SystemParameter (global) and `TaskManagerBlocked<Queue>` (per queue). If active, it does not process.
+2. **Concurrency lock**: `StartProcessStatusSDT` (`@ProcessMonitor`); if one is already running, it aborts.
+3. **Selection**: a `For Each` over TaskManager⋈Executions ordered by `Queue, Status, PlannedDate`, filtering the queue (Main = `Queue.IsNull()`; `ServerProcesses` additionally by `FilterData = &ProcessServerId`), `Enable = True`, `ExecutionStatus = Suspended`, `PlannedDate <= ServerNow` (only what is due).
+4. **Mark in progress**: the task's status → `Active`, the execution's → `Executing`.
+5. **Resolve the object**: `&Process = PPEXE_DeDynamicCallReferenceURL.Udp(TaskManagerExecutionCode)`.
+6. **Invoke** (inside a try/catch): `Call(&Process, TaskManagerId, &Error, &ErrorMessage)`.
+7. **Interpret** `Do Case &Error`: `Succeed` → mark Succeed and schedule the **next execution** (`RetTaskManagerNextExecution`); `Retry` or an exception → `'Retry Execution'`; `Fail` → mark Fail.
+8. **Retry**: if `RetTaskManagerExecutionCount < TaskManagerRetryTimes`, schedule a `Retry` execution at `ServerNow + Retry…`.
+9. **Persist + log**: `UpdTaskManagerExecutionStatus` (status + message + dates), `ChkTaskManagerStatus` (recomputes the aggregate status and propagates to the parent), `AddProcessStatusMessage` (persistent log in ProcessMonitor).
 
-**Ciclos**: `RetTaskManagerNextExecution` decide próxima repetición (`RetTaskManagerNextRepeat`) o próximo ciclo (`RetTaskManagerNextCycle`, respetando días/semanas/meses y `CycleExpire`).
+**Cycles**: `RetTaskManagerNextExecution` decides the next repetition (`RetTaskManagerNextRepeat`) or the next cycle (`RetTaskManagerNextCycle`, honouring days/weeks/months and `CycleExpire`).
 
-### 5.3 Leer parámetros dentro de la tarea
+### 5.3 Reading the parameters inside the task
 
-La tarea recibe solo `TaskManagerId`; lee sus parámetros del JSON con `RetTaskManagerParameterString/Integer/Date/Boolean(in: &TaskManagerId, in: &Position, out: &Valor)` (Position 1-based).
+The task only receives the `TaskManagerId`; it reads its parameters out of the JSON with `RetTaskManagerParameterString/Integer/Date/Boolean(in: &TaskManagerId, in: &Position, out: &Value)` (Position is 1-based).
 
 ## 6. APIs vs Personalized
 
-### `APIs/` (framework — no tocar)
-Todo el motor: transacciones (`TaskManager*`), BCs, el runner `PrcTaskManagerExecution`, los `Add*/Ret*/Upd*/Chk*`, las instancias de patterns (ABM), y las tareas de mantenimiento del propio módulo (`TskDeleteTaskManagerExecutions`, `TskTaskManagerForceRetryByQueue`, `TskKillProcess`).
+### `APIs/` (the framework — do not touch)
+The whole engine: the transactions (`TaskManager*`), the BCs, the `PrcTaskManagerExecution` runner, the `Add*/Ret*/Upd*/Chk*` procedures, the pattern instances (CRUD), and the module's own maintenance tasks (`TskDeleteTaskManagerExecutions`, `TskTaskManagerForceRetryByQueue`, `TskKillProcess`).
 
-### `Personalized/` (punto de extensión — se customiza por proyecto)
-| Objeto | Qué define / cómo se customiza |
+### `Personalized/` (the extension point — customized per project)
+| Object | What it defines / how it is customized |
 |---|---|
-| **`RetTaskManagerQueues`** (DataProvider) | **Qué colas están habilitadas** en el proyecto (combos de UI + genera los SystemParameters de bloqueo por cola). Cada proyecto agrega aquí, además de las colas estándar del framework, las colas propias de sus flujos batch. |
-| **`RetDynamicCallReferenceTaskManager`** (DataProvider) | **Qué objetos del propio framework son invocables** por el TaskManager (mapeo `code → objeto`): `TskDeleteTaskManagerExecutions`, `TskProcessMonitorKillProcess`→`TskKillProcess`, `TskTaskManagerForceRetryByQueue`, y un `TableCleanerTaskManagerQueue<Cola>` por cola → todos a `PrcTableCleanerTaskManager`. |
-| **`RetMenusTaskManager`** (DataProvider) | Menú "Task Manager" bajo `Basic`: **Queues** (`TrTaskManagerQueues`) y **Tasks** (`TrTaskManager`). |
-| **`PrcTableCleanerTaskManager`** (Procedure) | **Purgador de histórico** por cola (referenciado por todos los `TableCleanerTaskManagerQueue*`). Borra tareas `Once` vencidas y ejecuciones antiguas (preservando el último ciclo para no romper el Retry); antes de borrar, anula las FKs de negocio que apunten a la tarea. |
+| **`RetTaskManagerQueues`** (DataProvider) | **Which queues are enabled** in the project (the UI combos + it generates the per-queue blocking SystemParameters). Each project adds its own batch-flow queues here, alongside the framework's standard ones. |
+| **`RetDynamicCallReferenceTaskManager`** (DataProvider) | **Which of the framework's own objects are invocable** by the TaskManager (the `code → object` mapping): `TskDeleteTaskManagerExecutions`, `TskProcessMonitorKillProcess`→`TskKillProcess`, `TskTaskManagerForceRetryByQueue`, and one `TableCleanerTaskManagerQueue<Queue>` per queue → all pointing at `PrcTableCleanerTaskManager`. |
+| **`RetMenusTaskManager`** (DataProvider) | The "Task Manager" menu under `Basic`: **Queues** (`TrTaskManagerQueues`) and **Tasks** (`TrTaskManager`). |
+| **`PrcTableCleanerTaskManager`** (Procedure) | The per-queue **history purger** (referenced by every `TableCleanerTaskManagerQueue*`). It deletes expired `Once` tasks and old executions (preserving the last cycle so Retry does not break); before deleting it nulls out any business FKs pointing at the task. |
 
-> **Nota:** el mapeo `code → objeto` de las **tareas de la aplicación** (no las del framework) NO vive acá: cada aplicación lo declara en su propio DataProvider `Personalized` (por convención `RetDynamicCallReference<App>`), que también alimenta a `DynamicCallReferences` (ver §9).
+> **Note:** the `code → object` mapping of the **application's** tasks (not the framework's) does NOT live here: each application declares it in its own `Personalized` DataProvider (by convention `RetDynamicCallReference<App>`), which also feeds `DynamicCallReferences` (see §9).
 
-## 7. Instancias de patterns PXTools
+## 7. PXTools pattern instances
 
-| Instancia | Qué es |
+| Instance | What it is |
 |---|---|
-| **PXWorkWithTaskManager** | ABM completo de tareas. Transaction con tabs **General** (Queue, Subject, ExecutionCode como Dynamic Combo filtrado por `ReferenceType.TaskManagerExecution`, parámetros vía el prompt `PXParameterRequestUpdTaskManagerParameters`, bloque Retry) y **Cycle Settings**. Selection en 2 niveles (`TaskManager` básico / `TaskManagerAdvanced` con búsqueda dentro de mensajes). View "Task Information" con grid de **Executions** (Retry, ViewMessage, Kill&Retry, ExecuteNow, Download log) y árbol de **Childs Tasks**. |
-| **PXWorkWithTaskManagerQueues** | WW simple (basado en la colección `SDTTaskManagerQueues`) para **asignar un ProcessServer a cada cola** (`UpdTaskManagerQueueProcessServer`). |
-| **PXParameterRequestExecutionMessage** | Popup "View Message": muestra el `TaskManagerExecutionMessage` (log) de una ejecución en solo lectura. |
-| **PXParameterRequestUpdTaskManagerParameters** | Prompt "Edit parameters": editor de la lista de parámetros `;`-separada (Add/Remove item). |
+| **PXWorkWithTaskManager** | Full task CRUD. A Transaction with **General** (Queue, Subject, ExecutionCode as a Dynamic Combo filtered by `ReferenceType.TaskManagerExecution`, parameters through the `PXParameterRequestUpdTaskManagerParameters` prompt, the Retry block) and **Cycle Settings** tabs. A two-level Selection (basic `TaskManager` / `TaskManagerAdvanced` with search inside messages). A "Task Information" View with a grid of **Executions** (Retry, ViewMessage, Kill&Retry, ExecuteNow, Download log) and a tree of **Child Tasks**. |
+| **PXWorkWithTaskManagerQueues** | A simple WW (built on the `SDTTaskManagerQueues` collection) for **assigning a ProcessServer to each queue** (`UpdTaskManagerQueueProcessServer`). |
+| **PXParameterRequestExecutionMessage** | The "View Message" popup: shows an execution's `TaskManagerExecutionMessage` (log) read-only. |
+| **PXParameterRequestUpdTaskManagerParameters** | The "Edit parameters" prompt: an editor for the `;`-separated parameter list (Add/Remove item). |
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-**Encolar / ejecuciones**
-- `AddTaskManagerSDT(in: &SDTTaskManager, out: &TaskManagerId)` — alta de tarea + primera ejecución.
-- `AddTaskManagerExecution(...)` — crea/adelanta una ejecución `Suspended`.
-- `AddTaskManagerExecutions` / `AddTaskManagerExecutionsAndReset` — re-encola la tarea (y descendientes fallidas); la variante *Reset* limpia el contador de reintentos. Usadas por la acción "Retry".
-- `AddTaskManagerReferenceValue` — adjunta par id/valor.
+**Enqueueing / executions**
+- `AddTaskManagerSDT(in: &SDTTaskManager, out: &TaskManagerId)` — creates the task + its first execution.
+- `AddTaskManagerExecution(...)` — creates/brings forward a `Suspended` execution.
+- `AddTaskManagerExecutions` / `AddTaskManagerExecutionsAndReset` — re-enqueues the task (and its failed descendants); the *Reset* variant clears the retry counter. Used by the "Retry" action.
+- `AddTaskManagerReferenceValue` — attaches an id/value pair.
 
-**Lectura**
-- `RetTaskManagerParameterString/Integer/Date/Boolean(in: &TaskManagerId, in: &Position, out)` — parámetro N desde el JSON.
-- `RetTaskManagerNextExecution` / `…NextCycle` / `…NextRepeat` — cálculo de scheduling.
-- `RetTaskManagerExecutionCount` — reintentos reales (excluye ignorados).
-- `RetTaskManagerQueue`, `RetTaskManagerReferenceValue`, `RetTaskManagerHasChilds`, `RetTaskManagerExecutionMessageLinkToFile` (vuelca el log a `.txt`).
+**Reading**
+- `RetTaskManagerParameterString/Integer/Date/Boolean(in: &TaskManagerId, in: &Position, out)` — parameter N out of the JSON.
+- `RetTaskManagerNextExecution` / `…NextCycle` / `…NextRepeat` — scheduling computation.
+- `RetTaskManagerExecutionCount` — the real retry count (excluding ignored ones).
+- `RetTaskManagerQueue`, `RetTaskManagerReferenceValue`, `RetTaskManagerHasChilds`, `RetTaskManagerExecutionMessageLinkToFile` (dumps the log into a `.txt`).
 
-**Estado / control**
-- `UpdTaskManagerStatus`, `UpdTaskManagerEnable`, `UpdTaskManagerExecutionStatus` (estado + mensaje + fechas), `UpdTaskManagerExecutionsNow` (Execute Now).
-- `ChkTaskManagerStatus` — recalcula el estado agregado y propaga al padre.
+**Status / control**
+- `UpdTaskManagerStatus`, `UpdTaskManagerEnable`, `UpdTaskManagerExecutionStatus` (status + message + dates), `UpdTaskManagerExecutionsNow` (Execute Now).
+- `ChkTaskManagerStatus` — recomputes the aggregate status and propagates to the parent.
 
 **Kill / fail-and-retry**
-- `RequestKillProcess`, `SetFailAndRetryTaskManager`, `TestAndKillTaskManager`, `KillProcessStatus` (integración con `@ProcessMonitor`).
+- `RequestKillProcess`, `SetFailAndRetryTaskManager`, `TestAndKillTaskManager`, `KillProcessStatus` (integration with `@ProcessMonitor`).
 
-## 9. Patrón de integración con la aplicación
+## 9. The application integration pattern
 
-TaskManager es el **orquestador batch** del sistema. Una aplicación integra sus procesos así:
+TaskManager is the system's **batch orchestrator**. An application integrates its processes like this:
 
-1. **Declarar colas** — agregar las colas propias en `Personalized/RetTaskManagerQueues`. Dedicar una cola a un tipo de trabajo permite correr su runner en paralelo/aislado (y bloquearla independientemente con `TaskManagerBlocked<Cola>`).
-2. **Registrar las tareas** — en el DataProvider `Personalized` de la aplicación (`RetDynamicCallReference<App>`), mapear cada `DynamicCallReferenceCode` a su proc con `DynamicCallReferenceURL = <Proc>.Type` y `ReferenceType.TaskManagerExecution`. Esto es lo que resuelve el runner al ejecutar.
-3. **Encolar** — construir el `SDTTaskManager` (con `ExecutionCode`, parámetros, `Queue`, config de reintentos, y opcionalmente `FilterData` para agrupar) y llamar `AddTaskManagerSDT`. También se puede dar de alta una tarea **cíclica** desde el WW.
-4. **Implementar la tarea** — el proc cumple el contrato `Parm(in: &TaskManagerId, out: &Error TaskManagerExecutionResponse, out: &ErrorMessage)`: lee sus parámetros con `RetTaskManagerParameter*`, hace su trabajo, y devuelve `Succeed` / `Retry` (reintentar según la config) / `Fail`. El `&ErrorMessage` es el **log** que queda en la ejecución (visible en el WW y en `PXParameterRequestExecutionMessage`).
+1. **Declare the queues** — add your own queues in `Personalized/RetTaskManagerQueues`. Dedicating a queue to one kind of work lets its runner run in parallel/isolated (and be blocked independently with `TaskManagerBlocked<Queue>`).
+2. **Register the tasks** — in the application's own `Personalized` DataProvider (`RetDynamicCallReference<App>`), map each `DynamicCallReferenceCode` to its procedure with `DynamicCallReferenceURL = <Proc>.Type` and `ReferenceType.TaskManagerExecution`. This is what the runner resolves at execution time.
+3. **Enqueue** — build the `SDTTaskManager` (with `ExecutionCode`, parameters, `Queue`, retry configuration, and optionally `FilterData` for grouping) and call `AddTaskManagerSDT`. A **cyclic** task can also be created from the WW.
+4. **Implement the task** — the procedure honours the `Parm(in: &TaskManagerId, out: &Error TaskManagerExecutionResponse, out: &ErrorMessage)` contract: it reads its parameters with `RetTaskManagerParameter*`, does its work, and returns `Succeed` / `Retry` (retry per the configuration) / `Fail`. `&ErrorMessage` is the **log** left on the execution (visible in the WW and in `PXParameterRequestExecutionMessage`).
 
-### How-to: hacer una tarea "llamable" por el TaskManager
-1. Crear el proc con el contrato de 3 parámetros (leer parámetros con `RetTaskManagerParameter*`).
-2. Dar de alta un valor en el dominio `DynamicCallReferenceCode`.
-3. Registrarlo en el DataProvider `Personalized` de la aplicación (`RetDynamicCallReference<App>`) mapeando el code → `<Proc>.Type` con `ReferenceType.TaskManagerExecution`.
-4. Encolarlo con `AddTaskManagerSDT` (o darlo de alta como tarea cíclica en el WW), indicando la cola.
+### How-to: make a task "callable" by the TaskManager
+1. Create the procedure with the three-parameter contract (read the parameters with `RetTaskManagerParameter*`).
+2. Add a value to the `DynamicCallReferenceCode` domain.
+3. Register it in the application's `Personalized` DataProvider (`RetDynamicCallReference<App>`), mapping the code → `<Proc>.Type` with `ReferenceType.TaskManagerExecution`.
+4. Enqueue it with `AddTaskManagerSDT` (or create it as a cyclic task in the WW), naming the queue.
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- Módulo **DynamicCallReferences** — mapeo `code → objeto` (resuelto por `PPEXE_DeDynamicCallReferenceURL`).
-- Módulo **@ProcessMonitor** — lock de concurrencia, ProcessServers y log persistente (`AddProcessStatusMessage`).
-- `modulos/security.md` — módulo @Security (contexto `&Context`, políticas de acceso).
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- The **DynamicCallReferences** module — the `code → object` mapping (resolved by `PPEXE_DeDynamicCallReferenceURL`).
+- The **@ProcessMonitor** module — the concurrency lock, ProcessServers and the persistent log (`AddProcessStatusMessage`).
+- `modules/security.md` — the @Security module (the `&Context`, access policies).
