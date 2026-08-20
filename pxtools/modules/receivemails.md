@@ -1,96 +1,96 @@
-# Módulo @ReceiveMails — Recepción de Correos
+# @ReceiveMails Module — Incoming Mail
 
-> Comportamiento del módulo `@PXTools/@ReceiveMails`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@ReceiveMails` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@ReceiveMails` (`APIs/` core + `Personalized/`).
-- Cualificador: `PXTools.ReceiveMails`.
-- **Depende de:** `@APIs` (base), `@System`, `@MailAccounts` (cuenta POP3), `@FileStorage` (adjuntos), `@SendMails` (dominio `MailMessage`). Infra: `@Menus`, `@SystemParameters`, `@DynamicCallReferences`.
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@ReceiveMails` (`APIs/` core + `Personalized/`).
+- Qualifier: `PXTools.ReceiveMails`.
+- **Depends on:** `@APIs` (base), `@System`, `@MailAccounts` (the POP3 account), `@FileStorage` (attachments), `@SendMails` (the `MailMessage` domain). Infrastructure: `@Menus`, `@SystemParameters`, `@DynamicCallReferences`.
 
-## 1. Qué provee
+## 1. What it provides
 
-**Recepción de correos entrantes por POP3**: baja los mails de las cuentas configuradas (@MailAccounts), guarda cada uno en `ReceivedMails` (con adjuntos en @FileStorage) y los deja disponibles para que la aplicación los procese. El modelo es **pull + marca de estado**: el módulo NO ejecuta lógica de negocio; la app consulta los no procesados, actúa, y los marca procesados.
+**Receiving incoming mail over POP3**: it downloads mail from the configured accounts (@MailAccounts), stores each message in `ReceivedMails` (with attachments in @FileStorage) and leaves them available for the application to process. The model is **pull + status flag**: the module runs no business logic; the app queries the unprocessed messages, acts on them, and marks them processed.
 
-## 2. Concepto central
+## 2. Core concept
 
-- **`ReceivedMails`** = bandeja de entrada: cabecera (remitente, subject, texto/HTML, adjuntos) + nivel **TO** (un registro por destinatario).
-- **Estado**: `ReceivedMailProcesed` (cabecera) y `ReceivedMailToProcesed` (por destinatario, para el modo Alias donde varias cuentas comparten buzón).
-- La app hace `GetMails` (no procesados) → procesa cada `MailItem` → `Upd…Processed`.
+- **`ReceivedMails`** = the inbox: a header (sender, subject, text/HTML, attachments) + a **TO** level (one record per recipient).
+- **Status**: `ReceivedMailProcesed` (header) and `ReceivedMailToProcesed` (per recipient, for the Alias mode where several accounts share a mailbox).
+- The app calls `GetMails` (unprocessed) → processes each `MailItem` → `Upd…Processed`.
 
-## 3. Transacción `ReceivedMails`
+## 3. The `ReceivedMails` transaction
 
-Dos niveles; `ReceivedMailId` = `IdFirstLevel` (autonum).
+Two levels; `ReceivedMailId` = `IdFirstLevel` (autonumbered).
 
-- **Cabecera**: `ReceivedMailMailAccountId` (FK cuenta origen), `DateSent`/`DateReceived`, `Name`/`Address` (remitente), `Subject`, `Text` (`MailMessage`) y `HTMLText` (con imágenes embebidas), `ReceivedMailFileStorageId` (adjuntos, nullable), **`ReceivedMailProcesed`** (Boolean).
-- **Nivel `TO`**: `ReceivedMailTOId` (PK sub), `ReceivedMailToAccountId` (FK cuenta destino si se reconoce, nullable), `ToAddress`/`ToName`, **`ReceivedMailToProcesed`** (Boolean).
-- **`ReceivedMailsBC`**: Business Component sobre la misma estructura.
+- **Header**: `ReceivedMailMailAccountId` (FK to the source account), `DateSent`/`DateReceived`, `Name`/`Address` (sender), `Subject`, `Text` (`MailMessage`) and `HTMLText` (with embedded images), `ReceivedMailFileStorageId` (attachments, nullable), **`ReceivedMailProcesed`** (Boolean).
+- **`TO` level**: `ReceivedMailTOId` (sub PK), `ReceivedMailToAccountId` (FK to the destination account when recognised, nullable), `ToAddress`/`ToName`, **`ReceivedMailToProcesed`** (Boolean).
+- **`ReceivedMailsBC`**: a Business Component over the same structure.
 
-FKs por Group: `ReceivedMailMailAccountId` / `ReceivedMailToAccountId : MailAccountId` (@MailAccounts); `ReceivedMailFileStorageId` → @FileStorage.
+FKs through Groups: `ReceivedMailMailAccountId` / `ReceivedMailToAccountId : MailAccountId` (@MailAccounts); `ReceivedMailFileStorageId` → @FileStorage.
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-El módulo **no define dominios propios** (no existe ningún dominio `ReceiveMail*`). Reutiliza de otros módulos:
+The module **defines no domains of its own** (there is no `ReceiveMail*` domain). It reuses these from other modules:
 
-| Dominio | Dueño | Uso |
+| Domain | Owner | Use |
 |---|---|---|
-| `MailAccountType` | @MailAccounts | Main/Alias — decide el flujo de lectura |
-| `MailMessage` | @SendMails | Cuerpo del mail (`Text`) |
-| `FileStorageCategory` | @FileStorage | Categoría del adjunto |
-| `SystemParameterCode` | @SystemParameters | Parámetros POP3 |
-| `DynamicCallReferenceCode` | @DynamicCallReferences | Registro de la task de recepción |
-| `TaskManagerExecutionResponse` | @TaskManager | Contrato de retorno de la task |
-| `PXToolsEmail`, `PswEnc`, primitivos | @APIs | Tipos base |
+| `MailAccountType` | @MailAccounts | Main/Alias — decides the reading flow |
+| `MailMessage` | @SendMails | Mail body (`Text`) |
+| `FileStorageCategory` | @FileStorage | Attachment category |
+| `SystemParameterCode` | @SystemParameters | POP3 parameters |
+| `DynamicCallReferenceCode` | @DynamicCallReferences | Registration of the receive task |
+| `TaskManagerExecutionResponse` | @TaskManager | Return contract of the task |
+| `PXToolsEmail`, `PswEnc`, primitives | @APIs | Base types |
 
-## 5. Mecanismo
+## 5. How it works
 
-### 5.1 Bajada POP3 — `LoadMails`
-`Parm(in: &MailAccountId, out: &Error, out: &ErrorDescription)` — el corazón, usa el External Object `POP3Session`:
-- Resuelve host/puerto/secure/attachdir/timeout: `POP3Default` → System Parameters; si no, atributos POP3 de la cuenta. Credenciales de la cuenta (password `PPEXE_DePsw02`).
-- `CheckandEmptyDirectoryAttachs` → `POP3Session.Login()` → bucle `Receive(&MailMessage)` hasta `Count` o el límite por cuenta.
-- Por cada mail (ignora los propios): `New` en `ReceivedMails` (remitente, fechas, subject, Text/HTMLText), adjuntos → `AddReceivedMailAttach` (crea entrada FileStorage), un registro `TO` por destinatario To/CC/BCC; imágenes inline con `RetReceivedMailWithImagesEmbedded`.
-- Éxito: `Commit` + `POP3Session.Delete()` (borra del servidor). Fallo: según `ReceiveMailsDeleteLoadMailsWithFails`, borra o `Skip()`. Actualiza `MailAccountPOP3LastExecution`.
+### 5.1 POP3 download — `LoadMails`
+`Parm(in: &MailAccountId, out: &Error, out: &ErrorDescription)` — the heart of the module, using the `POP3Session` External Object:
+- It resolves host/port/secure/attachdir/timeout: `POP3Default` → System Parameters; otherwise the account's own POP3 attributes. Credentials come from the account (password via `PPEXE_DePsw02`).
+- `CheckandEmptyDirectoryAttachs` → `POP3Session.Login()` → a `Receive(&MailMessage)` loop up to `Count` or the account's limit.
+- For each message (its own are ignored): `New` in `ReceivedMails` (sender, dates, subject, Text/HTMLText), attachments → `AddReceivedMailAttach` (creates a FileStorage entry), one `TO` record per To/CC/BCC recipient; inline images through `RetReceivedMailWithImagesEmbedded`.
+- On success: `Commit` + `POP3Session.Delete()` (removes it from the server). On failure: depending on `ReceiveMailsDeleteLoadMailsWithFails`, it either deletes or calls `Skip()`. It updates `MailAccountPOP3LastExecution`.
 
-### 5.2 Orquestación — vía @TaskManager
-Entry points (`Parm(in: &TaskManagerId, out…)`) que iteran cuentas `Main` verificadas y llaman `LoadMails`:
-- `TskReceiveMails` (todas las Main), `TskReceiveMailsMainWithAlias`, `TskReceiveMailsMainWithoutAlias`.
-- `PrcReceiveMail` (`IsMain=True, CommandLine`): lock (`StartProcessStatus`) + `TskReceiveMails`.
-- Registrados en `Personalized/RetDynamicCallReferenceReceiveMails`.
+### 5.2 Orchestration — through @TaskManager
+Entry points (`Parm(in: &TaskManagerId, out…)`) that iterate verified `Main` accounts and call `LoadMails`:
+- `TskReceiveMails` (all Mains), `TskReceiveMailsMainWithAlias`, `TskReceiveMailsMainWithoutAlias`.
+- `PrcReceiveMail` (`IsMain=True, CommandLine`): a lock (`StartProcessStatus`) + `TskReceiveMails`.
+- Registered in `Personalized/RetDynamicCallReferenceReceiveMails`.
 
-### 5.3 Entrega a la aplicación (pull + marca)
-- `GetMails` / `LoadGetMails` devuelven `SDTReceiveMails` (colección `MailItem` con remitente, fechas, subject, Text, Html, FileStorageId y subcolección `To`) de los **no procesados**. `GetMainMails` filtra por `not …Procesed`; `GetAliasMails` por destinatario.
-- La app procesa cada `MailItem` a su criterio y marca con `UpdReceivedMailProcessed` / `UpdReceiveMailAliasProcessed`.
+### 5.3 Delivery to the application (pull + flag)
+- `GetMails` / `LoadGetMails` return `SDTReceiveMails` (a `MailItem` collection with sender, dates, subject, Text, Html, FileStorageId and a `To` sub-collection) of the **unprocessed** messages. `GetMainMails` filters by `not …Procesed`; `GetAliasMails` filters by recipient.
+- The app processes each `MailItem` however it sees fit and flags it with `UpdReceivedMailProcessed` / `UpdReceiveMailAliasProcessed`.
 
-> **El "qué hacer con cada mail" NO vive en este módulo**: lo implementa el consumidor externo (fuera de @ReceiveMails). El módulo permanece agnóstico del negocio.
+> **"What to do with each mail" does NOT live in this module**: the external consumer implements it (outside @ReceiveMails). The module stays business-agnostic.
 
 ## 6. APIs vs Personalized
 
-- **`APIs/`** (core): la transacción, `LoadMails`, los `Tsk*`/`Prc*`, los getters `Get*`, los `Upd*Processed`, `DelReceivedMails`, los SDTs.
+- **`APIs/`** (core): the transaction, `LoadMails`, the `Tsk*`/`Prc*` procedures, the `Get*` getters, the `Upd*Processed` procedures, `DelReceivedMails`, and the SDTs.
 - **`Personalized/`**:
-  | Objeto | Qué se customiza |
+  | Object | What gets customized |
   |---|---|
-  | `RetSystemParametersReceiveMails` (DataProvider) | System-parameters (`ReceiveMailsAccountLimit`, `ReceiveMailsDeleteLoadMailsWithFails`). |
-  | `RetDynamicCallReferenceReceiveMails` (DataProvider) | Registra los `TskReceiveMails*` + Table Cleaner en @TaskManager. |
-  | `RetMenusReceivedMails` (DataProvider) | Entrada de menú. |
-  | `PrcTableCleanerReceiveMails` (Procedure) | Purga correos viejos (`DelReceivedMails`). |
+  | `RetSystemParametersReceiveMails` (DataProvider) | System parameters (`ReceiveMailsAccountLimit`, `ReceiveMailsDeleteLoadMailsWithFails`). |
+  | `RetDynamicCallReferenceReceiveMails` (DataProvider) | Registers the `TskReceiveMails*` tasks + the Table Cleaner in @TaskManager. |
+  | `RetMenusReceivedMails` (DataProvider) | Menu entry. |
+  | `PrcTableCleanerReceiveMails` (Procedure) | Purges old mail (`DelReceivedMails`). |
 
-## 7. Instancia de pattern
+## 7. Pattern instance
 
-**PXWorkWithReceivedMails** — WW de la bandeja de entrada. Selection con filtros por cuenta (suggest), remitente, rango de fechas, estado Processed y Attachment; vistas y detalle (`TrReceivedMails`, `VeReceivedMails`, `CtReceivedMails`, con variantes `…Alias`).
+**PXWorkWithReceivedMails** — the inbox WW. Selection with filters by account (suggest), sender, date range, Processed status and Attachment; views and detail (`TrReceivedMails`, `VeReceivedMails`, `CtReceivedMails`, with `…Alias` variants).
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-**Getters (entrega)**: `GetMails(in: &MailAccountId, out: &SDTReceiveMail)` (enruta Main/Alias), `GetMainMails`, `GetAliasMails`, `LoadGetMails` (baja POP3 + devuelve en una llamada).
+**Getters (delivery)**: `GetMails(in: &MailAccountId, out: &SDTReceiveMail)` (routes Main/Alias), `GetMainMails`, `GetAliasMails`, `LoadGetMails` (POP3 download + return in one call).
 
-**Bajada/carga**: `LoadMails`, `AddReceivedMailAttach(in: &Sender, in: &SDTReceivedMailAttach, out: &FileStorageId)`, `RetReceivedMailWithImagesEmbedded`, `RetReceivedMailToId`.
+**Download/loading**: `LoadMails`, `AddReceivedMailAttach(in: &Sender, in: &SDTReceivedMailAttach, out: &FileStorageId)`, `RetReceivedMailWithImagesEmbedded`, `RetReceivedMailToId`.
 
-**Marca de estado** (la app tras procesar): `UpdReceivedMailProcessed(in: &ReceivedMailId)` (cabecera + todos los TO), `UpdReceiveMailAliasProcessed(in: &ReceivedMailId, in: &ToAccountId)` (un destinatario; si no quedan pendientes, marca la cabecera), `UpdReceivedMailToggleProcessed` (UI).
+**Status flagging** (by the app once it has processed): `UpdReceivedMailProcessed(in: &ReceivedMailId)` (the header + every TO), `UpdReceiveMailAliasProcessed(in: &ReceivedMailId, in: &ToAccountId)` (one recipient; if none are left pending, it flags the header), `UpdReceivedMailToggleProcessed` (UI).
 
-**Borrado**: `DelReceivedMails(in: &ReceivedMailId, …, out: &SDTCounter)` (usado por el TableCleaner).
+**Deletion**: `DelReceivedMails(in: &ReceivedMailId, …, out: &SDTCounter)` (used by the TableCleaner).
 
-**SDTs**: `SDTReceiveMails` (`MailItem` + `To`) — contrato de entrega; `SDTReceivedMailAttach` — adjuntos hacia FileStorage.
+**SDTs**: `SDTReceiveMails` (`MailItem` + `To`) — the delivery contract; `SDTReceivedMailAttach` — attachments on their way to FileStorage.
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- Módulo **@MailAccounts** — cuenta POP3 (`ReceivedMailMailAccountId`).
-- Módulo **@FileStorage** — adjuntos (`ReceivedMailFileStorageId`).
-- [taskmanager.md](taskmanager.md) — ejecuta los `TskReceiveMails*` (colas ReceiveMails).
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- The **@MailAccounts** module — the POP3 account (`ReceivedMailMailAccountId`).
+- The **@FileStorage** module — attachments (`ReceivedMailFileStorageId`).
+- [taskmanager.md](taskmanager.md) — runs the `TskReceiveMails*` tasks (the ReceiveMails queues).

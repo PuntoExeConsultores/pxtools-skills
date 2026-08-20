@@ -1,99 +1,99 @@
-# Módulo @DynamicCallReferences — Invocación Dinámica por Nombre
+# @DynamicCallReferences Module — Dynamic Invocation by Name
 
-> Comportamiento del módulo `@PXTools/@DynamicCallReferences`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@DynamicCallReferences` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@DynamicCallReferences` (`APIs/` core + `Personalized/`).
-- Cualificador: `PXTools.DynamicCallReferences`.
-- **Depende de:** `@APIs` (base), `@Menus` (`RetMenusDynamicCallReferences`).
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@DynamicCallReferences` (`APIs/` core + `Personalized/`).
+- Qualifier: `PXTools.DynamicCallReferences`.
+- **Depends on:** `@APIs` (base), `@Menus` (`RetMenusDynamicCallReferences`).
 
-## 1. Qué provee
+## 1. What it provides
 
-Un registro que asocia un **código lógico** (`DynamicCallReferenceCode`) a la **identidad de runtime de un objeto GeneXus** (`Objeto.Type`, guardado en `DynamicCallReferenceURL`). Así otros módulos invocan objetos **"por nombre"** con `Call(&url, …)` **sin hardcodear** a qué objeto llaman. Es la pieza transversal que desacopla "qué código ejecutar" del objeto concreto — la usan @TaskManager (`ExecutionCode`), @TableCleaner, @Alerts, @CloudTasks, etc.
+A registry associating a **logical code** (`DynamicCallReferenceCode`) with the **runtime identity of a GeneXus object** (`Object.Type`, stored in `DynamicCallReferenceURL`). That way other modules invoke objects **"by name"** with `Call(&url, …)` **without hard-coding** which object they call. It is the cross-cutting piece decoupling "what code to run" from the concrete object — used by @TaskManager (`ExecutionCode`), @TableCleaner, @Alerts, @CloudTasks, and others.
 
-## 2. Concepto central: code → objeto
+## 2. Core concept: code → object
 
-- La tabla `TDynamicCallReferences` mapea `Code → URL` (donde `URL = ObjetoReal.Type`).
-- En runtime: `&url = PPEXE_DeDynamicCallReferenceURL.Udp(code)` → `Call(&url, params)` (llamada **indirecta/polimórfica** resuelta en runtime).
-- La tabla se **siembra declarativamente**: cada módulo aporta un DataProvider `RetDynamicCallReference<X>` que devuelve sus referencias.
+- The `TDynamicCallReferences` table maps `Code → URL` (where `URL = RealObject.Type`).
+- At runtime: `&url = PPEXE_DeDynamicCallReferenceURL.Udp(code)` → `Call(&url, params)` (an **indirect/polymorphic** call resolved at runtime).
+- The table is **seeded declaratively**: each module contributes a `RetDynamicCallReference<X>` DataProvider returning its references.
 
-## 3. Transacción `TDynamicCallReferences`
+## 3. The `TDynamicCallReferences` transaction
 
-Un solo nivel; BC.
+A single level; a BC.
 
-| Atributo | Tipo | Rol |
+| Attribute | Type | Role |
 |---|---|---|
-| `DynamicCallReferenceCode` (PK) | `DynamicCallReferenceCode` (Char(50) enum) | Clave lógica del "punto de llamada". |
-| `DynamicCallReferenceType` | `ReferenceType` (Char(50) enum) | Categoría/subsistema (define qué contrato espera el `Call`). |
-| `DynamicCallReferenceDescription` | `ObjectDescription` | Descripción legible. |
-| `DynamicCallReferenceURL` | `Links` | Identidad de runtime del objeto destino (`Objeto.Type`). |
+| `DynamicCallReferenceCode` (PK) | `DynamicCallReferenceCode` (Char(50) enum) | Logical key of the "call point". |
+| `DynamicCallReferenceType` | `ReferenceType` (Char(50) enum) | Category/subsystem (it defines which contract the `Call` expects). |
+| `DynamicCallReferenceDescription` | `ObjectDescription` | Human-readable description. |
+| `DynamicCallReferenceURL` | `Links` | Runtime identity of the target object (`Object.Type`). |
 
-SDT espejo `SDTDynamicCallReferences` (colección de esos 4 miembros) = **contrato de siembra**.
+The mirror SDT `SDTDynamicCallReferences` (a collection of those 4 members) is the **seeding contract**.
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-Los tres dominios `DynamicCallReference*` + `ReferenceType` son de @DynamicCallReferences (por nomenclatura), todos **root-legacy** (viven en el `#Domains/` raíz). Nota: aunque `DynamicCallReferenceParameters` en esta KB solo lo consuma @TaskManager, **es de este módulo** por nomenclatura.
+The three `DynamicCallReference*` domains plus `ReferenceType` belong to @DynamicCallReferences (by naming), all **root-legacy** (they live in the root `#Domains/`). Note: even though in this KB only @TaskManager consumes `DynamicCallReferenceParameters`, **it belongs to this module** by naming.
 
-- **`DynamicCallReferenceCode`** (Char(50)): el **catálogo de "nombres"** lógicos de objetos invocables (tareas, table-cleaners, generadores, DPs, prompts OAV…). Cada módulo agrega sus valores.
-- **`ReferenceType`** (Char(50)): clasifica **para qué subsistema** sirve la referencia (y por tanto la firma esperada). Valores del framework: `TaskManagerExecution` (`TskExecution`), `TaskManagerVisualization`, `TableCleanerProcess`, `StatisticLogProcess`, `StatisticIdCompositionDP`, `OAVAttributeValuesPrompt`, `OAVAttributeValueValidation`, `OAVSrvDynamicReadOnly`, `FormularioPDFPublico`/`…Privado`. El consumidor filtra la tabla por este tipo.
-- **`DynamicCallReferenceParameters`** (Char(50)): valor de parámetro que se pasa a un objeto invocado dinámicamente.
+- **`DynamicCallReferenceCode`** (Char(50)): the **catalogue of logical "names"** of invocable objects (tasks, table cleaners, generators, DPs, OAV prompts…). Each module adds its values.
+- **`ReferenceType`** (Char(50)): classifies **which subsystem** the reference serves (and therefore the expected signature). Framework values: `TaskManagerExecution` (`TskExecution`), `TaskManagerVisualization`, `TableCleanerProcess`, `StatisticLogProcess`, `StatisticIdCompositionDP`, `OAVAttributeValuesPrompt`, `OAVAttributeValueValidation`, `OAVSrvDynamicReadOnly`, `FormularioPDFPublico`/`…Privado`. The consumer filters the table by this type.
+- **`DynamicCallReferenceParameters`** (Char(50)): a parameter value passed to a dynamically invoked object.
 
-> El objeto destino se guarda como `Objeto.Type` (nombre calificado) en `DynamicCallReferenceURL`: usar el **nombre calificado** mantiene la referencia estable ante renombres del objeto.
+> The target object is stored as `Object.Type` (its qualified name) in `DynamicCallReferenceURL`: using the **qualified name** keeps the reference stable when the object is renamed.
 
-## 5. Mecanismo
+## 5. How it works
 
-### 5.1 Resolución — `PPEXE_DeDynamicCallReferenceURL`
-`Parm(in: &DynamicCallReferenceId, out: &DynamicCallReferenceURL)` — `For Each Where Code = &Id → &URL = DynamicCallReferenceURL`. Devuelve el `.Type` del objeto.
+### 5.1 Resolution — `PPEXE_DeDynamicCallReferenceURL`
+`Parm(in: &DynamicCallReferenceId, out: &DynamicCallReferenceURL)` — `For Each Where Code = &Id → &URL = DynamicCallReferenceURL`. It returns the object's `.Type`.
 
-### 5.2 Invocación
-`&url` (tipo `Attribute:DynamicCallReferenceURL`, dominio `Links`) contiene el `.Type`; `Call(&url, params)` es la llamada indirecta. Ejemplos:
-- **@TaskManager** (`PrcTaskManagerExecution`): `&Process = PPEXE_DeDynamicCallReferenceURL.Udp(TaskManagerExecutionCode)` → `Call(&Process, TaskManagerId, &Error, &ErrorMessage)` (tipo esperado `TaskManagerExecution`).
-- **@TableCleaner**: resuelve por **subtipos** (denormaliza la URL en `TableCleanerConfiguration` vía el Group `TableCleanerDynamicCallReference`) → `Call(TableCleanerProcessURL, …)`.
+### 5.2 Invocation
+`&url` (of type `Attribute:DynamicCallReferenceURL`, domain `Links`) holds the `.Type`; `Call(&url, params)` is the indirect call. Examples:
+- **@TaskManager** (`PrcTaskManagerExecution`): `&Process = PPEXE_DeDynamicCallReferenceURL.Udp(TaskManagerExecutionCode)` → `Call(&Process, TaskManagerId, &Error, &ErrorMessage)` (expected type `TaskManagerExecution`).
+- **@TableCleaner**: resolves through **subtypes** (it denormalises the URL into `TableCleanerConfiguration` via the `TableCleanerDynamicCallReference` group) → `Call(TableCleanerProcessURL, …)`.
 
-### 5.3 Siembra (upsert)
-Cada módulo aporta `RetDynamicCallReference<X>` (`Output = SDTDynamicCallReferences`) con items:
+### 5.3 Seeding (upsert)
+Each module contributes a `RetDynamicCallReference<X>` (`Output = SDTDynamicCallReferences`) with items:
 ```
 SDTDynamicCallReferencesItem {
     DynamicCallReferenceCode        = DynamicCallReferenceCode.TskXxx
     DynamicCallReferenceType        = ReferenceType.TaskManagerExecution
     DynamicCallReferenceDescription = "Task Xxx"
-    DynamicCallReferenceURL         = TskXxx.Type      // ← .Type del objeto real
+    DynamicCallReferenceURL         = TskXxx.Type      // ← the real object's .Type
 }
 ```
-El upsert lo hace `AddDynamicCallReference(in: &SDTDynamicCallReferences)` (`New … When Duplicate …`).
+The upsert is done by `AddDynamicCallReference(in: &SDTDynamicCallReferences)` (`New … When Duplicate …`).
 
 ## 6. APIs vs Personalized
 
-- **`APIs/`** (core): la transacción, `PPEXE_DeDynamicCallReferenceURL` (resolver), `AddDynamicCallReference` (upsert), `DelDynamicCallReferences`.
+- **`APIs/`** (core): the transaction, `PPEXE_DeDynamicCallReferenceURL` (the resolver), `AddDynamicCallReference` (upsert), `DelDynamicCallReferences`.
 - **`Personalized/`**:
-  | Objeto | Qué se customiza |
+  | Object | What gets customized |
   |---|---|
-  | **`AddDynamicCallReferences`** (Procedure) | El **agregador maestro**: llama `.Udp()` de cada `RetDynamicCallReference<X>` de todos los módulos, hace upsert, y **poda** las filas cuyo código ya no declara ningún provider. Aquí el proyecto registra sus DPs. |
-  | `RetDynamicCallReferenceExample` (DataProvider) | Plantilla comentada de cómo declarar referencias. |
-  | `RetMenusDynamicCallReferences` (DataProvider) | Entrada de menú del WW. |
+  | **`AddDynamicCallReferences`** (Procedure) | The **master aggregator**: it calls `.Udp()` on every module's `RetDynamicCallReference<X>`, upserts them, and **prunes** the rows whose code no provider declares any more. This is where the project registers its DataProviders. |
+  | `RetDynamicCallReferenceExample` (DataProvider) | A commented template showing how to declare references. |
+  | `RetMenusDynamicCallReferences` (DataProvider) | The WW's menu entry. |
 
-## 7. Instancia de pattern
+## 7. Pattern instance
 
-**PXWorkWithTDynamicCallReferences** — WW sobre la transacción (grid filtrado por `ReferenceType`). Acción **"Update References"** → `DelDynamicCallReferences` + `AddDynamicCallReferences(True)` (re-siembra manual desde la UI).
+**PXWorkWithTDynamicCallReferences** — a WW over the transaction (grid filtered by `ReferenceType`). The **"Update References"** action → `DelDynamicCallReferences` + `AddDynamicCallReferences(True)` (manual re-seeding from the UI).
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-| Proc | `Parm()` | Propósito |
+| Proc | `Parm()` | Purpose |
 |---|---|---|
-| `PPEXE_DeDynamicCallReferenceURL` | `in: &Code; out: &URL` | **Resolver** code → `.Type` para `Call(&url, …)`. |
-| `AddDynamicCallReference` | `in: &SDTDynamicCallReferences` | Upsert de un conjunto de referencias. |
-| `DelDynamicCallReferences` | — | Vacía la tabla (antes de re-sembrar). |
-| `AddDynamicCallReferences` (Personalized) | `in: &ShowMessages` | Re-siembra total + poda de obsoletos. |
+| `PPEXE_DeDynamicCallReferenceURL` | `in: &Code; out: &URL` | **Resolver** code → `.Type` for `Call(&url, …)`. |
+| `AddDynamicCallReference` | `in: &SDTDynamicCallReferences` | Upserts a set of references. |
+| `DelDynamicCallReferences` | — | Empties the table (before re-seeding). |
+| `AddDynamicCallReferences` (Personalized) | `in: &ShowMessages` | Full re-seed + pruning of obsolete rows. |
 
-### How-to: registrar una referencia nueva
-1. Agregar el valor al dominio `DynamicCallReferenceCode`.
-2. Crear/editar un `RetDynamicCallReference<X>` (`Output = SDTDynamicCallReferences`) que devuelva `{ Code, Type (ReferenceType), Description, URL = ObjetoReal.Type }`.
-3. Añadir su `.Udp()` en el agregador `Personalized/AddDynamicCallReferences`.
-4. Correr "Update References" (o llamar al agregador) para persistir.
+### How-to: register a new reference
+1. Add the value to the `DynamicCallReferenceCode` domain.
+2. Create/edit a `RetDynamicCallReference<X>` (`Output = SDTDynamicCallReferences`) returning `{ Code, Type (ReferenceType), Description, URL = RealObject.Type }`.
+3. Add its `.Udp()` to the `Personalized/AddDynamicCallReferences` aggregator.
+4. Run "Update References" (or call the aggregator) to persist it.
 
-Desde entonces cualquier consumidor invoca el objeto vía `PPEXE_DeDynamicCallReferenceURL.Udp(code)` + `Call(…)`, o por subtipo si el módulo denormaliza la URL (como @TableCleaner).
+From then on any consumer invokes the object through `PPEXE_DeDynamicCallReferenceURL.Udp(code)` + `Call(…)`, or by subtype if the module denormalises the URL (as @TableCleaner does).
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- Consumidores: [taskmanager.md](taskmanager.md) (`ExecutionCode`), módulo @TableCleaner (`TableCleanerProcess`), [alerts.md](alerts.md), [cloudtasks.md](cloudtasks.md), [webserviceslog.md](webserviceslog.md).
-- [menus.md](menus.md) — la entrada de menú se declara en `RetMenusDynamicCallReferences`.
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- Consumers: [taskmanager.md](taskmanager.md) (`ExecutionCode`), the @TableCleaner module (`TableCleanerProcess`), [alerts.md](alerts.md), [cloudtasks.md](cloudtasks.md), [webserviceslog.md](webserviceslog.md).
+- [menus.md](menus.md) — the menu entry is declared in `RetMenusDynamicCallReferences`.

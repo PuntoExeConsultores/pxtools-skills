@@ -1,21 +1,21 @@
-# Módulo @System — Catálogo de Objetos del Sistema
+# @System Module — System Object Catalogue
 
-> Comportamiento del módulo `@PXTools/@System`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@System` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@System/`
-  - `APIs/` — core (transacciones catálogo + APIs de registro). Intocable.
-  - `Personalized/` — los procs de "seed" que se regeneran por proyecto.
-- Cualificador: `PXTools.System`.
-- **Depende de:** `@APIs` (base). Es **infraestructura compartida**: otros módulos (@Security, @OAV, @ControlPreferences) dependen de @System, no al revés.
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@System/`
+  - `APIs/` — core (catalogue transactions + registration APIs). Not to be touched.
+  - `Personalized/` — the "seed" procedures that get regenerated per project.
+- Qualifier: `PXTools.System`.
+- **Depends on:** `@APIs` (base). It is **shared infrastructure**: other modules (@Security, @OAV, @ControlPreferences) depend on @System, not the other way round.
 
-## 1. Qué provee
+## 1. What it provides
 
-Un módulo núcleo que mantiene el **catálogo interno de objetos y módulos del sistema**: un registro persistido de los objetos GeneXus (transacciones, web panels, procedures, tablas) agrupados por módulo. Ese catálogo es la **tabla "padre"** sobre la que otros módulos del framework cuelgan sus datos por objeto: **@Security** (permisos por objeto/acción/party), **@OAV** (atributos/clases dinámicos por objeto) y **@ControlPreferences** (preferencias de control por objeto) referencian todos a `SystemObjectName`.
+A core module maintaining the **internal catalogue of system objects and modules**: a persisted registry of the GeneXus objects (transactions, web panels, procedures, tables) grouped by module. That catalogue is the **"parent" table** other framework modules hang their per-object data from: **@Security** (permissions per object/action/party), **@OAV** (dynamic attributes/classes per object) and **@ControlPreferences** (control preferences per object) all reference `SystemObjectName`.
 
-## 2. Concepto central: `TSystemObjects` como tabla raíz
+## 2. Core concept: `TSystemObjects` as the root table
 
-`TSystemObjects` es el catálogo central de "objetos del sistema" y la **raíz** de varios subsistemas: cualquier funcionalidad que necesite colgar datos "por objeto GeneXus" lo hace con una FK a `SystemObjectName`.
+`TSystemObjects` is the central catalogue of "system objects" and the **root** of several subsystems: any feature needing to hang data "per GeneXus object" does so with an FK to `SystemObjectName`.
 
 ```
                  TSystemModules (PK SystemModuleName)
@@ -28,69 +28,69 @@ Un módulo núcleo que mantiene el **catálogo interno de objetos y módulos del
  (@Security)            (@OAV)              (@ControlPreferences)
 ```
 
-## 3. Transacciones del módulo
+## 3. Module transactions
 
-| Transacción | PK | Rol |
+| Transaction | PK | Role |
 |---|---|---|
-| **TSystemObjects** (BC) | `SystemObjectName` (dom. `ObjectName, GeneXus`) | **Catálogo de objetos.** Atributos: `SystemObjectType` (`ObjectType`, restringido a `T/H/D`), `SystemObjectDescription`, `SystemObjectParent` (self-FK jerárquica, vía Group `SystemObjectParent`), `SystemObjectUTL` (Boolean), `SystemObjectVersionChequed`, `SystemObjectOAVDeclaration` (Boolean, marca participación en OAV), `SystemModuleName` (FK a `TSystemModules`). Tabla física `#Tables/SystemObjects`. |
-| **TSystemModules** (BC) | `SystemModuleName` (`ObjectName`) | Catálogo de módulos. `SystemModuleDescription`. |
+| **TSystemObjects** (BC) | `SystemObjectName` (domain `ObjectName, GeneXus`) | **Object catalogue.** Attributes: `SystemObjectType` (`ObjectType`, restricted to `T/H/D`), `SystemObjectDescription`, `SystemObjectParent` (hierarchical self-FK, through the `SystemObjectParent` Group), `SystemObjectUTL` (Boolean), `SystemObjectVersionChequed`, `SystemObjectOAVDeclaration` (Boolean, marks participation in OAV), `SystemModuleName` (FK to `TSystemModules`). Physical table `#Tables/SystemObjects`. |
+| **TSystemModules** (BC) | `SystemModuleName` (`ObjectName`) | Module catalogue. `SystemModuleDescription`. |
 
-Objetos auxiliares:
-- **SDT `SystemObject`** (`APIs/SystemObject.StructuredDataType.gxSource`) — contrato de entrada de `AddSystemObject`: `Name`, `Type`, `Description`, `Parent`, `UTL`, `OAVDeclaration`, `ModuleName`.
-- **Group `SystemObjectParent`** — subtipo `SystemObjectParent : SystemObjectName` (resuelve la auto-relación padre/hijo).
+Supporting objects:
+- **SDT `SystemObject`** (`APIs/SystemObject.StructuredDataType.gxSource`) — the input contract of `AddSystemObject`: `Name`, `Type`, `Description`, `Parent`, `UTL`, `OAVDeclaration`, `ModuleName`.
+- **Group `SystemObjectParent`** — the subtype `SystemObjectParent : SystemObjectName` (resolves the parent/child self-relationship).
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-**Propio (root-legacy — vive en `#Domains/` raíz por ser previo a los dominios por módulo):**
-- **`ObjectType`** (`Character(1)`): `Transaction=T`, `WebPanel=H`, `DataBase=D`, `Procedure=P` (las transacciones restringen el ValueRange a `T/H/D`). Es de @System (lo define su `TSystemObjects`), aunque también lo leen @APIs y @Security.
+**Its own (root-legacy — it lives in the root `#Domains/` because it predates per-module domains):**
+- **`ObjectType`** (`Character(1)`): `Transaction=T`, `WebPanel=H`, `DataBase=D`, `Procedure=P` (the transactions restrict the ValueRange to `T/H/D`). It belongs to @System (its `TSystemObjects` defines it), even though @APIs and @Security read it too.
 
-**Usa de @APIs base / GeneXus:** `ObjectName` / `ObjectDescription` / `Version` (namespace `GeneXus`), `Links`, `MaxMem`, `Window*`.
+**Used from @APIs base / GeneXus:** `ObjectName` / `ObjectDescription` / `Version` (the `GeneXus` namespace), `Links`, `MaxMem`, `Window*`.
 
-## 5. Mecanismo de registro
+## 5. The registration mechanism
 
-### APIs de bajo nivel (`APIs/`, idempotentes)
-| Proc | `Parm()` | Qué hace |
+### Low-level APIs (`APIs/`, idempotent)
+| Proc | `Parm()` | What it does |
 |---|---|---|
-| `AddSystemModule` | `in: &SystemModuleName` | Alta idempotente del módulo (`For Each … When None → New`); descripción = el nombre. |
-| `AddSystemObject` | `in: &SystemObject` | Alta idempotente del objeto (llama antes a `AddSystemModule`); `CommitOnExit='No'`. |
-| `DelSystemObject` / `DelSystemObjects` | `in: &SystemObjectName` / — | Baja de un objeto / purga total. |
-| `DelSystemModules` | — | Purga total de módulos. |
-| `CheckSystemModules` | — | **Bootstrap perezoso**: si hay 0 módulos, invoca `SaveSystemModules`. |
+| `AddSystemModule` | `in: &SystemModuleName` | Idempotent module creation (`For Each … When None → New`); the description is the name. |
+| `AddSystemObject` | `in: &SystemObject` | Idempotent object creation (it calls `AddSystemModule` first); `CommitOnExit='No'`. |
+| `DelSystemObject` / `DelSystemObjects` | `in: &SystemObjectName` / — | Delete one object / purge everything. |
+| `DelSystemModules` | — | Purge all modules. |
+| `CheckSystemModules` | — | **Lazy bootstrap**: if there are 0 modules, it invokes `SaveSystemModules`. |
 
-### Procs de "seed" (`Personalized/`)
-- **`SaveSystemModules`** — reconstruye el catálogo de módulos (`DelSystemModules` + N `AddSystemModule` — la lista de módulos es específica del proyecto, se regenera al agregar módulos). ⚠️ **Agregar acá el módulo es requisito para que sus menús se siembren**: `AddMenusRecursive` descarta el ítem cuyo `Module` no esté en el catálogo y `AddDefaultMenus` hace `RollBack` de toda la corrida. Ver [`menus.md`](menus.md) → *El módulo tiene que estar en el catálogo de `SystemModules`*.
-- **`SaveSystemObjects`** — punto de registro de objetos concretos (se personaliza/regenera por proyecto).
+### "Seed" procedures (`Personalized/`)
+- **`SaveSystemModules`** — rebuilds the module catalogue (`DelSystemModules` + N `AddSystemModule` — the module list is project-specific and gets regenerated as modules are added). ⚠️ **Adding the module here is a prerequisite for its menus to be seeded**: `AddMenusRecursive` discards any item whose `Module` is not in the catalogue, and `AddDefaultMenus` `RollBack`s the entire run. See [`menus.md`](menus.md) → *The module has to be in the `SystemModules` catalogue*.
+- **`SaveSystemObjects`** — the registration point for concrete objects (customized/regenerated per project).
 
-### Quién puebla el catálogo
-- El **nombre** de cada objeto (`SystemObjectName`) lo aporta el propio objeto: sus eventos generados setean `&SecurityObjectStructure.Name = &Pgmname` y llaman `PAddSecurityContext` (que vive en `@APIs/Personalized/SecurityConnector`, **no** en @System, y solo arma el `SecurityContext` en memoria — no escribe el catálogo).
-- La **persistencia** la hacen `AddSystemObject` / `SaveSystemObjects` y consumidores como `@OAV` (`SaveOAVSystemObjects`, que marca `OAVDeclaration`) y `@ProcessMonitor` (`StartProcessStatus` → `AddSystemObject`).
+### Who populates the catalogue
+- The **name** of each object (`SystemObjectName`) comes from the object itself: its generated events set `&SecurityObjectStructure.Name = &Pgmname` and call `PAddSecurityContext` (which lives in `@APIs/Personalized/SecurityConnector`, **not** in @System, and only builds the in-memory `SecurityContext` — it does not write the catalogue).
+- The **persistence** is done by `AddSystemObject` / `SaveSystemObjects` and by consumers such as `@OAV` (`SaveOAVSystemObjects`, which sets `OAVDeclaration`) and `@ProcessMonitor` (`StartProcessStatus` → `AddSystemObject`).
 
 ## 6. APIs vs Personalized
 
-- **`APIs/`** (core): las transacciones catálogo (`TSystemObjects`, `TSystemModules`), el SDT `SystemObject`, el Group, y las APIs `Add*/Del*/CheckSystemModules`.
-- **`Personalized/`** (regenerable por proyecto): `SaveSystemModules` (lista de módulos del proyecto) y `SaveSystemObjects` (registro de objetos), cada uno con su instancia PXParameterRequest disparadora.
+- **`APIs/`** (core): the catalogue transactions (`TSystemObjects`, `TSystemModules`), the `SystemObject` SDT, the Group, and the `Add*/Del*/CheckSystemModules` APIs.
+- **`Personalized/`** (regenerated per project): `SaveSystemModules` (the project's module list) and `SaveSystemObjects` (object registration), each with its triggering PXParameterRequest instance.
 
-## 7. Instancias de patterns
+## 7. Pattern instances
 
-| Instancia | Qué es |
+| Instance | What it is |
 |---|---|
-| **PXParameterRequestSaveSystemModules** | Web panel (`WbSaveSystemModules`) con botón "Save" → `Call SaveSystemModules`. |
-| **PXParameterRequestSaveSystemObjects** | Web panel (`WbSaveSystemObjects`) con botón "Save" → `Call SaveSystemObjects`. |
+| **PXParameterRequestSaveSystemModules** | Web panel (`WbSaveSystemModules`) with a "Save" button → `Call SaveSystemModules`. |
+| **PXParameterRequestSaveSystemObjects** | Web panel (`WbSaveSystemObjects`) with a "Save" button → `Call SaveSystemObjects`. |
 
-> Las transacciones `TSystemObjects`/`TSystemModules` usan el pattern **PXWorkWith**, pero sus objetos generados residen fuera del módulo (bajo `@Security/APIs/Objects/`).
+> The `TSystemObjects`/`TSystemModules` transactions do use the **PXWorkWith** pattern, but their generated objects live outside the module (under `@Security/APIs/Objects/`).
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-| Proc | `Parm()` | Propósito |
+| Proc | `Parm()` | Purpose |
 |---|---|---|
-| `AddSystemObject` | `in: &SystemObject` | Alta idempotente de un objeto (crea también su módulo). |
-| `AddSystemModule` | `in: &SystemModuleName` | Alta idempotente de un módulo. |
-| `DelSystemObject` | `in: &SystemObjectName` | Baja de un objeto. |
-| `CheckSystemModules` | — | Bootstrap del catálogo de módulos. |
-| `SaveSystemModules` / `SaveSystemObjects` | — | Reconstrucción del catálogo (módulos / objetos). |
+| `AddSystemObject` | `in: &SystemObject` | Idempotent creation of an object (also creates its module). |
+| `AddSystemModule` | `in: &SystemModuleName` | Idempotent creation of a module. |
+| `DelSystemObject` | `in: &SystemObjectName` | Deletes an object. |
+| `CheckSystemModules` | — | Bootstraps the module catalogue. |
+| `SaveSystemModules` / `SaveSystemObjects` | — | Rebuilds the catalogue (modules / objects). |
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- [security.md](security.md) — `SecurityObjectAccess` (y row-level) son FK a `TSystemObjects`; la ACL se cuelga del catálogo.
-- Módulos **@OAV** y **@ControlPreferences** — también cuelgan de `SystemObjectName`.
-- `modulos/apis.md` — `PAddSecurityContext` (SecurityConnector) que aporta el nombre del objeto al contexto de seguridad.
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- [security.md](security.md) — `SecurityObjectAccess` (and row-level security) are FKs to `TSystemObjects`; the ACL hangs off the catalogue.
+- The **@OAV** and **@ControlPreferences** modules — they also hang off `SystemObjectName`.
+- `modules/apis.md` — `PAddSecurityContext` (SecurityConnector), which contributes the object's name to the security context.
