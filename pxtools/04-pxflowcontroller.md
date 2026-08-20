@@ -1,41 +1,41 @@
-# PXFlowController — Pattern de Orquestación de Flujos
+# PXFlowController — Flow Orchestration Pattern
 
-## Qué es
+## What it is
 
-PXFlowController genera **WebPanels de flujo de trabajo** que orquestan secuencias de acciones, confirmaciones e iteraciones. Transforma lógica de flujo compleja (que normalmente requiere mucho código manual) en una definición declarativa XML.
+PXFlowController generates **workflow WebPanels** orchestrating sequences of actions, confirmations and iterations. It turns complex flow logic (which normally takes a lot of hand-written code) into a declarative XML definition.
 
 ## Parent Objects
 
-Se puede asociar a:
-- `Procedure` — flujo posterior a un proceso
-- `Transaction` — flujo posterior a una transacción
-- `(None)` — flujo independiente
+It can be attached to:
+- `Procedure` — a flow following a process
+- `Transaction` — a flow following a transaction
+- `(None)` — a standalone flow
 
-## Objetos que genera
+## Objects it generates
 
-De **una sola instancia**, genera:
+From **a single instance**, it generates:
 
-| Objeto | Tipo GeneXus | Naming | Condición |
-|--------|-------------|--------|-----------|
-| FlowController (Desktop) | WebPanel | `Ct{Element.name}` | Siempre |
-| FlowControllerResponsive | WebPanel | `Ct{Element.name}` | Siempre |
+| Object | GeneXus type | Naming | Condition |
+|--------|--------------|--------|-----------|
+| FlowController (Desktop) | WebPanel | `Ct{Element.name}` | Always |
+| FlowControllerResponsive | WebPanel | `Ct{Element.name}` | Always |
 
-Cada `level` en la instancia genera un par de WebPanels (Desktop + Responsive).
+Each `level` in the instance generates a pair of WebPanels (Desktop + Responsive).
 
-## Estructura XML de la instancia
+## XML structure of the instance
 
 ```xml
 <instance>
-  <!-- Atributos raíz -->
-  <!-- templatesGroup: grupo de templates a aplicar -->
+  <!-- Root attributes -->
+  <!-- templatesGroup: the template group to apply -->
 
-  <level name="MiFlujo" description="Flujo de facturación">
-    <!-- Propiedades del level -->
-    <!-- name: nombre del flujo -->
-    <!-- description: descripción -->
-    <!-- masterPage: MasterPage a usar (<default> o referencia) -->
-    <!-- theme: Theme a usar (<default> o referencia) -->
-    <!-- isGXFlowTask: bool — integración con GXFlow -->
+  <level name="MyFlow" description="Invoicing flow">
+    <!-- Level properties -->
+    <!-- name: the flow's name -->
+    <!-- description: a description -->
+    <!-- masterPage: the MasterPage to use (<default> or a reference) -->
+    <!-- theme: the Theme to use (<default> or a reference) -->
+    <!-- isGXFlowTask: bool — GXFlow integration -->
     <!-- generateWeb: enum{<default>;True;False} -->
     <!-- generateWebResponsive: enum{<default>;True;False} -->
     <!-- generateSD: enum{<default>;True;False} -->
@@ -44,26 +44,26 @@ Cada `level` en la instancia genera un par de WebPanels (Desktop + Responsive).
     <!-- templateSDObject: SDPanel template (Smart Devices) -->
 
     <parameters>
-      <parameter name="FacturaId" />
-      <parameter name="ClienteId" />
+      <parameter name="InvoiceId" />
+      <parameter name="CustomerId" />
     </parameters>
 
     <blocksLevels>
       <blocksLevel name="Main">
-        <!-- Bloque de líneas: cada línea es un paso del flujo -->
+        <!-- A block of lines: each line is a step of the flow -->
         <linesBlock lineFrom="1">
           <mainCode>
             <![CDATA[
-              // Código GeneXus que se ejecuta en la línea 1
-              &FacturaTotal = GetFacturaTotal(&FacturaId)
+              // GeneXus code executed on line 1
+              &InvoiceTotal = GetInvoiceTotal(&InvoiceId)
             ]]>
           </mainCode>
 
           <actions>
-            <action name="Confirmar"
+            <action name="Confirm"
                     callType="Link"
                     linkType="PXInstance"
-                    instanceObject="PXParameterRequestConfirmarFactura"
+                    instanceObject="PXParameterRequestConfirmInvoice"
                     instanceLevel="Level1"
                     instanceLevelNode="Level"
                     target="New"
@@ -72,28 +72,28 @@ Cada `level` en la instancia genera un par de WebPanels (Desktop + Responsive).
                     actionLine="1"
                     nextLine="2">
               <parameters>
-                <parameter name="FacturaId" />
+                <parameter name="InvoiceId" />
               </parameters>
             </action>
 
-            <action name="Cancelar"
+            <action name="Cancel"
                     callType="Subroutine"
-                    subroutine="CancelarFlujo"
+                    subroutine="CancelFlow"
                     actionLine="1"
                     nextLine="99">
             </action>
           </actions>
 
           <confirms>
-            <confirm name="ConfirmarEnvio"
-                     question="¿Desea enviar la factura?"
+            <confirm name="ConfirmSend"
+                     question="Do you want to send the invoice?"
                      questionType="Constant"
                      popupWidth="350"
                      popupHeight="200"
                      confirmLine="1"
                      nextLine="3">
               <responses>
-                <response responseValue="Si" responseLine="2" />
+                <response responseValue="Yes" responseLine="2" />
                 <response responseValue="No" responseLine="1" />
               </responses>
             </confirm>
@@ -102,263 +102,263 @@ Cada `level` en la instancia genera un par de WebPanels (Desktop + Responsive).
 
         <linesBlock lineFrom="2">
           <mainCode><![CDATA[
-            // Línea 2: enviar factura
-            EnviarFactura(&FacturaId)
+            // Line 2: send the invoice
+            SendInvoice(&InvoiceId)
           ]]></mainCode>
         </linesBlock>
       </blocksLevel>
     </blocksLevels>
 
     <codes>
-      <code type="Start" data="...código de inicio..." />
-      <code type="Refresh" data="...código de refresh..." />
-      <code type="Subroutine" name="CancelarFlujo" data="...código..." />
+      <code type="Start" data="...startup code..." />
+      <code type="Refresh" data="...refresh code..." />
+      <code type="Subroutine" name="CancelFlow" data="...code..." />
     </codes>
 
     <variables>
-      <variable name="FacturaTotal" basedOn="FacturaTotal" />
+      <variable name="InvoiceTotal" basedOn="InvoiceTotal" />
     </variables>
   </level>
 </instance>
 ```
 
-## Concepto de Bloques de Líneas
+## The concept of line blocks
 
-El flujo se organiza en **líneas numeradas**. Cada bloque de líneas (`linesBlock`) define:
+The flow is organised into **numbered lines**. Each block of lines (`linesBlock`) defines:
 
 ```
 ┌─────────────────────────────────────────────┐
-│ Bloque de Líneas (lineFrom=1)               │
+│ Line block (lineFrom=1)                     │
 │                                             │
-│  1. mainCode: código GeneXus a ejecutar     │
-│  2. iterationCode: código de iteración      │
-│     (opcional, para loops)                  │
-│  3. actions: acciones disponibles           │
-│     └─ Cada acción tiene nextLine           │
-│  4. confirms: confirmaciones                │
-│     └─ Cada respuesta tiene responseLine    │
+│  1. mainCode: the GeneXus code to run       │
+│  2. iterationCode: iteration code           │
+│     (optional, for loops)                   │
+│  3. actions: the available actions          │
+│     └─ each action has a nextLine           │
+│  4. confirms: confirmations                 │
+│     └─ each response has a responseLine     │
 │                                             │
-│  El flujo salta a nextLine/responseLine     │
-│  según la acción o respuesta elegida        │
+│  The flow jumps to nextLine/responseLine    │
+│  according to the action or response chosen │
 └─────────────────────────────────────────────┘
 ```
 
-### Flujo de ejecución
+### Execution flow
 
 ```
-Línea 1 ──► mainCode ──► Actions/Confirms
+Line 1 ──► mainCode ──► Actions/Confirms
                            │
                 ┌──────────┼──────────┐
                 ▼          ▼          ▼
-            Acción A   Acción B   Confirm
-            nextLine=2 nextLine=3  │
-                │          │    ┌──┴──┐
-                ▼          ▼    ▼     ▼
-             Línea 2   Línea 3 Si    No
-                              resp=4 resp=1
-                               │      │
-                               ▼      ▼
-                           Línea 4  Línea 1
-                                   (vuelve)
+            Action A   Action B    Confirm
+            nextLine=2 nextLine=3   │
+                │          │    ┌───┴───┐
+                ▼          ▼    ▼       ▼
+             Line 2     Line 3 Yes     No
+                              resp=4  resp=1
+                               │        │
+                               ▼        ▼
+                            Line 4   Line 1
+                                    (goes back)
 ```
 
-## Tipos de acción (callType)
+## Action types (callType)
 
-| callType | Descripción | Propiedades clave |
-|----------|-------------|-------------------|
-| `Link` | Invoca un objeto o instancia | linkType, gxObject/instanceObject, target |
-| `External Link` | Link a URL/objeto externo | externalObject |
-| `Client Text Print` | Impresión de texto en cliente | gxObject |
-| `Subroutine` | Invoca una subrutina local | subroutine |
+| callType | Description | Key properties |
+|----------|-------------|----------------|
+| `Link` | Invokes an object or an instance | linkType, gxObject/instanceObject, target |
+| `External Link` | A link to an external URL/object | externalObject |
+| `Client Text Print` | Client-side text printing | gxObject |
+| `Subroutine` | Invokes a local subroutine | subroutine |
 
-### linkType para acciones tipo Link
+### linkType for Link actions
 
-| linkType | Descripción | Propiedad |
-|----------|-------------|-----------|
-| `GXObject` | Llama directamente a un objeto GeneXus | gxObject (reference) |
-| `PXInstance` | Llama a una instancia de PXTools | instanceObject + instanceLevel + instanceLevelNode |
+| linkType | Description | Property |
+|----------|-------------|----------|
+| `GXObject` | Calls a GeneXus object directly | gxObject (reference) |
+| `PXInstance` | Calls a PXTools instance | instanceObject + instanceLevel + instanceLevelNode |
 
-### Patterns invocables vía PXInstance
+### Patterns invocable through PXInstance
 
-Una acción con `linkType="PXInstance"` puede invocar:
+An action with `linkType="PXInstance"` can invoke:
 - **PXWorkWith** (Selection, View, Edit, Prompt)
 - **PXParameterRequest** (Level)
 - **PXComposer** (Level)
-- **PXFlowController** (otro flujo)
-- **PXOAV** (gestión de OAV)
+- **PXFlowController** (another flow)
+- **PXOAV** (OAV management)
 
-### Target de acciones
+### Action target
 
-| target | Comportamiento |
-|--------|---------------|
-| `Self` | Navega en la misma ventana |
-| `New` | Abre en popup/nueva ventana |
+| target | Behaviour |
+|--------|-----------|
+| `Self` | Navigates in the same window |
+| `New` | Opens in a popup/new window |
 
-Cuando `target="New"`:
-- `popupWidth` / `popupHeight` controlan el tamaño
-- `closeWindowControl` permite controlar el cierre del popup
-- `closeWindowControlCondition` evalúa si el cierre es aceptado
-- `hasPostCode` habilita código post-cierre del popup
+When `target="New"`:
+- `popupWidth` / `popupHeight` control the size
+- `closeWindowControl` lets you control the popup's closing
+- `closeWindowControlCondition` evaluates whether the close is accepted
+- `hasPostCode` enables code that runs after the popup closes
 
-## Confirmaciones
+## Confirmations
 
-Las confirmaciones (`confirm`) son diálogos modales con múltiples respuestas posibles:
+Confirmations (`confirm`) are modal dialogs with several possible responses:
 
 ```xml
-<confirm name="ConfirmarAccion"
-         question="¿Está seguro?"
-         questionType="Constant"    <!-- o Variable -->
-         gxObject="WbConfirm"       <!-- WebPanel custom de confirmación (opcional) -->
-         responseDomain="MiDominio" <!-- Dominio para las respuestas -->
+<confirm name="ConfirmAction"
+         question="Are you sure?"
+         questionType="Constant"    <!-- or Variable -->
+         gxObject="WbConfirm"       <!-- a custom confirmation WebPanel (optional) -->
+         responseDomain="MyDomain"  <!-- the domain of the responses -->
          confirmLine="1"
          nextLine="2">
   <responses>
-    <response responseValue="Aceptar" responseLine="3" />
-    <response responseValue="Cancelar" responseLine="1" />
+    <response responseValue="Accept" responseLine="3" />
+    <response responseValue="Cancel" responseLine="1" />
   </responses>
 </confirm>
 ```
 
-- Pueden usar un WebPanel custom (`gxObject`) o el popup estándar de PXTools
-- Cada respuesta dirige a una línea diferente del flujo
-- `responseLine="1"` en los bloques de respuesta se reserva para validación
+- They can use a custom WebPanel (`gxObject`) or the standard PXTools popup
+- Each response directs the flow to a different line
+- `responseLine="1"` in the response blocks is reserved for validation
 
-## Iteraciones
+## Iterations
 
-El nodo `iterationCode` permite crear loops dentro del flujo:
+The `iterationCode` node allows loops inside the flow:
 
 ```xml
 <linesBlock lineFrom="5">
   <iterationCode iterationLineNext="5">
     <![CDATA[
-      // Este código se ejecuta en cada iteración
-      // Si iterationLineNext=5 (la misma línea), itera
-      For each Factura where FacturaEstado = "Pendiente"
+      // This code runs on each iteration
+      // If iterationLineNext=5 (the same line), it iterates
+      For each Invoice where InvoiceStatus = "Pending"
     ]]>
   </iterationCode>
   <mainCode>
     <![CDATA[
-      // Código principal de la iteración
-      ProcesarFactura(FacturaId)
+      // The iteration's main code
+      ProcessInvoice(InvoiceId)
     ]]>
   </mainCode>
 </linesBlock>
 ```
 
-## Hooks de código (Codes)
+## Code hooks (Codes)
 
-| type | Cuándo se ejecuta |
-|------|-------------------|
-| `Start` | Al inicio del WebPanel (evento Start) |
-| `Refresh` | En el evento Refresh |
-| `Load` | En el evento Load |
-| `Subroutine` | Subrutina invocable por nombre |
+| type | When it runs |
+|------|--------------|
+| `Start` | At the start of the WebPanel (the Start event) |
+| `Refresh` | In the Refresh event |
+| `Load` | In the Load event |
+| `Subroutine` | A subroutine callable by name |
 
 ## Variables
 
-Las variables del flujo se declaran con definición completa:
+The flow's variables are declared with a complete definition:
 
 ```xml
 <variable name="Total"
-          basedOn="FacturaTotal"    <!-- basado en atributo -->
-          domain="Numeric10_2"      <!-- o basado en dominio -->
-          SDT="MiSDT"              <!-- o basado en SDT -->
-          dataType="Numeric"        <!-- o tipo primitivo -->
+          basedOn="InvoiceTotal"    <!-- based on an attribute -->
+          domain="Numeric10_2"      <!-- or based on a domain -->
+          SDT="MySDT"               <!-- or based on an SDT -->
+          dataType="Numeric"        <!-- or a primitive type -->
           length="10"
           decimals="2"
           collection="false"
           dimension="Scalar" />
 ```
 
-## Capacidad dual-platform
+## Dual-platform capability
 
-Cada level tiene propiedades `generateWeb`, `generateWebResponsive` y `generateSD`. El .Pattern define dos Object entries para cada level:
+Every level has `generateWeb`, `generateWebResponsive` and `generateSD` properties. The .Pattern defines two Object entries per level:
 
-- `FlowController` → genera WebPanel con template `FlowControllerWebForm.dll` (HTML)
-- `FlowControllerResponsive` → genera WebPanel con template `FlowControllerAbstractForm.dll` (abstracto)
+- `FlowController` → generates a WebPanel with the `FlowControllerWebForm.dll` template (HTML)
+- `FlowControllerResponsive` → generates a WebPanel with the `FlowControllerAbstractForm.dll` template (abstract)
 
-## Ejemplo: alta continua con confirmación (PXFlowControllerAltaContinua)
+## Example: continuous creation with confirmation (PXFlowControllerContinuousCreate)
 
-Esta instancia orquesta el **alta continua de registros**: tras crear uno, pregunta si se desea crear otro del mismo tipo y encadena la navegación según la respuesta.
+This instance orchestrates **creating records continuously**: after creating one, it asks whether another of the same kind should be created, and chains the navigation according to the answer.
 
 ```xml
 <?xml version="1.0" encoding="utf-16"?>
 <instance>
-  <level name="AltaContinua" generateWebResponsive="True">
+  <level name="ContinuousCreate" generateWebResponsive="True">
     <blocksLevels>
       <blocksLevel>
-        <!-- Línea 1: ¿Crear otro registro del mismo tipo? -->
+        <!-- Line 1: create another record of the same kind? -->
         <linesBlock lineFrom="1">
           <mainCode><![CDATA[
-            &SDTAltaContinua = RetSDTAltaContinua.Udp()
-            If not &SDTAltaContinua.Habilitada
-              ControllerGotoLine 4          // Ir directamente al Selection
+            &SDTContinuousCreate = RetSDTContinuousCreate.Udp()
+            If not &SDTContinuousCreate.Enabled
+              ControllerGotoLine 4          // Go straight to the Selection
             Else
-              ControllerConfirm Reingresar  // Preguntar al usuario
+              ControllerConfirm CreateAgain // Ask the user
             EndIf
           ]]></mainCode>
 
           <confirms>
-            <confirm name="Reingresar"
+            <confirm name="CreateAgain"
                      gxObject="PuConfirm, PXTools.APIs"
                      responseDomain="Boolean"
-                     question="¿Desea crear un nuevo registro del mismo tipo?"
+                     question="Do you want to create another record of the same kind?"
                      nextLine="1">
               <responses>
-                <response responseValue="True" responseLine="2" />   <!-- Sí: crear nuevo -->
-                <response responseValue="False" responseLine="3" />  <!-- No: ir al Selection -->
+                <response responseValue="True" responseLine="2" />   <!-- Yes: create a new one -->
+                <response responseValue="False" responseLine="3" />  <!-- No: go to the Selection -->
               </responses>
 
-              <!-- Línea 2: Crear nuevo registro y navegar al View -->
+              <!-- Line 2: create the record and navigate to the View -->
               <linesBlock lineFrom="2">
                 <mainCode><![CDATA[
-                  AddPedido.Call(&Context.SecurityUserTenantId, 0,
-                    &SDTAltaContinua.Tipo, ...)
+                  AddOrder.Call(&Context.SecurityUserTenantId, 0,
+                    &SDTContinuousCreate.Kind, ...)
                   For Each
                     Where TenantId = &Context.SecurityUserTenantId
-                    Where TipoId = &SDTAltaContinua.Tipo
-                    If TipoSaltaDatosCabecera
-                      ControllerAction IrAlViewDetalle
+                    Where KindId = &SDTContinuousCreate.Kind
+                    If KindSkipsHeaderData
+                      ControllerAction GoToViewDetail
                     Else
-                      ControllerAction IrAlViewCabecera
+                      ControllerAction GoToViewHeader
                     EndIf
                   EndFor
                 ]]></mainCode>
                 <actions>
-                  <!-- Acción que invoca PXWorkWith View, sección Cabecera -->
-                  <action name="IrAlViewCabecera"
-                          instanceObject="PXWorkWithPedidos, MiApp"
-                          instanceLevel="Pedido"
+                  <!-- An action invoking the PXWorkWith View, the Header section -->
+                  <action name="GoToViewHeader"
+                          instanceObject="PXWorkWithOrders, MyApp"
+                          instanceLevel="Order"
                           instanceLevelNode="View"
-                          instanceLevelViewSection="Cabecera"
+                          instanceLevelViewSection="Header"
                           nextLine="999">
                     <parameters>
                       <parameter name="TrnMode.Insert" />
                       <parameter name="0" />
-                      <parameter name="&EstadoVacio" />
+                      <parameter name="&EmptyStatus" />
                     </parameters>
                   </action>
-                  <!-- Acción que invoca PXWorkWith View, sección Detalle -->
-                  <action name="IrAlViewDetalle"
-                          instanceObject="PXWorkWithPedidos, MiApp"
-                          instanceLevel="Pedido"
+                  <!-- An action invoking the PXWorkWith View, the Detail section -->
+                  <action name="GoToViewDetail"
+                          instanceObject="PXWorkWithOrders, MyApp"
+                          instanceLevel="Order"
                           instanceLevelNode="View"
-                          instanceLevelViewSection="Detalle"
+                          instanceLevelViewSection="Detail"
                           nextLine="999">
                   </action>
                 </actions>
               </linesBlock>
 
-              <!-- Línea 3: No reingresar, ir al Selection -->
+              <!-- Line 3: no repeat, go to the Selection -->
               <linesBlock lineFrom="3">
                 <mainCode><![CDATA[
-                  DelSDTAltaContinua.Call()
-                  ControllerAction IrAlSelection
+                  DelSDTContinuousCreate.Call()
+                  ControllerAction GoToSelection
                 ]]></mainCode>
                 <actions>
-                  <action name="IrAlSelection"
-                          instanceObject="PXWorkWithPedidos, MiApp"
-                          instanceLevel="Pedido"
+                  <action name="GoToSelection"
+                          instanceObject="PXWorkWithOrders, MyApp"
+                          instanceLevel="Order"
                           instanceLevelNode="Selection"
                           nextLine="999" />
                 </actions>
@@ -367,13 +367,13 @@ Esta instancia orquesta el **alta continua de registros**: tras crear uno, pregu
           </confirms>
         </linesBlock>
 
-        <!-- Línea 4: Ir al Selection (cuando el alta continua no está habilitada) -->
+        <!-- Line 4: go to the Selection (when continuous creation is disabled) -->
         <linesBlock lineFrom="4">
-          <mainCode><![CDATA[ControllerAction IrAlSelection]]></mainCode>
+          <mainCode><![CDATA[ControllerAction GoToSelection]]></mainCode>
           <actions>
-            <action name="IrAlSelection"
-                    instanceObject="PXWorkWithPedidos, MiApp"
-                    instanceLevel="Pedido"
+            <action name="GoToSelection"
+                    instanceObject="PXWorkWithOrders, MyApp"
+                    instanceLevel="Order"
                     instanceLevelNode="Selection"
                     nextLine="1" />
           </actions>
@@ -381,45 +381,45 @@ Esta instancia orquesta el **alta continua de registros**: tras crear uno, pregu
       </blocksLevel>
     </blocksLevels>
     <variables>
-      <variable name="SDTAltaContinua" SDT="SDTAltaContinua, MiApp" />
-      <variable name="EstadoVacio" basedOn="PedidoEstado" />
-      <variable name="TipoVacio" basedOn="PedidoTipo" />
+      <variable name="SDTContinuousCreate" SDT="SDTContinuousCreate, MyApp" />
+      <variable name="EmptyStatus" basedOn="OrderStatus" />
+      <variable name="EmptyKind" basedOn="OrderKind" />
     </variables>
   </level>
 </instance>
 ```
 
-### Diagrama del flujo
+### Diagram of the flow
 
 ```
-Línea 1: ¿Alta continua habilitada?
+Line 1: is continuous creation enabled?
     │
-    ├── NO ──► Línea 4 ──► IrAlSelection (PXWorkWithPedidos)
+    ├── NO ──► Line 4 ──► GoToSelection (PXWorkWithOrders)
     │
-    └── SÍ ──► Confirm "¿Crear un nuevo registro del mismo tipo?"
+    └── YES ──► Confirm "Create another record of the same kind?"
                  │
-                 ├── True (Línea 2) ──► Crear registro ──►
-                 │     ├── Si salta cabecera ──► View.Detalle
-                 │     └── Si no ──► View.Cabecera
+                 ├── True (Line 2) ──► create the record ──►
+                 │     ├── if it skips the header ──► View.Detail
+                 │     └── otherwise ──► View.Header
                  │
-                 └── False (Línea 3) ──► Eliminar estado ──► IrAlSelection
+                 └── False (Line 3) ──► clear the state ──► GoToSelection
 ```
 
-**Puntos clave del ejemplo:**
-- Usa `ControllerGotoLine` para saltar líneas sin acción del usuario
-- Usa `ControllerConfirm` para mostrar diálogo de confirmación
-- Usa `ControllerAction` para ejecutar una acción definida
-- Las acciones referencian PXWorkWith con `instanceLevelViewSection` para navegar a un tab específico
-- `generateWebResponsive="True"` genera versiones Desktop y Responsive
+**Key points of the example:**
+- It uses `ControllerGotoLine` to jump lines without any user action
+- It uses `ControllerConfirm` to show a confirmation dialog
+- It uses `ControllerAction` to run a defined action
+- The actions reference PXWorkWith with `instanceLevelViewSection` to navigate to a specific tab
+- `generateWebResponsive="True"` generates both the Desktop and Responsive versions
 
-## Relación con otros patterns
+## Relationship with the other patterns
 
 ```
 PXFlowController
-├── Puede invocar ──► PXWorkWith (Selection/View/Prompt)
-├── Puede invocar ──► PXParameterRequest (confirmaciones, captura de datos)
-├── Puede invocar ──► PXComposer (pantallas compuestas)
-├── Puede invocar ──► PXOAV (gestión de atributos dinámicos)
-├── Puede invocar ──► Otro PXFlowController (flujos anidados)
-└── Puede invocar ──► Cualquier objeto GeneXus (Procedures, WebPanels)
+├── Can invoke ──► PXWorkWith (Selection/View/Prompt)
+├── Can invoke ──► PXParameterRequest (confirmations, data capture)
+├── Can invoke ──► PXComposer (composed screens)
+├── Can invoke ──► PXOAV (dynamic attribute management)
+├── Can invoke ──► another PXFlowController (nested flows)
+└── Can invoke ──► any GeneXus object (Procedures, WebPanels)
 ```
