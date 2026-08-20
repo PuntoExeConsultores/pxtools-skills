@@ -1,74 +1,62 @@
-# Módulo @Menus — Menús de Navegación Web
+# @Menus Module — Web Navigation Menus
 
-> Comportamiento del módulo `@PXTools/@Menus`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@Menus` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@Menus/` (`APIs/` core + `Personalized/`).
-- Cualificador: `PXTools.Menus`.
-- **Depende de:** `@APIs` (base). Para el estilo SmartMenu usa el módulo **de GeneXus** `@SmartMenus` (no es un módulo PXTools — solo aporta el soporte del User Control). En el grafo canónico también `@System`.
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@Menus/` (`APIs/` core + `Personalized/`).
+- Qualifier: `PXTools.Menus`.
+- **Depends on:** `@APIs` (base). For the SmartMenu style it uses the **GeneXus** module `@SmartMenus` (not a PXTools module — it only provides the User Control's support). In the canonical graph also `@System`.
 
-## 1. Qué provee
+## 1. What it provides
 
-El **árbol de menús de navegación web**: nodos jerárquicos que apuntan a objetos GeneXus, con imágenes/íconos, override por plataforma, y **seguridad por nodo**. Cada módulo declara su porción del menú; el framework la persiste, resuelve qué nodos ve cada usuario (según autorización) y los renderiza (top / left / dropdown / tree).
+The **web navigation menu tree**: hierarchical nodes pointing at GeneXus objects, with images/icons, per-platform overrides, and **per-node security**. Each module declares its slice of the menu; the framework persists it, works out which nodes each user can see (based on authorization) and renders them (top / left / dropdown / tree).
 
-## 2. Concepto central
+## 2. Core concept
 
-Tres piezas:
-1. **`TMnuWeb`** — la tabla donde se persiste el árbol (un registro = un nodo).
-2. **`SDTMenus`** — el **modelo declarativo** recursivo que cada módulo llena para describir su menú (se siembra en `TMnuWeb`).
-3. **`MenuContext`** — el resultado, por usuario, de resolver qué nodos están **habilitados/visibles**; se calcula una vez y se guarda en `WebSession`; el render solo lee ese set.
+Three pieces:
+1. **`TMnuWeb`** — the table the tree is persisted in (one record = one node).
+2. **`SDTMenus`** — the recursive **declarative model** each module fills in to describe its menu (it gets seeded into `TMnuWeb`).
+3. **`MenuContext`** — the per-user result of working out which nodes are **enabled/visible**; computed once and stored in `WebSession`; rendering only reads that set.
 
-## 3. Transacción `TMnuWeb`
+## 3. The `TMnuWeb` transaction
 
-- **PK compuesta**: `MnWOri` (`Origin`, Char(1)) + `MnWSec` (Numeric(10.0), autonumerado). El origen separa espacios de menú (Development/Customer/Favorites).
-- **Jerarquía (self-FK)**: `MnWPadOri` + `MnWPad` → nodo padre (`MnWPad=0`/null = raíz). `MnWOrd` ordena hermanos. `MnWCat` agrupa árboles por zona (top/left).
-- **UI del nodo**: `MnWName` (ObjectName destino), `MnWDsc`, `MnWAbr`, `MnWImg`/`MnWImgSel`/`MnWImageType`, `MnWIconClass`/`MnWIconValue`.
-- **Destino**: `MnWPgm` (programa a invocar), `MnWTgt` (target).
-- **Seguridad por nodo**: `MnWCodSeg` (código de seguridad) + `MnWSystemModuleName`/`…Description` (módulo del objeto — califica el nombre del programa al chequear autorización; Group `MnuWebSystemModule`).
-- **Sublevel `ApplicationPlatform`** (PK += `MnWApplicationPlatformPlatform`): programa/target **por plataforma** (WebDesktop / WebResponsive / SmartDevices), + `MnWApplicationPlatformChildsAction` (cómo se renderizan los hijos: DropDown vs LeftMenus).
+- **Composite PK**: `MnWOri` (`Origin`, Char(1)) + `MnWSec` (Numeric(10.0), autonumbered). The origin separates menu spaces (Development/Customer/Favorites).
+- **Hierarchy (self-FK)**: `MnWPadOri` + `MnWPad` → the parent node (`MnWPad=0`/null = root). `MnWOrd` orders siblings. `MnWCat` groups trees by zone (top/left).
+- **Node UI**: `MnWName` (the target ObjectName), `MnWDsc`, `MnWAbr`, `MnWImg`/`MnWImgSel`/`MnWImageType`, `MnWIconClass`/`MnWIconValue`.
+- **Target**: `MnWPgm` (the program to invoke), `MnWTgt` (target).
+- **Per-node security**: `MnWCodSeg` (security code) + `MnWSystemModuleName`/`…Description` (the object's module — it qualifies the program name when checking authorization; the `MnuWebSystemModule` Group).
+- **`ApplicationPlatform` sublevel** (PK += `MnWApplicationPlatformPlatform`): program/target **per platform** (WebDesktop / WebResponsive / SmartDevices), plus `MnWApplicationPlatformChildsAction` (how children are rendered: DropDown vs LeftMenus).
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-**Propios** de @Menus (nombre `Menu*`/`Menus*`/`*MenuType`/`*MenuDropDownType` + `PXToolsMenus*`), todos **root-legacy** (viven en el `#Domains/` raíz):
+**Owned** by @Menus (named `Menu*`/`Menus*`/`*MenuType`/`*MenuDropDownType` + `PXToolsMenus*`), all **root-legacy** (they live in the root `#Domains/`):
 
-| Dominio | Valores / Rol |
+| Domain | Values / Role |
 |---|---|
-| **MenuLocation** | `Left, Top, Toolbar, Main, Category` — dónde se renderiza |
+| **MenuLocation** | `Left, Top, Toolbar, Main, Category` — where it is rendered |
 | **MenuOrder** | Alphabetic=`A`, Order=`O` |
 | **MenuImageDisplayType** | Horizontal=`H`, Vertical=`V` |
-| **MenuCategory** / **MenuSearch** / **MenusEnabled** / **MenusCollection** | Categoría (p.ej. Favorites), texto de búsqueda, flag de habilitados, SDT-colección de ítems |
-| **PXToolsMenusChildsAction** | DropDown=`DPD`, LeftMenus=`LEF` — cómo se renderizan los hijos |
-| **{Left,DesktopLeft,ResponsiveLeft}MenuType** | `Standard, TreeView, PXToolsSmartMenus` — estilo del menú lateral por plataforma |
-| **{Top,DesktopTop,ResponsiveTop}MenuDropDownType** | `GXUIToolbar, PXToolsSmartMenus*, HorizontalFloat/Push` — estilo del menú superior |
+| **MenuCategory** / **MenuSearch** / **MenusEnabled** / **MenusCollection** | Category (e.g. Favorites), search text, enabled flag, the SDT collection of items |
+| **PXToolsMenusChildsAction** | DropDown=`DPD`, LeftMenus=`LEF` — how children are rendered |
+| **{Left,DesktopLeft,ResponsiveLeft}MenuType** | `Standard, TreeView, PXToolsSmartMenus` — side menu style per platform |
+| **{Top,DesktopTop,ResponsiveTop}MenuDropDownType** | `GXUIToolbar, PXToolsSmartMenus*, HorizontalFloat/Push` — top menu style |
 
-**Usa de @APIs base:** `Origin` (Development=`D`, Customer=`C`, Favorites=`F` — separa espacios de menú), `NodeType` (tipo de objeto destino), `ApplicationPlatform` (`WebDesktop, WebResponsive, SmartDevices`).
+**Used from @APIs base:** `Origin` (Development=`D`, Customer=`C`, Favorites=`F` — separates menu spaces), `NodeType` (type of the target object), `ApplicationPlatform` (`WebDesktop, WebResponsive, SmartDevices`).
 
-## 5. Mecanismo
+## 5. How it works
 
-### 5.1 Declarar y sembrar
+### 5.1 Declaring and seeding
 
-> ⚠️ **El menú NO es un dato que se carga a mano.** `TMnuWeb` se ve y se edita desde su WorkWith, pero
-> el árbol se **declara en código** y se siembra desde ahí. Agregar una opción editando la tabla la
-> deja fuera del `RetMenus<X>` de su módulo: no viaja a otra instalación y la próxima siembra no la
-> reproduce. La opción se agrega al DataProvider, no a la pantalla.
+> ⚠️ **The menu is NOT data you load by hand.** `TMnuWeb` can be viewed and edited through its WorkWith, but the tree is **declared in code** and seeded from there. Adding an option by editing the table leaves it out of its module's `RetMenus<X>`: it does not travel to another installation and the next seeding will not reproduce it. The option goes into the DataProvider, not into the screen.
 
-> 📍 **Dónde vive el `RetMenus<X>`: en el `Personalized/` DEL MÓDULO que aporta las opciones**, no en
-> `@Menus/Personalized/`. `RetMenusSecurity` está en `@Security/Personalized/`, `RetMenusOAuthService`
-> en `@OAuthService/Personalized/`, `RetMenusFileStorage` en `@FileStorage/Personalized/`, y así.
-> En `@Menus/Personalized/` quedan sólo los de secciones sin módulo propio, varios de ellos cascarones
-> vacíos. **Antes de crear un `RetMenus<X>`, buscarlo en todo el árbol** (`find . -name
-> "RetMenus*.DataProvider.gxSource"`) o revisar la lista de `AddDefaultMenus`, que es el catálogo
-> completo de los que se siembran: crear un segundo DataProvider con el mismo nombre en otro módulo
-> compila y siembra el árbol dos veces.
+> 📍 **Where the `RetMenus<X>` lives: in the `Personalized/` OF THE MODULE contributing the options**, not in `@Menus/Personalized/`. `RetMenusSecurity` is in `@Security/Personalized/`, `RetMenusOAuthService` in `@OAuthService/Personalized/`, `RetMenusFileStorage` in `@FileStorage/Personalized/`, and so on. Only the sections with no module of their own stay in `@Menus/Personalized/`, several of them empty shells. **Before creating a `RetMenus<X>`, look for it across the whole tree** (`find . -name "RetMenus*.DataProvider.gxSource"`) or check the `AddDefaultMenus` list, which is the complete catalogue of what gets seeded: creating a second DataProvider with the same name in another module compiles and seeds the tree twice.
 
-- **Declarar**: cada módulo aporta un DataProvider **`RetMenus<X>`** con `Output = SDTMenus` que devuelve su porción del árbol. `SDTMenus` es una colección recursiva (`Item` con `Name/Description/Program/Module/InstanceReference/Image…/SecurityCode/Category`, `Parent`, y `Childs : SDTMenus`; + colección `ApplicationPlatform` para overrides).
-- **Sembrar** (idempotente): `PDefaultMenus` → `ChkMenusExistance` (si no hay `Origin=Development`, siembra) → **`AddDefaultMenus`** (`Personalized/`, la lista de `RetMenus<X>()` a agregar) → `AddMenus` → **`AddMenusRecursive`**: por cada item resuelve el padre (`RetParentMenu`), verifica el módulo, hace `New … When Duplicate` (upsert por `MnWName`) en `TMnuWeb` con `MnWOri=Development`, genera las filas de `ApplicationPlatform` (una por plataforma soportada) y desciende en `Childs`.
+- **Declaring**: each module contributes a **`RetMenus<X>`** DataProvider with `Output = SDTMenus` returning its slice of the tree. `SDTMenus` is a recursive collection (`Item` with `Name/Description/Program/Module/InstanceReference/Image…/SecurityCode/Category`, `Parent`, and `Childs : SDTMenus`; plus an `ApplicationPlatform` collection for overrides).
+- **Seeding** (idempotent): `PDefaultMenus` → `ChkMenusExistance` (if there is no `Origin=Development`, it seeds) → **`AddDefaultMenus`** (`Personalized/`, the list of `RetMenus<X>()` to add) → `AddMenus` → **`AddMenusRecursive`**: for each item it resolves the parent (`RetParentMenu`), verifies the module, does a `New … When Duplicate` (upsert by `MnWName`) into `TMnuWeb` with `MnWOri=Development`, generates the `ApplicationPlatform` rows (one per supported platform) and descends into `Childs`.
 
-### 5.1.0 Apuntar a la pantalla: `InstanceReference`, no el nombre del objeto
+### 5.1.0 Pointing at the screen: `InstanceReference`, not the object's name
 
-Una hoja puede declarar su destino de dos formas, y **la buena es `InstanceReference`**: se nombra la
-**entidad** y el tipo de nodo, y el framework resuelve el objeto generado según la plataforma
-(`RetNodeTypePlatformPrefix`: Selection→`Tr`, Prompt→`Pr`, WebPanel→`Wb`, y `R` delante en Responsive).
+A leaf can declare its target in two ways, and **the good one is `InstanceReference`**: you name the **entity** and the node type, and the framework resolves the generated object per platform (`RetNodeTypePlatformPrefix`: Selection→`Tr`, Prompt→`Pr`, WebPanel→`Wb`, with `R` in front for Responsive).
 
 ```
 Item
@@ -77,25 +65,19 @@ Item
 	Module		= PXToolsModules.Messaging
 	InstanceReference
 	{
-		LevelName	= !'MessagingPendingAction'      // ✅ la ENTIDAD, no el objeto
+		LevelName	= !'MessagingPendingAction'      // ✅ the ENTITY, not the object
 		NodeType	= NodeType.Selection
 	}
 }
 ```
 
-`Program = RetObjectName.Udp(<Objeto>.Type)` es la forma vieja y sólo tiene sentido para un objeto
-suelto que no salió de un pattern. Usarla para una pantalla generada ata el menú al nombre del objeto
-de **una** plataforma y se pierde el override responsive.
+`Program = RetObjectName.Udp(<Object>.Type)` is the old form and only makes sense for a standalone object that did not come out of a pattern. Using it for a generated screen ties the menu to **one** platform's object name and loses the responsive override.
 
-De paso, el nombre del objeto generado por PXWorkWith para el listado es **`Tr<Entidad>`** (`Ct<Entidad>`
-es la consulta) — no `WW<Entidad>`. Buscar por "WW" no encuentra nada y hace parecer que el menú no
-está declarado cuando sí lo está.
+While we are here: the object PXWorkWith generates for the listing is **`Tr<Entity>`** (`Ct<Entity>` is the query screen) — not `WW<Entity>`. Searching for "WW" finds nothing and makes an existing menu declaration look absent.
 
-### 5.1.1 `Parent`: SOLO en el nodo raíz de cada `RetMenus<X>`
+### 5.1.1 `Parent`: ONLY on the root node of each `RetMenus<X>`
 
-`Parent` sirve para **enganchar la porción de árbol que aporta el módulo debajo de un nodo que ya
-existe** (típicamente `'Basic'`). Se usa **únicamente en el/los ítems del primer nivel** del
-DataProvider. La jerarquía interna ya está dada por el anidamiento en `Childs`.
+`Parent` exists to **hook the slice of tree a module contributes underneath an already-existing node** (typically `'Basic'`). It is used **only on the first-level item(s)** of the DataProvider. The internal hierarchy already comes from the nesting in `Childs`.
 
 ```
 SDTMenus
@@ -104,14 +86,14 @@ SDTMenus
 	{
 		Description	= 'OAuth Service'
 		Module		= PXToolsModules.OAuthService
-		Parent		= 'Basic'              // ✅ engancha el módulo bajo el menú 'Basic'
+		Parent		= 'Basic'              // ✅ hooks the module under the 'Basic' menu
 		Childs
 		{
 			Item
 			{
 				Description	= 'Clients'
 				Module		= PXToolsModules.OAuthService
-				// ❌ NO poner Parent aquí: el padre lo da el anidamiento
+				// ❌ do NOT put Parent here: the nesting provides the parent
 				InstanceReference
 				{
 					LevelName	= !'OAuthServiceClient'
@@ -123,37 +105,28 @@ SDTMenus
 }
 ```
 
-**Por qué**: en `AddMenusRecursive`, `Parent` se lee **solo cuando no viene un padre por la
-recursión**:
+**Why**: in `AddMenusRecursive`, `Parent` is read **only when no parent arrives through the recursion**:
 
 ```genexus
 For &Item in &SDTMenus
-	If &MnWPad.IsEmpty()                                  // nivel raíz
-		&ItemMnwPadSec = RetParentMenu.Udp(&Item.Parent)  // <- único lugar donde se usa Parent
+	If &MnWPad.IsEmpty()                                  // root level
+		&ItemMnwPadSec = RetParentMenu.Udp(&Item.Parent)  // <- the only place Parent is used
 		…
-	Else                                                   // hijos: viene de la recursión
+	Else                                                   // children: it comes from the recursion
 		&ItemMnWPadOri = &MnWPadOri
 		&ItemMnwPadSec = &MnWPad
 	EndIf
 ```
 
-Un `Parent` en un hijo **se ignora**: no rompe nada, pero es engañoso — sugiere una referencia que
-el motor nunca resuelve. Y si además apunta a un texto que no coincide con ningún `MnWName`
-(p. ej. `Parent = !'OAuth Service'` cuando ese nodo se declaró con `Description` y sin `Name`),
-alguien puede perder tiempo buscando ahí un problema inexistente.
+A `Parent` on a child **is ignored**: it breaks nothing, but it is misleading — it suggests a reference the engine never resolves. And if it also points at text matching no `MnWName` (say, `Parent = !'OAuth Service'` when that node was declared with a `Description` and no `Name`), somebody can lose time hunting for a problem that does not exist there.
 
-> **`RetParentMenu` crea el padre si no existe**: busca por `MnWName = &MnwName` y, si no lo
-> encuentra, hace `New` con ese nombre y `Origin.Development`. O sea que un `Parent` mal escrito
-> en el nodo raíz **no falla**: crea silenciosamente un menú nuevo con ese texto. Si aparece un
-> nodo huérfano inesperado en el árbol, revisar los `Parent` de los `RetMenus<X>`.
+> **`RetParentMenu` creates the parent if it does not exist**: it looks up `MnWName = &MnwName` and, failing to find it, does a `New` with that name and `Origin.Development`. So a misspelled `Parent` on the root node **does not fail**: it silently creates a new menu with that text. If an unexpected orphan node shows up in the tree, check the `Parent` values of the `RetMenus<X>` DataProviders.
 
-### 5.1.2 El módulo tiene que estar en el catálogo de `SystemModules`
+### 5.1.2 The module has to be in the `SystemModules` catalogue
 
-⚠️ **Antes de sembrar los menús de un módulo nuevo hay que darlo de alta en
-`@System/Personalized/SaveSystemModules`.** No alcanza con escribir el `RetMenus<X>` y agregarlo a
-`AddDefaultMenus`.
+⚠️ **Before seeding a new module's menus, register it in `@System/Personalized/SaveSystemModules`.** Writing the `RetMenus<X>` and adding it to `AddDefaultMenus` is not enough.
 
-`AddMenusRecursive` valida cada ítem contra el catálogo antes de crear el nodo:
+`AddMenusRecursive` validates each item against the catalogue before creating the node:
 
 ```genexus
 If not &Item.Module.IsEmpty()
@@ -165,17 +138,17 @@ If not &Item.Module.IsEmpty()
 		&OkModule = False
 	EndFor
 Else
-	&OkModule = True                                       // sin Module declarado, pasa
+	&OkModule = True                                       // with no Module declared, it passes
 EndIf
 
 If &OkModule
-	…crea el nodo…
+	…creates the node…
 Else
 	AddMissingModules.Call(&MissingModules, &SystemModuleName)
 EndIf
 ```
 
-Y `AddDefaultMenus` **descarta toda la siembra** si quedó algún módulo sin resolver:
+And `AddDefaultMenus` **discards the whole seeding** if any module went unresolved:
 
 ```genexus
 If &ColMissingModules.Count > 0
@@ -183,80 +156,73 @@ If &ColMissingModules.Count > 0
 		Msg('Missing module  ' + &Item)
 	EndFor
 	Msg('Some menu options could not be saved! Execute SaveSystemModule extension, do F5 and retry!')
-	RollBack                                               // <- se pierde TODO, no solo ese módulo
+	RollBack                                               // <- EVERYTHING is lost, not just that module
 Else
 	Commit
 EndIf
 ```
 
-Dos consecuencias que conviene tener presentes:
+Two consequences worth keeping in mind:
 
-- El `RollBack` es **global a la corrida**: un solo módulo sin declarar deja sin menús a *todos* los
-  módulos de esa ejecución, no únicamente al suyo. Si después de agregar un módulo "no aparece ningún
-  menú nuevo", esto es lo primero a mirar.
-- El valor que se compara es el **`Value` del dominio `PXToolsModules`**, que es el nombre calificado
-  del módulo, y tiene que coincidir carácter a carácter con el string que se le pasa a
-  `AddSystemModule`:
+- The `RollBack` is **global to the run**: a single undeclared module leaves *every* module of that execution without menus, not only its own. If after adding a module "no new menu shows up", this is the first thing to check.
+- The value being compared is the **`Value` of the `PXToolsModules` domain**, which is the module's qualified name, and it has to match character for character the string passed to `AddSystemModule`:
 
 ```genexus
 // #Domains/PXToolsModules.gxDomain
 Messaging: { Description: "PXTools Messaging", Value: "PXTools.Messaging"}
 
 // @System/Personalized/SaveSystemModules
-AddSystemModule.Call("PXTools.Messaging")     // mismo string exacto
+AddSystemModule.Call("PXTools.Messaging")     // the exact same string
 ```
 
-**Checklist para dar de alta un módulo nuevo con menús**: (1) valor en el dominio `PXToolsModules`;
-(2) `AddSystemModule.Call("<nombre calificado>")` en `SaveSystemModules`; (3) el DataProvider
-`RetMenus<X>`; (4) la línea en `AddDefaultMenus`. Y después ejecutar `SaveSystemModules` **antes** que
-`AddDefaultMenus` — si el catálogo se pobló en la misma corrida no hay problema, pero al revés sí.
+**Checklist for registering a new module with menus**: (1) the value in the `PXToolsModules` domain; (2) `AddSystemModule.Call("<qualified name>")` in `SaveSystemModules`; (3) the `RetMenus<X>` DataProvider; (4) the line in `AddDefaultMenus`. Then run `SaveSystemModules` **before** `AddDefaultMenus` — if the catalogue was populated in the same run there is no problem, but the other way round there is.
 
-### 5.2 Seguridad por nodo y menú del usuario
-- **`PPEXE_DeMnW05`** (motor) recorre el árbol por categoría/padre; para cada **hoja** llama `PCheckMenuSecurity` (hook, default True) y `PIsAuthorized.Udp(<Modulo>.<Program>)` (autorización real). **Propagación bottom-up**: si un hijo queda habilitado, el padre también, y su clave `MnWOri+MnWSec` se agrega a `MenuContext.Enabled`.
-- El chequeo se hace **una vez** al armar el `MenuContext` (persistido en session con `PSetMenuContext`/`PLoadMenuContext`); en render, **`PPEXE_CtMnW01`** solo consulta `MenuContext.Enabled.IndexOf(<clave>)` para decidir si pintar cada nodo.
+### 5.2 Per-node security and the user's menu
+- **`PPEXE_DeMnW05`** (the engine) walks the tree by category/parent; for each **leaf** it calls `PCheckMenuSecurity` (a hook, default True) and `PIsAuthorized.Udp(<Module>.<Program>)` (the real authorization). **Bottom-up propagation**: if a child ends up enabled, so does its parent, and its `MnWOri+MnWSec` key is added to `MenuContext.Enabled`.
+- The check happens **once**, while building the `MenuContext` (persisted in the session with `PSetMenuContext`/`PLoadMenuContext`); at render time **`PPEXE_CtMnW01`** only consults `MenuContext.Enabled.IndexOf(<key>)` to decide whether to paint each node.
 
-`MenuContext` (SDT): `Enabled`/`Visible` (sets de claves), `SelectedMain/TopTab/TopDropDown/Left`, `SearchValue`, `Variables` (pares Name/Value de contexto de menú).
+`MenuContext` (SDT): `Enabled`/`Visible` (key sets), `SelectedMain/TopTab/TopDropDown/Left`, `SearchValue`, `Variables` (Name/Value pairs of menu context).
 
 ## 6. APIs vs Personalized
 
-- **`APIs/`** (core): la transacción `TMnuWeb`, los SDTs (`SDTMenus`, `MenuContext`, `MenusStructure`…), el motor de siembra (`AddMenus*`, `RetParentMenu`), el motor de seguridad/consulta (`PPEXE_DeMnW0x`, `PPEXE_CtMnW01`), y los WebComponents de render (top/left/tree/dropdown).
-- **`Personalized/`** (customización del proyecto):
-  | Objeto | Qué se customiza |
+- **`APIs/`** (core): the `TMnuWeb` transaction, the SDTs (`SDTMenus`, `MenuContext`, `MenusStructure`…), the seeding engine (`AddMenus*`, `RetParentMenu`), the security/query engine (`PPEXE_DeMnW0x`, `PPEXE_CtMnW01`), and the rendering WebComponents (top/left/tree/dropdown).
+- **`Personalized/`** (the project's customization):
+  | Object | What gets customized |
   |---|---|
-  | `AddDefaultMenus` | La **lista de `RetMenus<X>()` a sembrar** (una línea por sección/módulo). |
-  | `RetMenus<X>` (DataProviders) | **Un DP por sección de menú**: el proyecto declara ahí el árbol de esa sección. Pueden quedar vacíos (cascarón `Output=SDTMenus`) si la sección no aplica. **Los de un módulo con nombre propio NO viven acá sino en el `Personalized/` de ese módulo** — ver el aviso de §5.1. |
-  | `PCheckMenuSecurity` | Hook de seguridad por hoja (default `True`; lógica extra opcional). |
-  | `PLoadOrigin` | El `Origin` activo al insertar nodos (default `Development`). |
-  | `PGetNotGenericOrigins` | Orígenes a excluir del armado estándar (default agrega `Favorites`). |
-  | `PGetMenuObject` | Extrae el nombre de objeto limpio desde `MnWPgm`. |
-  | `RetNodeTypePlatformPrefix` | Mapea (plataforma × `NodeType`) → prefijo de nombre del objeto generado (WebDesktop/Prompt=`Pr`, Selection=`Tr`, WebPanel=`Wb`; Responsive antepone `R`). |
-  | `PSaveMenuContext` | Rellena `MenuContext.Variables` con datos del usuario (hook de contexto). |
-  | `MenuSearch` / `MenuSearchResponsive` (WebComponent) | UI de búsqueda dentro del menú. |
+  | `AddDefaultMenus` | The **list of `RetMenus<X>()` to seed** (one line per section/module). |
+  | `RetMenus<X>` (DataProviders) | **One DataProvider per menu section**: the project declares that section's tree there. They can be left empty (a `Output=SDTMenus` shell) when the section does not apply. **The ones belonging to a named module do NOT live here but in that module's `Personalized/`** — see the warning in §5.1. |
+  | `PCheckMenuSecurity` | Per-leaf security hook (default `True`; extra logic optional). |
+  | `PLoadOrigin` | The active `Origin` when inserting nodes (default `Development`). |
+  | `PGetNotGenericOrigins` | Origins excluded from the standard build (by default it adds `Favorites`). |
+  | `PGetMenuObject` | Extracts the clean object name out of `MnWPgm`. |
+  | `RetNodeTypePlatformPrefix` | Maps (platform × `NodeType`) → the generated object's name prefix (WebDesktop/Prompt=`Pr`, Selection=`Tr`, WebPanel=`Wb`; Responsive prepends `R`). |
+  | `PSaveMenuContext` | Fills `MenuContext.Variables` with user data (context hook). |
+  | `MenuSearch` / `MenuSearchResponsive` (WebComponent) | The search UI inside the menu. |
 
-## 7. Instancia de pattern
+## 7. Pattern instance
 
-**PXWorkWithTMnuWeb** — WorkWith de administración del menú sobre `TMnuWeb` (edición de nodos: nombre/descripción/imágenes, combo de padre, combo dinámico de módulo, grid del sublevel `ApplicationPlatform` con combo `ChildsAction`). Genera `TrMnW02`, `CtMnW02`, etc.
+**PXWorkWithTMnuWeb** — the menu administration WorkWith over `TMnuWeb` (editing nodes: name/description/images, parent combo, dynamic module combo, a grid for the `ApplicationPlatform` sublevel with a `ChildsAction` combo). It generates `TrMnW02`, `CtMnW02`, and so on.
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-**Contexto**: `PLoadMenuContext(out: &MenuContext)`, `PSetMenuContext(in: &MenuContext)`, `PDefaultMenus` (asegura siembra + contexto).
+**Context**: `PLoadMenuContext(out: &MenuContext)`, `PSetMenuContext(in: &MenuContext)`, `PDefaultMenus` (ensures seeding + context).
 
-**Motor de habilitación/consulta**:
-- `PPEXE_DeMnW05(&MenuContext, in: &MnWCat, in: &MnWOriPar, in: &MnWSecPar, in: &NotIncludeOrigins, in: &UsrCod)` — calcula nodos habilitados.
-- `PPEXE_CtMnW01(in: &MenuContext, in: &MnuOriSec, in: &IncludeVisible, out: &lEnabled)` — ¿nodo habilitado/visible?
-- `PPEXE_DeMnW02(...)` — hijos ordenados (filtrando habilitados); `PPEXE_DeMnW01` — nodos-padre para combos.
-- `ProgramNameWithModule(in: &MnWOri, in: &MnWSec, in: &MnWPgm, out: &ProgramName)` — nombre calificado por módulo (para autorización).
+**Enablement/query engine**:
+- `PPEXE_DeMnW05(&MenuContext, in: &MnWCat, in: &MnWOriPar, in: &MnWSecPar, in: &NotIncludeOrigins, in: &UsrCod)` — computes the enabled nodes.
+- `PPEXE_CtMnW01(in: &MenuContext, in: &MnuOriSec, in: &IncludeVisible, out: &lEnabled)` — is this node enabled/visible?
+- `PPEXE_DeMnW02(...)` — ordered children (filtering by enabled); `PPEXE_DeMnW01` — parent nodes for combos.
+- `ProgramNameWithModule(in: &MnWOri, in: &MnWSec, in: &MnWPgm, out: &ProgramName)` — the module-qualified name (for authorization).
 
-**Siembra**: `AddMenus(in: &SDTMenus, inout: &ColMissingModules)`, `AddMenusRecursive(...)`, `RetParentMenu(in: &MnwName, out: &MnWSec)`, `ChkMenusExistance`.
+**Seeding**: `AddMenus(in: &SDTMenus, inout: &ColMissingModules)`, `AddMenusRecursive(...)`, `RetParentMenu(in: &MnwName, out: &MnWSec)`, `ChkMenusExistance`.
 
-**Favoritos / búsqueda**: `PGetFavorites`, `PPEXE_AddToFavorites(...)`, `PGetMenuSearch`/`PSaveMenuSearch`.
+**Favorites / search**: `PGetFavorites`, `PPEXE_AddToFavorites(...)`, `PGetMenuSearch`/`PSaveMenuSearch`.
 
-**Render** (WebComponents en `APIs/Top/` y `APIs/Left/`): `HPEXE_TopMenus`, `HPEXE_TabsMenus`, `HPEXE_LeftMenus`, `HPEXE_TreeViewMenus`, `TreeViewMenusResponsive`, carga GXUI (`PLoadMenusToGXUIToolBar`), selección de nodo activo `PSetMainMenu`/`PSetTopMenu`/`PSetLeftMenu`. Todos leen `MenuContext` vía `PPEXE_CtMnW01`.
+**Rendering** (WebComponents in `APIs/Top/` and `APIs/Left/`): `HPEXE_TopMenus`, `HPEXE_TabsMenus`, `HPEXE_LeftMenus`, `HPEXE_TreeViewMenus`, `TreeViewMenusResponsive`, the GXUI loader (`PLoadMenusToGXUIToolBar`), and the active-node selectors `PSetMainMenu`/`PSetTopMenu`/`PSetLeftMenu`. They all read `MenuContext` through `PPEXE_CtMnW01`.
 
-> **Flujo end-to-end:** módulo declara su árbol en `RetMenus<X>` (→ `SDTMenus`) → `AddDefaultMenus`/`AddMenusRecursive` lo persisten en `TMnuWeb` (idempotente) → en runtime `PPEXE_DeMnW05` chequea `PCheckMenuSecurity` + `PIsAuthorized` por hoja y propaga al padre, guardando el set en `MenuContext.Enabled` (session) → los WebComponents de render pintan solo lo habilitado.
+> **End-to-end flow:** a module declares its tree in `RetMenus<X>` (→ `SDTMenus`) → `AddDefaultMenus`/`AddMenusRecursive` persist it into `TMnuWeb` (idempotently) → at runtime `PPEXE_DeMnW05` checks `PCheckMenuSecurity` + `PIsAuthorized` per leaf and propagates upwards, storing the set in `MenuContext.Enabled` (session) → the rendering WebComponents paint only what is enabled.
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- [security.md](security.md) — `PIsAuthorized` (autorización por objeto) que usa el motor de menú por hoja.
-- `modulos/apis.md` — el menú se arma sobre el `Context` de sesión (§ contexto) y se muestra en las MasterPages.
-- `modulos/system.md` — `SystemModuleName` (catálogo de módulos) usado para calificar el programa de cada nodo.
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- [security.md](security.md) — `PIsAuthorized` (per-object authorization), used by the menu engine on each leaf.
+- `modules/apis.md` — the menu is built on the session `Context` (§ context) and displayed in the MasterPages.
+- `modules/system.md` — `SystemModuleName` (the module catalogue) used to qualify each node's program.
