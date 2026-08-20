@@ -1,130 +1,121 @@
-# Módulo @WSLayer — Capa de Web Services
+# @WSLayer Module — The Web Services Layer
 
-> Comportamiento del módulo `@PXTools/@WSLayer`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@WSLayer` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@WSLayer` (`APIs/` core + `Personalized/`).
-- Patterns de generación: `Patterns/PXWS*` (PXWSLayer / PXWSQuery / PXWSData / PXWSTransaction).
-- Cualificador: `PXTools.WSLayer`.
-- **Depende de:** `@APIs` (base). Infra: `@Menus`.
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@WSLayer` (`APIs/` core + `Personalized/`).
+- Generation patterns: `Patterns/PXWS*` (PXWSLayer / PXWSQuery / PXWSData / PXWSTransaction).
+- Qualifier: `PXTools.WSLayer`.
+- **Depends on:** `@APIs` (base). Infrastructure: `@Menus`.
 
-## 1. Qué provee
+## 1. What it provides
 
-Dos cosas complementarias:
-1. **Framework de generación por patterns** (`PXWS*`): expone transacciones/consultas como servicios **SOAP / REST / API**, versionados, con envelope estándar y OpenAPI opcional.
-2. **Runtime**: **control de acceso por whitelist de IPs** (por categoría), **envelope de conexión/respuesta** (credenciales de entrada + `Succeed`/`Response`/`Error`) y **conversión de mensajes** GeneXus → formato de la API.
+Two complementary things:
+1. **A pattern-based generation framework** (`PXWS*`): exposes transactions/queries as **SOAP / REST / API** services, versioned, with a standard envelope and optional OpenAPI.
+2. **Runtime**: **access control by IP whitelist** (per category), the **connection/response envelope** (inbound credentials + `Succeed`/`Response`/`Error`) and **message conversion** from GeneXus to the API's format.
 
-El logging de invocaciones es **ortogonal** y vive en el módulo hermano **@WebServicesLog**.
+Logging of invocations is **orthogonal** and lives in the sibling module **@WebServicesLog**.
 
-## 2. Concepto central: whitelist por categoría
+## 2. Core concept: whitelist per category
 
-`WSWhiteList` guarda, **por categoría**, reglas **Accept** (lista blanca) o **Deny** (lista negra) con un rango **CIDR**. La semántica:
-- Si la categoría tiene **alguna** regla Accept → es **whitelist estricta**: el IP debe matchear un Accept y no matchear un Deny.
-- Si **no** tiene reglas Accept → funciona como **blacklist**: permite todo salvo lo denegado.
+`WSWhiteList` stores, **per category**, **Accept** (allow list) or **Deny** (block list) rules with a **CIDR** range. The semantics:
+- If the category has **any** Accept rule → it is a **strict whitelist**: the IP must match an Accept and must not match a Deny.
+- If it has **no** Accept rules → it behaves as a **blacklist**: everything is allowed except what is denied.
 
-## 3. Transacción `WSWhiteList`
+## 3. The `WSWhiteList` transaction
 
-Un solo nivel; BC.
+A single level; a BC.
 
-| Atributo | Tipo | Notas |
+| Attribute | Type | Notes |
 |---|---|---|
-| `WSWhiteListId` (PK) | `IdFirstLevel` | autonum |
-| `WSWhiteListCategory` | `PXToolsWSLayerCategory` | agrupa reglas por categoría de servicio |
+| `WSWhiteListId` (PK) | `IdFirstLevel` | autonumbered |
+| `WSWhiteListCategory` | `PXToolsWSLayerCategory` | groups rules by service category |
 | `WSWhiteListAcceptDeny` | `PXToolsWSLayerWhiteListAcceptDeny` | ACC / DEN |
 | `WSWhiteListIPVersion` | `PXToolsWSLayerWhiteListIPVersion` | 4 / 6 |
-| `WSWhiteListIPRange` | `MaxStr` | rango CIDR (IPv4/IPv6) |
+| `WSWhiteListIPRange` | `MaxStr` | CIDR range (IPv4/IPv6) |
 
-Índices: `IWSWhiteList` (unique, Id), `UWSWhiteList` (duplicate, Category+Id).
+Indexes: `IWSWhiteList` (unique, Id), `UWSWhiteList` (duplicate, Category+Id).
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-Todos `PXToolsWSLayer*` → @WSLayer (nombre de módulo tras `PXTools`), **root-legacy** (viven en el `#Domains/` raíz). Excepción: `WhiteListReason` vive en el `#Domains/` de paquete pero lo usa **solo** @WSLayer → también es de @WSLayer:
+All `PXToolsWSLayer*` domains belong to @WSLayer (the module name follows `PXTools`), all **root-legacy** (they live in the root `#Domains/`). One exception: `WhiteListReason` lives in the package's `#Domains/` but is used **only** by @WSLayer → it belongs to @WSLayer as well:
 
-| Dominio | Valores |
+| Domain | Values |
 |---|---|
 | **PXToolsWSLayerWhiteListAcceptDeny** | Accept=`ACC`, Deny=`DEN` |
 | **PXToolsWSLayerWhiteListIPVersion** | IPv4=`4`, IPv6=`6` |
 | **PXToolsWSLayerMessageType** | Warning, Error, Info, Debug |
-| **PXToolsWSLayerConnectionErrorCode** | catálogo de errores de autenticación de conexión (código/clave de empresa/usuario inválidos, sin acceso, sin suscripción, acceso denegado, …) |
-| **PXToolsWSLayerConnectionMessage** | Character(100) — mensaje de conexión |
+| **PXToolsWSLayerConnectionErrorCode** | Catalogue of connection authentication errors (invalid code/company key/user, no access, no subscription, access denied, …) |
+| **PXToolsWSLayerConnectionMessage** | Character(100) — connection message |
 | **PXToolsWSLayerErrorCodes** | RecordDoesNotExists, InvalidDelete, SaveError, InsertIsNotAllowed, UpdateIsNotAllowed (+ `…LoadErrorCode`/`…SaveErrorCode`) |
-| **PXToolsWSLayerCategory** | enum de **categorías de servicio** — la clave de agrupación de reglas de whitelist / control de acceso por API (los valores concretos los define cada aplicación). |
+| **PXToolsWSLayerCategory** | An enum of **service categories** — the grouping key for whitelist rules / per-API access control (each application defines the concrete values). |
 | **WhiteListReason** (`@PXTools/#Domains/`) | Denied, NotAccepted, NotDenied, Accepted |
 
-## 5. Mecanismo
+## 5. How it works
 
-### 5.1 Generación (patterns `PXWS*`)
-Cuatro patterns cuyo `ParentObject` es una Transaction:
-- **PXWSTransaction** → métodos CRUD por versión (`WSTransaction<Obj>V<n>Load/Save/Delete`) + SDT In/Out.
-- **PXWSQuery** → consultas paginadas (`WSQuery<Obj>V<n>`, filtros Range/Like/Contains, paginación).
-- **PXWSData** → servicios de datos (`WSData<Obj>V<n>Method` + SDT DataIn/DataOut).
-- **PXWSLayer** → envuelve lo anterior como **SOAP** (`SOAP<Obj>`), **REST** (`REST<Obj>`) y/o **API** (`API<Obj>`), versionado, con OpenAPI opcional.
+### 5.1 Generation (the `PXWS*` patterns)
+Four patterns whose `ParentObject` is a Transaction:
+- **PXWSTransaction** → CRUD methods per version (`WSTransaction<Obj>V<n>Load/Save/Delete`) + In/Out SDTs.
+- **PXWSQuery** → paged queries (`WSQuery<Obj>V<n>`, Range/Like/Contains filters, paging).
+- **PXWSData** → data services (`WSData<Obj>V<n>Method` + DataIn/DataOut SDTs).
+- **PXWSLayer** → wraps all of the above as **SOAP** (`SOAP<Obj>`), **REST** (`REST<Obj>`) and/or **API** (`API<Obj>`), versioned, with optional OpenAPI.
 
-Los `Patterns/PXWSLayer/PXWSLayerSettings.xml` definen la convención de nombres y el **envelope**: cada request lleva un nivel `Connection`; cada response un envelope `Succeed` + `Response` + `Error{Code, Message, Detail}`. Soporta atributos multi-tenant desde el `SDTConnection`, y banderas para **generar el proc de seguridad** (`ChkWSSecurity`) y para **generar logging** (`GenerateWebServiceLog`).
+`Patterns/PXWSLayer/PXWSLayerSettings.xml` defines the naming convention and the **envelope**: every request carries a `Connection` level; every response an envelope of `Succeed` + `Response` + `Error{Code, Message, Detail}`. It supports multi-tenant attributes from `SDTConnection`, plus flags to **generate the security procedure** (`ChkWSSecurity`) and to **generate logging** (`GenerateWebServiceLog`).
 
-> En esta KB los patterns `PXWS*` están **instalados pero sin instancias aplicadas**; por eso no hay procs `ChkWSSecurity` generados y los endpoints reutilizan directamente la API de whitelist (§5.3).
+> In this KB the `PXWS*` patterns are **installed but with no instances applied**; that is why there are no generated `ChkWSSecurity` procedures and the endpoints use the whitelist API directly (§5.3).
 
-### 5.2 Envelope de conexión/respuesta (runtime)
-- `SDTConnection`: credenciales de entrada (códigos/claves de desarrollador/empresa/usuario/rol).
+### 5.2 Connection/response envelope (runtime)
+- `SDTConnection`: inbound credentials (developer/company/user/role codes and keys).
 - `SDTConnectionResponse`: `Succeed` + `Error{Code (PXToolsWSLayerConnectionErrorCode), Message}`.
-- `MessageDetail` + `RetMessageFromGX`/`RetMessageTypeFromGX` — convierten `Messages, GeneXus.Common` al formato de mensajes de la API.
+- `MessageDetail` + `RetMessageFromGX`/`RetMessageTypeFromGX` — they convert `Messages, GeneXus.Common` into the API's message format.
 
 ### 5.3 Whitelist — `ValWSWhitelistIPWithReason`
 `(in: &Category, in: &IP, out: &Result: SDTWhiteListResult{IsValid, Reason})`:
-1. Recorre reglas **ACC** de la categoría; si el IP cae en un rango → `IsValid=True, Reason=Accepted`.
-2. Si hubo accept **o no hay ninguna regla ACC** (modo abierto): recorre **DEN**; en rango → `IsValid=False, Reason=Denied`; si no → `IsValid=True, Reason=NotDenied`.
-3. Si hay reglas ACC pero ninguna matcheó → `IsValid=False, Reason=NotAccepted`.
+1. It walks the category's **ACC** rules; if the IP falls inside a range → `IsValid=True, Reason=Accepted`.
+2. If there was an accept **or there are no ACC rules at all** (open mode): it walks the **DEN** rules; inside a range → `IsValid=False, Reason=Denied`; otherwise → `IsValid=True, Reason=NotDenied`.
+3. If there are ACC rules but none matched → `IsValid=False, Reason=NotAccepted`.
 
-Apoyo: `ValWSWhiteListIPInRange` (contención IP en CIDR vía ExternalObject `IPMaskValidation` — Java, en `@APIs/APIs/Network/`; **fail-open** ante error de validación), `ValWSWhiteListIPRange` (CIDR bien formado), `RetWSWhiteListIPVersion` (detecta v4/v6).
+Supporting procedures: `ValWSWhiteListIPInRange` (IP containment in a CIDR through the `IPMaskValidation` ExternalObject — Java, in `@APIs/APIs/Network/`; **fail-open** if validation errors), `ValWSWhiteListIPRange` (well-formed CIDR), `RetWSWhiteListIPVersion` (detects v4/v6).
 
-### 5.4 Cómo se integra un consumidor
+### 5.4 How a consumer integrates
 
-El control se aplica **en el punto que se quiere proteger**, con la categoría **hardcodeada desde el
-dominio**. La IP no es parámetro del llamador: se obtiene ahí mismo.
+The check is applied **at the point you want to protect**, with the category **hard-coded from the domain**. The IP is not a caller parameter: it is obtained right there.
 
 ```genexus
 &RemoteAddress = RetHTTPRemoteAddress.Udp()
-&IPAllowed     = ValWSWhiteListIP.Udp(PXToolsWSLayerCategory.<Categoria>, &RemoteAddress)
+&IPAllowed     = ValWSWhiteListIP.Udp(PXToolsWSLayerCategory.<Category>, &RemoteAddress)
 ```
 
-Alta de un consumidor nuevo: **(1)** agregar el valor al dominio `PXToolsWSLayerCategory`;
-**(2)** invocar `ValWSWhiteListIP` lo más temprano posible en el endpoint — antes de parsear el body,
-porque es un control de **red** y no debe depender de que el request sea válido; **(3)** cargar las
-reglas por la pantalla White List.
+Adding a new consumer: **(1)** add the value to the `PXToolsWSLayerCategory` domain; **(2)** invoke `ValWSWhiteListIP` as early as possible in the endpoint — before parsing the body, because this is a **network** control and must not depend on the request being valid; **(3)** load the rules through the White List screen.
 
-Activar o desactivar el control **no requiere tocar código**: una categoría sin registros permite
-todo (§2), así que el gate puede quedar programado desde el día uno y las reglas cargarse después.
+Turning the check on or off **requires no code change**: a category with no rows allows everything (§2), so the gate can be coded from day one and the rules loaded later.
 
-> **Antipatrón: FK a `WSWhiteListId`.** No modelar en la entidad a proteger una clave foránea al
-> registro de whitelist. Un concepto necesita **N registros** (varios rangos Accept conviviendo con
-> varios Deny) y una FK apunta a uno solo; además el `Id` es autonumber —distinto en cada
-> instalación, no hardcodeable— mientras que el valor del dominio sí lo es. **La unidad del concepto
-> es la categoría**, y por eso toda la API la recibe como parámetro en lugar de un `Id`.
+> **Antipattern: an FK to `WSWhiteListId`.** Do not model a foreign key to the whitelist row in the entity you want to protect. A concept needs **N rows** (several Accept ranges coexisting with several Denies) and an FK points at only one; besides, the `Id` is an autonumber — different in every installation, impossible to hard-code — while the domain value is not. **The unit of the concept is the category**, which is why the whole API takes it as a parameter instead of an `Id`.
 
 ## 6. APIs vs Personalized
 
-- **`APIs/`** (core): `WSWhiteList`, la familia `Val*`/`RetWSWhiteList*`, `AddWSWhiteListSDT`, el envelope (`SDTConnection`/`SDTConnectionResponse`) y la conversión de mensajes.
+- **`APIs/`** (core): `WSWhiteList`, the `Val*`/`RetWSWhiteList*` family, `AddWSWhiteListSDT`, the envelope (`SDTConnection`/`SDTConnectionResponse`) and the message conversion.
 - **`Personalized/`**:
-  | Objeto | Qué se customiza |
+  | Object | What gets customized |
   |---|---|
-  | `RetMenusWSLayer` (DataProvider) | Entrada de menú "White List". |
-  | `RetWhiteListDenyReason` (Procedure) | Texto legible del motivo de rechazo (localizable). |
+  | `RetMenusWSLayer` (DataProvider) | The "White List" menu entry. |
+  | `RetWhiteListDenyReason` (Procedure) | Human-readable text for the rejection reason (localizable). |
 
-## 7. Instancias de patterns
+## 7. Pattern instances
 
-- **PXWorkWithWSWhiteList** — WW de las reglas de whitelist (filtro por categoría, orden Category+Id); genera `TrWSWhiteList`/`CtWSWhiteList`.
-- Los patterns `PXWSLayer/PXWSQuery/PXWSData/PXWSTransaction` solo tienen definición en `Patterns/` (sin instancias aplicadas en esta KB).
+- **PXWorkWithWSWhiteList** — the whitelist rules WW (filter by category, ordered by Category+Id); it generates `TrWSWhiteList`/`CtWSWhiteList`.
+- The `PXWSLayer/PXWSQuery/PXWSData/PXWSTransaction` patterns only have their definition in `Patterns/` (no instances applied in this KB).
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-**Whitelist**: `ValWSWhitelistIPWithReason(in: &Category, in: &IP, out: &SDTWhiteListResult)` (central), `ValWSWhiteListIP(… out: &IsValid)` (wrapper booleano), `ValWSWhiteListIPInRange`, `ValWSWhiteListIPRange`, `RetWSWhiteListIPVersion`, `AddWSWhiteListSDT(in: &SDTWhiteList, out…)` *(stub actualmente)*.
+**Whitelist**: `ValWSWhitelistIPWithReason(in: &Category, in: &IP, out: &SDTWhiteListResult)` (the central one), `ValWSWhiteListIP(… out: &IsValid)` (boolean wrapper), `ValWSWhiteListIPInRange`, `ValWSWhiteListIPRange`, `RetWSWhiteListIPVersion`, `AddWSWhiteListSDT(in: &SDTWhiteList, out…)` *(currently a stub)*.
 
-**Mensajes**: `RetMessageFromGX`, `RetMessageTypeFromGX`.
+**Messages**: `RetMessageFromGX`, `RetMessageTypeFromGX`.
 
 **SDTs**: `SDTConnection`, `SDTConnectionResponse`, `SDTWhiteList` (Category/AcceptDeny/IPVersion/IPRange), `SDTWhiteListResult` (IsValid/Reason), `MessageDetail`.
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- [webserviceslog.md](webserviceslog.md) — logging de invocaciones (ortogonal a esta capa).
-- `30-guia-reconocimiento-patterns.md` y los docs de patterns `PXWS*` (si se documentan aparte) para el detalle de la generación SOAP/REST/API.
-- `modulos/apis.md` — el ExternalObject `IPMaskValidation` (Network) usado por la whitelist.
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- [webserviceslog.md](webserviceslog.md) — invocation logging (orthogonal to this layer).
+- `30-pattern-recognition-guide.md` and the `PXWS*` pattern docs (where documented separately) for the detail of SOAP/REST/API generation.
+- `modules/apis.md` — the `IPMaskValidation` ExternalObject (Network) used by the whitelist.

@@ -1,47 +1,47 @@
-# Módulo @Alerts — Alertas y Notificaciones
+# @Alerts Module — Alerts and Notifications
 
-> Comportamiento del módulo `@PXTools/@Alerts`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@Alerts` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@Alerts/` (`APIs/` core + `Personalized/`).
-- Cualificador: `PXTools.Alerts`.
-- **Depende de:** `@APIs` (base), `@SendMails` (canal correo), `@SystemParameters`, `@DynamicCallReferences`, `@Menus`. En el grafo canónico también `@FileStorage` (adjuntos), `@MailAccounts` y `@TaskManager` (opcional).
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@Alerts/` (`APIs/` core + `Personalized/`).
+- Qualifier: `PXTools.Alerts`.
+- **Depends on:** `@APIs` (base), `@SendMails` (the mail channel), `@SystemParameters`, `@DynamicCallReferences`, `@Menus`. In the canonical graph also `@FileStorage` (attachments), `@MailAccounts` and `@TaskManager` (optional).
 
-## 1. Qué provee
+## 1. What it provides
 
-Un framework de **alertas/notificaciones multicanal** (**correo** + **notificación in-app**), **multi-idioma**, con **categorías**, **prioridades**, **suscripción/desuscripción**, **reintentos**, **time-out** con proceso de acción, y **ciclos de periodicidad**. Una alerta se crea suspendida con fecha de disparo; un motor la procesa y la envía por los canales habilitados a sus destinatarios (usuarios o roles).
+A framework of **multi-channel alerts/notifications** (**mail** + **in-app notification**), **multi-language**, with **categories**, **priorities**, **subscribe/unsubscribe**, **retries**, **time-outs** with an action process, and **periodicity cycles**. An alert is created suspended with a trigger date; an engine processes it and sends it through the enabled channels to its recipients (users or roles).
 
-## 2. Concepto central
+## 2. Core concept
 
-- **Alerta (`SystemAlert`)** = cabezal (fecha de disparo, estado, prioridad, categoría, config de reintento/time-out) con **destinatarios** (`Parties` — cada uno es un **usuario o rol**, dominio `SecurityPartyType`).
-- **Canales (`SystemAlertTypes`)**: Mail y/o System (in-app), cada uno con su propia máquina de estados.
-- **Contenido por idioma (`SystemAlertLanguages`)**: subject + message (HTML/Text) + adjuntos, con fallback de idioma.
-- **Bandeja in-app (`SystemAlertUserStates`)**: estado por usuario (Active/Viewed/Discarded).
-- **Categorías (`SystemAlertCategories`)**: catálogo con prioridad, periodicidad y canales habilitados; los usuarios pueden **desuscribirse** por categoría.
+- **An alert (`SystemAlert`)** = a header (trigger date, status, priority, category, retry/time-out configuration) plus **recipients** (`Parties` — each one a **user or a role**, domain `SecurityPartyType`).
+- **Channels (`SystemAlertTypes`)**: Mail and/or System (in-app), each with its own state machine.
+- **Per-language content (`SystemAlertLanguages`)**: subject + message (HTML/Text) + attachments, with a language fallback.
+- **In-app inbox (`SystemAlertUserStates`)**: per-user status (Active/Viewed/Discarded).
+- **Categories (`SystemAlertCategories`)**: a catalogue with priority, periodicity and enabled channels; users can **unsubscribe** per category.
 
-## 3. Transacciones del módulo
+## 3. Module transactions
 
-`SystemAlertId` = `IdFirstLevel` (autonum). Las principales:
+`SystemAlertId` = `IdFirstLevel` (autonumbered). The main ones:
 
-| Transacción | PK | Rol |
+| Transaction | PK | Role |
 |---|---|---|
-| **SystemAlert** | `SystemAlertId` | Cabezal de la alerta. Estado (`SystemAlertState`), origen, prioridad, categoría, fecha/hora de disparo; config de reintento (`ActionRetry…`) y time-out (`ActionTimeOut…` + `ActionTimeOutProcess`). Nivel anidado **Parties** (`SystemAlertSecurityPartyId` + `…Type` User/Role). |
-| **SystemAlertTypes** | `SystemAlertId, SystemAlertType` (Mail/System) | Canal habilitado + `SystemAlertTypeState`. |
-| **SystemAlertLanguages** | `SystemAlertId, SystemAlertLanguage` | `Subject`, `Message` (MaxMem), `MessageType` (HTML/Text). Nivel **Attachs** (adjuntos Internal/External/FileStorage). |
-| **SystemAlertCategories** | `SystemAlertCategoryCode` | Catálogo: descripción, prioridad, `Periodicity` (cada N días), `MaxRange`, canales (fórmulas). Nivel `SystemAlertCategoryTypes` (canal habilitado/deshabilitado por categoría). |
-| **SystemAlertUnsubscriptions** | `CategoryCode, SecurityUserId` | Desuscripción usuario↔categoría. |
-| **SystemAlertUserStates** | `SystemAlertId, SecurityUserId` | Estado in-app por usuario. |
-| **SystemAlertReferences / …References2** | `SystemAlertId (+ RefId)` | Referencias clave/valor; **v2** guarda un `QueryString` que identifica unívocamente la alerta para **dedup y cálculo de ciclo**. |
-| **SystemAlertRetries** | `SystemAlertId, RetryDateTime` | Bitácora de reintentos (Alert/Error). |
+| **SystemAlert** | `SystemAlertId` | The alert's header. Status (`SystemAlertState`), origin, priority, category, trigger date/time; retry (`ActionRetry…`) and time-out (`ActionTimeOut…` + `ActionTimeOutProcess`) configuration. Nested **Parties** level (`SystemAlertSecurityPartyId` + `…Type` User/Role). |
+| **SystemAlertTypes** | `SystemAlertId, SystemAlertType` (Mail/System) | Enabled channel + `SystemAlertTypeState`. |
+| **SystemAlertLanguages** | `SystemAlertId, SystemAlertLanguage` | `Subject`, `Message` (MaxMem), `MessageType` (HTML/Text). An **Attachs** level (Internal/External/FileStorage attachments). |
+| **SystemAlertCategories** | `SystemAlertCategoryCode` | Catalogue: description, priority, `Periodicity` (every N days), `MaxRange`, channels (formulas). A `SystemAlertCategoryTypes` level (channel enabled/disabled per category). |
+| **SystemAlertUnsubscriptions** | `CategoryCode, SecurityUserId` | User↔category unsubscription. |
+| **SystemAlertUserStates** | `SystemAlertId, SecurityUserId` | Per-user in-app status. |
+| **SystemAlertReferences / …References2** | `SystemAlertId (+ RefId)` | Key/value references; **v2** stores a `QueryString` uniquely identifying the alert, for **deduplication and cycle computation**. |
+| **SystemAlertRetries** | `SystemAlertId, RetryDateTime` | Retry log (Alert/Error). |
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-Todos `SystemAlert*` → @Alerts (nomenclatura), **root-legacy** (viven en el `#Domains/` raíz):
+All `SystemAlert*` domains belong to @Alerts (by naming), all **root-legacy** (they live in the root `#Domains/`):
 
-| Dominio | Valores |
+| Domain | Values |
 |---|---|
 | **SystemAlertState** | Suspended=`SUS`, Active=`ACT`, Discarded=`DIS`, Fail=`FAI`, Created=`CRE`, TimeOut=`TMO` |
-| **SystemAlertTypeState** | + `ErrorRetry=TRY`, `ActionRetry=ART` (por canal) |
+| **SystemAlertTypeState** | + `ErrorRetry=TRY`, `ActionRetry=ART` (per channel) |
 | **SystemAlertUserState** | Active=`ACT`, Viewed=`VIE`, Discarded=`DIS` |
 | **SystemAlertType** | Mail=`M`, System=`S` |
 | **SystemAlertOrigin** | Manual=`M`, System=`S` |
@@ -49,75 +49,75 @@ Todos `SystemAlert*` → @Alerts (nomenclatura), **root-legacy** (viven en el `#
 | **SystemAlertRetryType** | Alert=`A`, Error=`E` |
 | **SystemAlertSubjectFilterTo** | Description, LanguageSubject |
 | **SystemAlertUserDiscardType** | ToMe, ToAll, SameDayAndCategoryToMe, SameDayAndCategoryToAll |
-| **SystemAlertCategoryCode** | Char(50) **enumerado extensible**: catálogo tipado de categorías; cada aplicación agrega sus valores. |
+| **SystemAlertCategoryCode** | Char(50), an **extensible enum**: a typed catalogue of categories; each application adds its own values. |
 
-**Usa de otros módulos:** `MailMessageType` / `AttachmentType` (@SendMails), `SecurityPartyType` / `SecurityPartyIdCollection` (@Security — pese a que `SecurityPartyIdCollection` solo lo usa @Alerts, es de @Security por nomenclatura), `Language` (@APIs base). Nota: `NotificationMethod` y `SMSParameterDeliverStatus` **no** son de @Alerts (los usa solo @APIs).
+**Used from other modules:** `MailMessageType` / `AttachmentType` (@SendMails), `SecurityPartyType` / `SecurityPartyIdCollection` (@Security — even though only @Alerts uses `SecurityPartyIdCollection`, it belongs to @Security by naming), `Language` (@APIs base). Note: `NotificationMethod` and `SMSParameterDeliverStatus` do **not** belong to @Alerts (only @APIs uses them).
 
-## 5. Mecanismo
+## 5. How it works
 
-### 5.1 Crear una alerta — `AddSystemAlertSDT`
-`parm(in: &SDTSystemAlert, out: &SystemAlertId)` (`ExecuteInNewLUW=True`). El `SDTSystemAlert` agrupa todo: `DateTime, Description, Priority, CategoryCode`, config de retry/time-out, `Types[]` (canales), `Languages[]` (subject/message/type + `Attachments[]`), `SecurityPartyId[]` (destinatarios), `References[]`. Filtra los canales contra `SystemAlertCategoryTypes` (respeta deshabilitados), inserta el cabezal (State=Suspended, Origin=System) y sus hijos, y si hay referencias crea un `SystemAlertReferences2` con el querystring para dedup/ciclo. Wrappers simples: `AddSystemAlertParty` (un destinatario/canal), `AddSystemAlertParties` (colección, canal System).
+### 5.1 Creating an alert — `AddSystemAlertSDT`
+`parm(in: &SDTSystemAlert, out: &SystemAlertId)` (`ExecuteInNewLUW=True`). `SDTSystemAlert` bundles everything: `DateTime, Description, Priority, CategoryCode`, the retry/time-out configuration, `Types[]` (channels), `Languages[]` (subject/message/type + `Attachments[]`), `SecurityPartyId[]` (recipients), `References[]`. It filters the channels against `SystemAlertCategoryTypes` (honouring the disabled ones), inserts the header (State=Suspended, Origin=System) and its children, and if there are references it creates a `SystemAlertReferences2` row with the query string for deduplication/cycles. Simple wrappers: `AddSystemAlertParty` (one recipient/channel), `AddSystemAlertParties` (a collection, System channel).
 
-### 5.2 Enviar — `TskAlerts` (motor)
+### 5.2 Sending — `TskAlerts` (the engine)
 `Parm(in: &TaskManagerId, out: &Error, out: &ErrorMessage)`:
-1. Recorre alertas **Suspended con fecha ≤ ahora** y **Active**.
-2. Por cada canal en `Suspended`/`ActionRetry`:
-   - **Time-out**: si venció, `…TimeOut` e invoca dinámicamente `ActionTimeOutProcess`.
-   - **Ciclo**: para categorías con `MaxRange>0`, calcula periodicidad (`SystemAlertReferences2` + `RetSystemAlertFromReferences2FirstAlertDate`) y solo envía en los días que corresponden.
-   - **Mail**: arma `MailData` (`PXTools.SendMails`), inyecta la master page de alerta, reemplaza `[!BodyContent!]`, agrega el link `[!Unsubscription!]` (Base64), expande destinatarios (User / Role / Domain-Role), aplica el idioma del usuario (`RetSystemAlertLanguage`), chequea suscripción, adjunta y envía con `SendMailOutboxWithErrorRetry` (To usuarios, BCC roles).
-   - **System**: crea/actualiza `SystemAlertUserStates` (Active) → aparece en la bandeja del usuario.
-   - Al terminar: canal → `ActionRetry` o `Discarded`.
-3. `UpdSystemAlertState` recalcula el estado global; sub `'Clean User Alerts'` purga las más viejas que `AlertBackDaysToDepure`.
+1. It walks the alerts that are **Suspended with a date ≤ now** and those that are **Active**.
+2. For each channel in `Suspended`/`ActionRetry`:
+   - **Time-out**: if it has expired, set `…TimeOut` and dynamically invoke `ActionTimeOutProcess`.
+   - **Cycle**: for categories with `MaxRange>0`, compute the periodicity (`SystemAlertReferences2` + `RetSystemAlertFromReferences2FirstAlertDate`) and send only on the matching days.
+   - **Mail**: build `MailData` (`PXTools.SendMails`), inject the alert master page, replace `[!BodyContent!]`, add the `[!Unsubscription!]` link (Base64), expand the recipients (User / Role / Domain-Role), apply the user's language (`RetSystemAlertLanguage`), check the subscription, attach files and send through `SendMailOutboxWithErrorRetry` (To for users, BCC for roles).
+   - **System**: create/update `SystemAlertUserStates` (Active) → it shows up in the user's inbox.
+   - When finished: the channel goes to `ActionRetry` or `Discarded`.
+3. `UpdSystemAlertState` recomputes the global status; the `'Clean User Alerts'` subroutine purges anything older than `AlertBackDaysToDepure`.
 
-### 5.3 Cómo corre (scheduler)
-- **`PrcSystemAlert`** (`IsMain=True, CallProtocol=CommandLine`): toma lock (`StartProcessStatus`), llama `TskAlerts`, libera. Variante manual (también botón "Process Alerts" del WW).
-- La ejecución **programada** la hace **@TaskManager**: `Personalized/RetDynamicCallReferenceAlerts` registra `TskAlerts` como `ReferenceType.TaskManagerExecution` + dos `TableCleanerProcess`.
+### 5.3 How it runs (the scheduler)
+- **`PrcSystemAlert`** (`IsMain=True, CallProtocol=CommandLine`): takes the lock (`StartProcessStatus`), calls `TskAlerts`, releases it. The manual variant (also the WW's "Process Alerts" button).
+- **Scheduled** execution is done by **@TaskManager**: `Personalized/RetDynamicCallReferenceAlerts` registers `TskAlerts` as a `ReferenceType.TaskManagerExecution` plus two `TableCleanerProcess` entries.
 
-### 5.4 Suscripción / desuscripción
-`AddSystemAlertUnsubscription` / `DelSystemAlertUnsubscription` (usuario+categoría). El link de baja del mail abre el panel externo `UnsubscriptionConfirmation` (valida email → `AddSystemAlertUnsubscription`). `TskAlerts` omite destinatarios desuscriptos.
+### 5.4 Subscribing / unsubscribing
+`AddSystemAlertUnsubscription` / `DelSystemAlertUnsubscription` (user+category). The unsubscribe link in the mail opens the external `UnsubscriptionConfirmation` panel (it validates the email → `AddSystemAlertUnsubscription`). `TskAlerts` skips unsubscribed recipients.
 
 ## 6. APIs vs Personalized
 
-- **`APIs/`** (core): todas las transacciones, el SDT `SDTSystemAlert`, el motor `TskAlerts`/`PrcSystemAlert`, y toda la familia `Add*/Ret*/Chk*/Val*/Upd*/Dlt*`.
-- **`Personalized/`** (customización del proyecto):
-  | Objeto | Qué se customiza |
+- **`APIs/`** (core): every transaction, the `SDTSystemAlert` SDT, the `TskAlerts`/`PrcSystemAlert` engine, and the whole `Add*/Ret*/Chk*/Val*/Upd*/Dlt*` family.
+- **`Personalized/`** (the project's customization):
+  | Object | What gets customized |
   |---|---|
-  | `RetSystemAlertCategoriesCodes` (DataProvider) | **Las categorías propias del proyecto** (código + descripción) a sembrar. Suele venir vacío (cascarón). |
-  | `AddSystemAlertCategoriesCodes` (Procedure) | Orquestador de siembra: junta las categorías declaradas, hace upsert y borra las huérfanas. |
-  | `RetMenusAlerts` (DataProvider) | La entrada de menú del módulo (Alerts / Categories / Unsubscriptions). |
-  | `RetDynamicCallReferenceAlerts` (DataProvider) | Registro en @TaskManager de `TskAlerts` + los table-cleaners. |
+  | `RetSystemAlertCategoriesCodes` (DataProvider) | **The project's own categories** (code + description) to be seeded. Usually ships empty (a shell). |
+  | `AddSystemAlertCategoriesCodes` (Procedure) | Seeding orchestrator: gathers the declared categories, upserts them and deletes the orphans. |
+  | `RetMenusAlerts` (DataProvider) | The module's menu entry (Alerts / Categories / Unsubscriptions). |
+  | `RetDynamicCallReferenceAlerts` (DataProvider) | Registration of `TskAlerts` + the table cleaners in @TaskManager. |
 
-Parametrización: `APIs/RetSystemParametersSystemAlerts` publica los System Parameters (categoría `SystemAlerts`) que gobiernan el módulo (`AlertBackDaysToDepure`, `AlertDefaultMailAccount`, `AlertMailMasterPage`, `AlertUnsubscriptionPanelURL`, etc.).
+Parameterization: `APIs/RetSystemParametersSystemAlerts` publishes the System Parameters (category `SystemAlerts`) governing the module (`AlertBackDaysToDepure`, `AlertDefaultMailAccount`, `AlertMailMasterPage`, `AlertUnsubscriptionPanelURL`, and so on).
 
-## 7. Instancias de patterns
+## 7. Pattern instances
 
-| Instancia | Qué es |
+| Instance | What it is |
 |---|---|
-| **PXWorkWithSystemAlert** | ABM principal + **bandeja in-app** (`SystemAlertMessages`/`…Home`). Vistas Calendar/Table; acciones Activate/Deactivate/Process Alerts; detalle con Languages/References/Parties/Retries. |
-| **PXWorkWithSystemAlertLanguages** | ABM del contenido por idioma (subject/message HTML o texto). |
-| **PXWorkWithSystemAlertCategories** | ABM de categorías (checks Mail/System, Periodicity/MaxRange). Acción "Upgrade …Codes" → `AddSystemAlertCategoriesCodes`. |
-| **PXWorkWithSystemAlertUnsubscriptions** | Consulta/baja de desuscripciones. |
-| **PXComposerSystemAlertMessage / …SchedulerView** | Popups (contenido de alerta / calendario). |
-| **PXParameterRequestSystemAlertMessage** | "Alert Content View": muestra el mensaje y permite descartar (marca Viewed/Discarded). |
-| **PXParameterRequestUnsubscriptionConfirmation** | Panel **externo** (master page `HMPExternal`) de confirmación de baja. |
-| **PXParameterRequestPPEXE_PrcSystemAlert** | Request UI para lanzar `PrcSystemAlert`. |
+| **PXWorkWithSystemAlert** | The main CRUD screen + the **in-app inbox** (`SystemAlertMessages`/`…Home`). Calendar/Table views; Activate/Deactivate/Process Alerts actions; detail with Languages/References/Parties/Retries. |
+| **PXWorkWithSystemAlertLanguages** | CRUD for the per-language content (subject/message, HTML or text). |
+| **PXWorkWithSystemAlertCategories** | CRUD for categories (Mail/System checkboxes, Periodicity/MaxRange). The "Upgrade …Codes" action → `AddSystemAlertCategoriesCodes`. |
+| **PXWorkWithSystemAlertUnsubscriptions** | Query/removal of unsubscriptions. |
+| **PXComposerSystemAlertMessage / …SchedulerView** | Popups (alert content / calendar). |
+| **PXParameterRequestSystemAlertMessage** | "Alert Content View": shows the message and allows discarding it (marks Viewed/Discarded). |
+| **PXParameterRequestUnsubscriptionConfirmation** | The **external** panel (master page `HMPExternal`) confirming an unsubscription. |
+| **PXParameterRequestPPEXE_PrcSystemAlert** | Request UI for launching `PrcSystemAlert`. |
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-**Alta**: `AddSystemAlertSDT(in: &SDTSystemAlert, out: &SystemAlertId)` (principal), `AddSystemAlertParty/Parties` (wrappers), `AddSystemAlertCategoriesCode`, `AddSystemAlertUnsubscription`, `AddSystemAlertUserCategoriesExcluded`.
+**Creation**: `AddSystemAlertSDT(in: &SDTSystemAlert, out: &SystemAlertId)` (the main one), `AddSystemAlertParty/Parties` (wrappers), `AddSystemAlertCategoriesCode`, `AddSystemAlertUnsubscription`, `AddSystemAlertUserCategoriesExcluded`.
 
-**Consulta**: `RetSystemAlertLanguage(id, lang, out sdt)` (con fallback), `RetSystemAlertTypes`, `RetSystemAlertIdFromReferences/…2` (buscar por referencias), `RetSystemAlertFromReferences2FirstAlertDate` (ciclo).
+**Queries**: `RetSystemAlertLanguage(id, lang, out sdt)` (with fallback), `RetSystemAlertTypes`, `RetSystemAlertIdFromReferences/…2` (lookup by references), `RetSystemAlertFromReferences2FirstAlertDate` (cycle).
 
-**Chequeo/validación**: `ChkSystemAlertTypeEnabled`, `ValSystemAlertParty` (¿es destinatario?), `ValSystemAlertLanguages` (¿tiene contenido? — requisito para activar), `ValSystemAlertUserState` (badge de bandeja).
+**Checks/validation**: `ChkSystemAlertTypeEnabled`, `ValSystemAlertParty` (is this a recipient?), `ValSystemAlertLanguages` (does it have content? — a prerequisite for activation), `ValSystemAlertUserState` (inbox badge).
 
-**Estado**: `UpdSystemAlertActivate/Deactivate`, `UpdSystemAlertState`, `UpdSystemAlertTypeState[s]`, `UpdSystemAlertUserState` (0 = todos), `UpdActionTakenFromReferences` (marca "acción tomada" y responde el hilo).
+**Status**: `UpdSystemAlertActivate/Deactivate`, `UpdSystemAlertState`, `UpdSystemAlertTypeState[s]`, `UpdSystemAlertUserState` (0 = everyone), `UpdActionTakenFromReferences` (marks "action taken" and replies on the thread).
 
-**Baja/limpieza**: `DelSystemAlertUnsubscription`, `DltSystemAlertFromNotificactions` (descarte por `SystemAlertUserDiscardType`), `PrcTableCleanerAlerts[…UserState]`.
+**Removal/cleanup**: `DelSystemAlertUnsubscription`, `DltSystemAlertFromNotificactions` (discarding by `SystemAlertUserDiscardType`), `PrcTableCleanerAlerts[…UserState]`.
 
-**Proceso**: `TskAlerts(in: &TaskManagerId, out…)` (motor), `PrcSystemAlert` (wrapper CommandLine).
+**Processing**: `TskAlerts(in: &TaskManagerId, out…)` (the engine), `PrcSystemAlert` (the CommandLine wrapper).
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- [taskmanager.md](taskmanager.md) — ejecuta `TskAlerts` de forma programada (`RetDynamicCallReferenceAlerts`).
-- [security.md](security.md) — `Parties` son usuarios o roles (`SecurityParty`); los destinatarios se expanden por rol/dominio.
-- Módulos **@SendMails** (envío del canal Mail), **@SystemParameters** (config), **@FileStorage** (adjuntos), **@ProcessMonitor** (lock del proceso).
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- [taskmanager.md](taskmanager.md) — runs `TskAlerts` on a schedule (`RetDynamicCallReferenceAlerts`).
+- [security.md](security.md) — `Parties` are users or roles (`SecurityParty`); recipients are expanded by role/domain.
+- The **@SendMails** (sending the Mail channel), **@SystemParameters** (configuration), **@FileStorage** (attachments) and **@ProcessMonitor** (process lock) modules.
