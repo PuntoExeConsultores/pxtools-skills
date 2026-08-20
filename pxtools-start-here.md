@@ -1,72 +1,72 @@
-# PXTools — Documentación para Entrenamiento de IAs
+# PXTools — Documentation for Training AIs
 
-## Qué es PXTools
+## What PXTools is
 
-PXTools es un **framework de patterns (patrones) para GeneXus** desarrollado por PuntoExe Consultores (Uruguay). Automatiza la generación de código GeneXus transformando definiciones declarativas (archivos XML `.gxPattern`) en objetos GeneXus completos: WebPanels, Procedures, DataProviders, SDTs, APIs, Transactions, entre otros.
+PXTools is a **pattern framework for GeneXus** developed by PuntoExe Consultores (Uruguay). It automates GeneXus code generation by turning declarative definitions (`.gxPattern` XML files) into complete GeneXus objects: WebPanels, Procedures, DataProviders, SDTs, APIs, Transactions, and others.
 
-## Concepto clave
+## Key concept
 
-Un **pattern** en PXTools tiene tres niveles:
+A **pattern** in PXTools has three levels:
 
-1. **Definición del patrón** (`.Pattern`) — Schema XML que define la estructura, nodos y propiedades disponibles, y qué objetos GeneXus se generan de cada nodo.
-2. **Instancia del patrón** (`.gxPattern`) — Configuración concreta que sigue el schema, definida por el desarrollador para una entidad o funcionalidad específica.
-3. **Objetos generados** (`.Childs/`) — Código GeneXus resultante: WebPanels, Procedures, DataProviders, SDTs, etc.
+1. **Pattern definition** (`.Pattern`) — XML schema defining the available structure, nodes and properties, and which GeneXus objects each node generates.
+2. **Pattern instance** (`.gxPattern`) — the concrete configuration that follows the schema, written by the developer for a specific entity or feature.
+3. **Generated objects** (`.Childs/`) — the resulting GeneXus code: WebPanels, Procedures, DataProviders, SDTs, and so on.
 
-## Índice de documentación
+## Documentation index
 
-Toda la documentación detallada está en la subcarpeta [`pxtools/`](pxtools/):
+All the detailed documentation lives in the [`pxtools/`](pxtools/) subfolder:
 
-### Visión general
-- [00-overview.md](pxtools/00-overview.md) — Arquitectura del framework, cómo funciona el generador, tipos de patterns
+### Overview
+- [00-overview.md](pxtools/00-overview.md) — Framework architecture, how the generator works, kinds of patterns
 
-### Patterns de UI (generan WebPanels)
-- [01-pxworkwith.md](pxtools/01-pxworkwith.md) — CRUD maestro-detalle con Selection, View, Edit, Prompt
-- [02-pxparameterrequest.md](pxtools/02-pxparameterrequest.md) — Formularios modales/popup para captura de parámetros
-- [03-pxcomposer.md](pxtools/03-pxcomposer.md) — Composición de pantallas a partir de WebComponents
+### UI patterns (they generate WebPanels)
+- [01-pxworkwith.md](pxtools/01-pxworkwith.md) — Master-detail CRUD with Selection, View, Edit, Prompt
+- [02-pxparameterrequest.md](pxtools/02-pxparameterrequest.md) — Modal/popup forms for capturing parameters
+- [03-pxcomposer.md](pxtools/03-pxcomposer.md) — Screen composition out of WebComponents
 
-### Pattern de flujo
-- [04-pxflowcontroller.md](pxtools/04-pxflowcontroller.md) — Orquestación de flujos de trabajo con confirmaciones y acciones encadenadas
+### Flow pattern
+- [04-pxflowcontroller.md](pxtools/04-pxflowcontroller.md) — Workflow orchestration with confirmations and chained actions
 
-### Patterns de API/WebServices
-- [05-pxwslayer.md](pxtools/05-pxwslayer.md) — Orquestador de API REST/SOAP con OpenAPI 3.0
-- [06-pxwsquery.md](pxtools/06-pxwsquery.md) — DataProviders con filtros, ordenamiento y paginación
-- [07-pxwsdata.md](pxtools/07-pxwsdata.md) — Procedimientos de lectura de datos con hooks de código
-- [08-pxwstransaction.md](pxtools/08-pxwstransaction.md) — CRUD (Load/Save/Delete) sobre transacciones vía Business Components
+### API / Web Service patterns
+- [05-pxwslayer.md](pxtools/05-pxwslayer.md) — REST/SOAP API orchestrator with OpenAPI 3.0
+- [06-pxwsquery.md](pxtools/06-pxwsquery.md) — DataProviders with filtering, ordering and paging
+- [07-pxwsdata.md](pxtools/07-pxwsdata.md) — Data-read procedures with code hooks
+- [08-pxwstransaction.md](pxtools/08-pxwstransaction.md) — CRUD (Load/Save/Delete) over transactions via Business Components
 
-### Referencia transversal
-- [12-acciones-patterns-ui.md](pxtools/12-acciones-patterns-ui.md) — Sistema de acciones compartido por PXWorkWith, PXParameterRequest y PXComposer (callTypes, ConditionalCalls, PXInstance, ciclo de ejecucion, propiedad execute)
-- [13-semantica-grids-webpanels.md](pxtools/13-semantica-grids-webpanels.md) — Cómo interpretar la presencia de grids en un WebPanel para reconocer el pattern: grids reales vs fantasma (SDT-persistencia legacy), múltiples grids, For Each Line
+### Cross-cutting reference
+- [12-pattern-ui-actions.md](pxtools/12-pattern-ui-actions.md) — The action system shared by PXWorkWith, PXParameterRequest and PXComposer (callTypes, ConditionalCalls, PXInstance, execution cycle, the `execute` property)
+- [13-grid-webpanel-semantics.md](pxtools/13-grid-webpanel-semantics.md) — How to read the presence of grids in a WebPanel to recognise the pattern: real vs phantom grids (legacy SDT persistence), multiple grids, For Each Line
 
-### Patterns de datos/configuración
-- [09-pxoav.md](pxtools/09-pxoav.md) — Object Attribute Values (atributos extensibles dinámicos)
-- [10-pxentityparameters.md](pxtools/10-pxentityparameters.md) — Parámetros configurables por entidad
-- [11-pxreporttemplate.md](pxtools/11-pxreporttemplate.md) — Templates para generación de reportes
+### Data / configuration patterns
+- [09-pxoav.md](pxtools/09-pxoav.md) — Object Attribute Values (dynamic extensible attributes)
+- [10-pxentityparameters.md](pxtools/10-pxentityparameters.md) — Per-entity configurable parameters
+- [11-pxreporttemplate.md](pxtools/11-pxreporttemplate.md) — Templates for report generation
 
-### Módulos @PXTools
-- [20-modulos-pxtools.md](pxtools/20-modulos-pxtools.md) — 25+ módulos reutilizables: Security, Alerts, CloudTasks, FileStorage, etc.
-- [21-oauth-service.md](pxtools/21-oauth-service.md) — `@OAuthService`: Authorization Server OAuth 2.0 + OpenID Connect (token / introspect / revoke / userinfo / .well-known + PKCE + JWT id_token HS256 + TaskManager purge)
+### @PXTools modules
+- [20-pxtools-modules.md](pxtools/20-pxtools-modules.md) — 25+ reusable modules: Security, Alerts, CloudTasks, FileStorage, etc.
+- [21-oauth-service.md](pxtools/21-oauth-service.md) — `@OAuthService`: OAuth 2.0 + OpenID Connect Authorization Server (token / introspect / revoke / userinfo / .well-known + PKCE + JWT id_token HS256 + TaskManager purge)
 
-### Guías transversales
-- [30-guia-reconocimiento-patterns.md](pxtools/30-guia-reconocimiento-patterns.md) — Cómo analizar WebPanels manuales y determinar a qué pattern migrar
-- [31-capacidades-dual-platform.md](pxtools/31-capacidades-dual-platform.md) — Migración Desktop → Responsiva, generación dual-platform
-- [32-limitaciones-y-gaps.md](pxtools/32-limitaciones-y-gaps.md) — Qué NO soportan los patterns hoy
-- [33-estrategia-migracion.md](pxtools/33-estrategia-migracion.md) — Proceso de migración de KB sin patterns a PXTools
+### Cross-cutting guides
+- [30-pattern-recognition-guide.md](pxtools/30-pattern-recognition-guide.md) — How to analyse hand-written WebPanels and decide which pattern to migrate them to
+- [31-dual-platform-capabilities.md](pxtools/31-dual-platform-capabilities.md) — Desktop → Responsive migration, dual-platform generation
+- [32-limitations-and-gaps.md](pxtools/32-limitations-and-gaps.md) — What the patterns do NOT support today
+- [33-migration-strategy.md](pxtools/33-migration-strategy.md) — Migrating a KB without patterns to PXTools
 
-## Cómo usar esta documentación
+## How to use this documentation
 
-Esta documentación está diseñada para que una IA pueda:
+It is written so that an AI can:
 
-1. **Entender** qué genera cada pattern y cómo se configura
-2. **Reconocer** en código GeneXus existente qué patterns podrían aplicarse
-3. **Generar** instancias de patterns (.gxPattern) válidas para nuevas funcionalidades
-4. **Migrar** WebPanels manuales a patterns de PXTools
-5. **Diagnosticar** qué WebPanels no son migrables y por qué
+1. **Understand** what each pattern generates and how it is configured
+2. **Recognise**, in existing GeneXus code, which patterns could be applied
+3. **Generate** valid pattern instances (.gxPattern) for new features
+4. **Migrate** hand-written WebPanels to PXTools patterns
+5. **Diagnose** which WebPanels cannot be migrated, and why
 
-## Fuentes de información utilizadas
+## Sources used
 
 - KB 1: 179 PXWorkWith, 93 PXParameterRequest, 14 PXComposer, 1 PXFlowController, 8 PXReportTemplate, 2 PXOAV, 2 PXEntityParameters
-- KB 2: Ejemplos de PXWSLayer, PXWSQuery, PXWSData, PXWSTransaction
-- KB 3: 19 módulos @PXTools
-- Sitio web: https://pxtools.puntoexe.com.uy/
+- KB 2: examples of PXWSLayer, PXWSQuery, PXWSData, PXWSTransaction
+- KB 3: 19 @PXTools modules
+- Website: https://pxtools.puntoexe.com.uy/
 - Manual: https://sites.google.com/puntoexe.com.uy/pxtools-manual/
-- Definiciones de patterns: `Patterns/*.Pattern` de las KBs externalizadas
+- Pattern definitions: `Patterns/*.Pattern` from the externalized KBs

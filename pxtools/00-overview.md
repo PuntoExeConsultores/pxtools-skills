@@ -1,58 +1,58 @@
-# PXTools — Visión General del Framework
+# PXTools — Framework Overview
 
-## Qué es PXTools
+## What PXTools is
 
-PXTools es un framework de **patterns (patrones)** para [GeneXus](https://www.genexus.com/) que transforma definiciones declarativas XML en código GeneXus completo y funcional. Fue creado por **PuntoExe Consultores** (Uruguay) y soporta las plataformas:
+PXTools is a **pattern** framework for [GeneXus](https://www.genexus.com/) that turns declarative XML definitions into complete, working GeneXus code. It was created by **PuntoExe Consultores** (Uruguay) and supports these platforms:
 
-- **Web Desktop** (layout HTML clásico)
-- **Web Responsive** (layout abstracto de GeneXus)
-- **Smart Devices** (aplicaciones móviles nativas)
+- **Web Desktop** (classic HTML layout)
+- **Web Responsive** (GeneXus abstract layout)
+- **Smart Devices** (native mobile applications)
 
-## Arquitectura del Sistema de Patterns
+## Architecture of the Pattern System
 
-### Tres niveles de un pattern
+### The three levels of a pattern
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  NIVEL 1: DEFINICIÓN DEL PATRÓN (.Pattern)                   │
+│  LEVEL 1: PATTERN DEFINITION (.Pattern)                      │
 │  ─────────────────────────────────────────                   │
-│  Schema XML que define:                                      │
-│  • Estructura de nodos y propiedades permitidas              │
-│  • Qué objetos GeneXus genera cada nodo                      │
-│  • Código del generador (DLL compiladas)                      │
-│  • Parent Objects (a qué tipo de objeto se asocia)           │
-│  Ubicación: Patterns/<PatternName>/<PatternName>.Pattern     │
+│  XML schema defining:                                        │
+│  • Node structure and allowed properties                     │
+│  • Which GeneXus objects each node generates                 │
+│  • Generator code (compiled DLLs)                            │
+│  • Parent Objects (what kind of object it attaches to)       │
+│  Location: Patterns/<PatternName>/<PatternName>.Pattern      │
 ├──────────────────────────────────────────────────────────────┤
-│  NIVEL 2: INSTANCIA DEL PATRÓN (.gxPattern)                  │
+│  LEVEL 2: PATTERN INSTANCE (.gxPattern)                      │
 │  ─────────────────────────────────────────                   │
-│  XML que sigue el schema del .Pattern                        │
-│  Configurado por el desarrollador para una entidad/función   │
-│  Ubicación: Knowledge Base/<ruta>/<Nombre>.gxPattern         │
+│  XML that follows the .Pattern schema                        │
+│  Configured by the developer for one entity/feature          │
+│  Location: Knowledge Base/<path>/<Name>.gxPattern            │
 ├──────────────────────────────────────────────────────────────┤
-│  NIVEL 3: OBJETOS GENERADOS (.Childs/)                       │
+│  LEVEL 3: GENERATED OBJECTS (.Childs/)                       │
 │  ─────────────────────────────────────                       │
-│  Objetos GeneXus resultantes del generador                   │
+│  The GeneXus objects the generator produces                  │
 │  WebPanels, Procedures, DataProviders, SDTs, APIs, etc.      │
-│  Ubicación: Knowledge Base/<ruta>/.<Nombre>.gxSource.Childs/ │
+│  Location: Knowledge Base/<path>/.<Name>.gxSource.Childs/    │
 └──────────────────────────────────────────────────────────────┘
 ```
 
-### Archivos de soporte por pattern
+### Supporting files per pattern
 
-Cada pattern tiene archivos adicionales en su directorio de definición:
+Every pattern has additional files in its definition directory:
 
-| Archivo | Propósito |
-|---------|-----------|
-| `<Pattern>Instance.xml` | Instance Specification: schema completo de la instancia (ElementTypes, atributos, nodos hijos, tipos, valores por defecto) |
-| `<Pattern>Settings.xml` | Preferencias/configuración global del pattern (valores por defecto, prefijos, clases de tema, etc.) |
-| `<Pattern>CustomTypes.xml` | Definiciones de tipos personalizados usados en las propiedades |
-| `Templates/` | Código del generador (DLL compiladas) que produce cada parte de los objetos GeneXus. Compilado para proteger propiedad intelectual y licenciamiento |
-| `Icons/` | Iconos del pattern para el IDE de GeneXus |
-| `Resources/` | Recursos adicionales (settings por defecto, exportaciones iniciales) |
+| File | Purpose |
+|------|---------|
+| `<Pattern>Instance.xml` | Instance Specification: the complete instance schema (ElementTypes, attributes, child nodes, types, default values) |
+| `<Pattern>Settings.xml` | Global pattern preferences/configuration (defaults, prefixes, theme classes, etc.) |
+| `<Pattern>CustomTypes.xml` | Definitions of the custom types used in properties |
+| `Templates/` | Generator code (compiled DLLs) producing each part of the GeneXus objects. Compiled to protect intellectual property and licensing |
+| `Icons/` | Pattern icons for the GeneXus IDE |
+| `Resources/` | Additional resources (default settings, initial exports) |
 
-### Anatomía de un .Pattern
+### Anatomy of a .Pattern
 
-Cada archivo `.Pattern` tiene esta estructura XML:
+Every `.Pattern` file has this XML structure:
 
 ```xml
 <Pattern Publisher="PuntoExe" Id="GUID" Name="PXWorkWith" Version="10.3.0">
@@ -62,73 +62,73 @@ Cada archivo `.Pattern` tiene esta estructura XML:
     <SettingsSpecification>PXWorkWithSettings.xml</SettingsSpecification>
     <CustomTypeDefinitions>PXWorkWithCustomTypes.xml</CustomTypeDefinitions>
     <Implementation>PuntoExe.Patterns.PXWorkWith.dll</Implementation>
-    <ParentObjects>                                         <!-- A qué se asocia -->
+    <ParentObjects>                                         <!-- What it attaches to -->
       <ParentObject Type="Transaction" />
       <ParentObject Type="(None)" />
     </ParentObjects>
   </Definition>
 
   <Objects>
-    <!-- Cada Object define un objeto GeneXus a generar -->
+    <!-- Each Object declares one GeneXus object to generate -->
     <Object Type="WebPanel" Id="Selection" Name="WW{Instance.Name}"
-            Element="instance/level/selection">             <!-- Nodo XML fuente -->
+            Element="instance/level/selection">             <!-- Source XML node -->
       <Part Type="WebForm" Template="Templates\SelectionWebForm.dll" />
       <Part Type="Variables" Template="Templates\SelectionVariables.dll" />
       <Part Type="Events" Template="Templates\SelectionEvents.dll" />
       <Part Type="Rules" Template="Templates\SelectionRules.dll" />
     </Object>
-    <!-- ... más objetos ... -->
+    <!-- ... more objects ... -->
   </Objects>
 </Pattern>
 ```
 
-Puntos clave:
-- **`Element`** indica qué nodo XML de la instancia dispara la generación de ese objeto
-- **`Name`** usa placeholders como `{Instance.Name}`, `{Element.name}` para naming dinámico
-- **`Count="*"`** indica que puede generar múltiples objetos (uno por cada match del Element XPath)
-- **`Template`** (en el .Pattern) apunta al **código del generador** (DLL) que produce cada parte del objeto GeneXus. No confundir con los "Templates de UI" de PXTools (ver sección siguiente)
+Key points:
+- **`Element`** says which XML node of the instance triggers the generation of that object
+- **`Name`** uses placeholders such as `{Instance.Name}`, `{Element.name}` for dynamic naming
+- **`Count="*"`** means it can generate several objects (one per Element XPath match)
+- **`Template`** (inside the .Pattern) points at the **generator code** (DLL) producing each part of the GeneXus object. Not to be confused with the PXTools "UI Templates" (see the next section)
 
-## Catálogo de Patterns
+## Pattern Catalogue
 
-### Patterns de UI (generan WebPanels)
+### UI patterns (they generate WebPanels)
 
-| Pattern | Genera | Parent Object | Dual-platform |
-|---------|--------|--------------|---------------|
-| **PXWorkWith** | Selection, View, Edit, Prompt, Controller, Tabs (Grid/Tabular), Export Excel, Charts | Transaction / (None) | Si (Web + Responsive + SD) |
-| **PXParameterRequest** | WebPanel modal/popup para captura de parámetros | WebPanel / Procedure / Report / Transaction / (None) | Si (Web + Responsive) |
-| **PXComposer** | WebPanel compositor que embebe WebComponents | (None) | Si (Web + Responsive) |
+| Pattern | Generates | Parent Object | Dual-platform |
+|---------|-----------|---------------|---------------|
+| **PXWorkWith** | Selection, View, Edit, Prompt, Controller, Tabs (Grid/Tabular), Excel export, Charts | Transaction / (None) | Yes (Web + Responsive + SD) |
+| **PXParameterRequest** | Modal/popup WebPanel for capturing parameters | WebPanel / Procedure / Report / Transaction / (None) | Yes (Web + Responsive) |
+| **PXComposer** | Composer WebPanel embedding WebComponents | (None) | Yes (Web + Responsive) |
 
-### Pattern de flujo
+### Flow pattern
 
-| Pattern | Genera | Parent Object | Dual-platform |
-|---------|--------|--------------|---------------|
-| **PXFlowController** | WebPanel con flujo de trabajo paso a paso: acciones, confirmaciones, iteraciones | Procedure / Transaction / (None) | Si (Web + Responsive + SD) |
+| Pattern | Generates | Parent Object | Dual-platform |
+|---------|-----------|---------------|---------------|
+| **PXFlowController** | WebPanel with a step-by-step workflow: actions, confirmations, iterations | Procedure / Transaction / (None) | Yes (Web + Responsive + SD) |
 
-### Patterns de API/WebServices
+### API / Web Service patterns
 
-| Pattern | Genera | Parent Object |
-|---------|--------|--------------|
-| **PXWSLayer** | Procedures SOAP, Procedures REST, objetos API (OpenAPI 3.0), SDTs In/Out | Transaction / (None) |
-| **PXWSQuery** | DataProvider + Procedure + SDTs + Domain (ordenamiento), con filtros, búsqueda, paginación | Transaction / (None) |
-| **PXWSData** | Procedure de lectura + SDTs (In/Out/Structure), con hooks de código | Transaction / (None) |
-| **PXWSTransaction** | Procedures Load/Save/Delete + SDTs (Structure/In/Out por método) via Business Components | Transaction / (None) |
+| Pattern | Generates | Parent Object |
+|---------|-----------|---------------|
+| **PXWSLayer** | SOAP Procedures, REST Procedures, API objects (OpenAPI 3.0), In/Out SDTs | Transaction / (None) |
+| **PXWSQuery** | DataProvider + Procedure + SDTs + Domain (ordering), with filters, search and paging | Transaction / (None) |
+| **PXWSData** | Read Procedure + SDTs (In/Out/Structure), with code hooks | Transaction / (None) |
+| **PXWSTransaction** | Load/Save/Delete Procedures + SDTs (Structure/In/Out per method) via Business Components | Transaction / (None) |
 
-### Patterns de datos/configuración
+### Data / configuration patterns
 
-| Pattern | Genera | Parent Object |
-|---------|--------|--------------|
-| **PXOAV** | Attributes, Transactions (WRI/WORI/Definition), Groups, Procedures (CRUD de valores) | Transaction |
-| **PXEntityParameters** | Attributes, Domains, Transactions, Groups, SDTs, Procedures, DataProviders para parámetros configurables por entidad | Transaction |
-| **PXReportTemplate** | No genera objetos directamente; define template/settings para reportes | Procedure |
+| Pattern | Generates | Parent Object |
+|---------|-----------|---------------|
+| **PXOAV** | Attributes, Transactions (WRI/WORI/Definition), Groups, Procedures (value CRUD) | Transaction |
+| **PXEntityParameters** | Attributes, Domains, Transactions, Groups, SDTs, Procedures, DataProviders for per-entity configurable parameters | Transaction |
+| **PXReportTemplate** | Generates no objects directly; defines template/settings for reports | Procedure |
 
-## Relaciones entre Patterns
+## How the patterns relate
 
 ```
                     ┌──────────────────┐
-                    │   PXWSLayer      │ ◄── Orquesta API REST/SOAP
+                    │   PXWSLayer      │ ◄── Orchestrates the REST/SOAP API
                     │   (API Object)   │
                     └────────┬─────────┘
-                             │ methods apuntan a:
+                             │ methods point to:
               ┌──────────────┼──────────────┐
               ▼              ▼              ▼
      ┌────────────┐  ┌────────────┐  ┌────────────┐
@@ -139,176 +139,176 @@ Puntos clave:
 
      ┌───────────────────────────────────────────┐
      │              PXComposer                   │
-     │  (compositor de pantalla)                 │
-     │  Embebe como WebComponents:               │
+     │  (screen composer)                        │
+     │  Embeds as WebComponents:                 │
      │  ┌──────────┐ ┌──────────┐ ┌──────────┐   │
      │  │PXWorkWith│ │PXParam.  │ │PXComposer│   │
-     │  │Selection │ │Request   │ │(anidado) │   │
+     │  │Selection │ │Request   │ │(nested)  │   │
      │  └──────────┘ └──────────┘ └──────────┘   │
      └───────────────────────────────────────────┘
 
      ┌────────────────────────────────────────────┐
      │          PXFlowController                  │
-     │  Acciones pueden invocar:                  │
-     │  • PXWorkWith (cualquier nodo)             │
+     │  Actions can invoke:                       │
+     │  • PXWorkWith (any node)                   │
      │  • PXParameterRequest                      │
      │  • PXComposer                              │
      │  • PXOAV                                   │
-     │  • Otros PXFlowController                  │
-     │  • Objetos GeneXus directos                │
+     │  • Other PXFlowControllers                 │
+     │  • GeneXus objects directly                │
      └────────────────────────────────────────────┘
 ```
 
-## Comunicación entre componentes: GlobalEvents
+## Communication between components: GlobalEvents
 
-Cuando múltiples WebComponents están **desplegados simultáneamente en la misma pantalla**, la comunicación entre ellos se logra mediante el **External Object nativo `GlobalEvents`** de GeneXus. Este objeto, importado por defecto en toda KB GeneXus, permite:
+When several WebComponents are **displayed on the same screen at the same time**, they talk to each other through GeneXus' native **`GlobalEvents` External Object**. That object, imported by default into every GeneXus KB, allows you to:
 
-1. **Definir eventos globales** que cualquier panel puede disparar
-2. **Escuchar eventos** en otros paneles que estén renderizados en ese momento y reaccionar (refrescar, actualizar datos, etc.)
+1. **Define global events** that any panel can raise
+2. **Listen for events** in other panels currently rendered, and react (refresh, update data, etc.)
 
-**Aplica a**: componentes de **PXComposer** (todos visibles simultáneamente en pantalla).
+**Applies to**: **PXComposer** components (all visible on screen simultaneously).
 
-**No aplica a**: tabs de **PXWorkWith View**, ya que solo el tab activo está cargado/renderizado — los demás tabs no están escuchando eventos en ese momento. Para comunicar entre tabs se usa **WebSession**: un tab escribe datos en WebSession y al activarse otro tab, este los lee en su Start/Refresh.
+**Does not apply to**: **PXWorkWith View** tabs, since only the active tab is loaded/rendered — the other tabs are not listening at that moment. To communicate between tabs use **WebSession**: one tab writes data into WebSession and, when another tab becomes active, it reads that data in its Start/Refresh.
 
-La configuración de `GlobalEvents` se implementa en los **hooks de código** (nodos `codes` y `events`) de las instancias de patterns, no como propiedad declarativa del pattern.
+`GlobalEvents` is wired up in the **code hooks** (`codes` and `events` nodes) of the pattern instances, not as a declarative property of the pattern.
 
-## Hooks de código: formato e indentación del CDATA (común a los patterns)
+## Code hooks: CDATA formatting and indentation (common to all patterns)
 
-Los nodos `codes` existen en **PXWorkWith, PXParameterRequest y PXComposer**. En el `.gxPattern` cada hook se serializa con el código dentro de un CDATA y la **primera línea pegada a la apertura** `<![CDATA[`:
+`codes` nodes exist in **PXWorkWith, PXParameterRequest and PXComposer**. In the `.gxPattern`, each hook is serialized with the code inside a CDATA and the **first line flush against the opening** `<![CDATA[`:
 
 ```xml
 <code type="Start"><![CDATA[&Total = 0
 For Each
-	Where PedidoId = &PedidoId
-	&Total = &Total + PedidoImporte
+	Where OrderId = &OrderId
+	&Total = &Total + OrderAmount
 EndFor]]></code>
 ```
 
-**Regla de indentación** (aplica a todo pattern con code nodes CDATA):
+**Indentation rule** (applies to every pattern with CDATA code nodes):
 
-- La **primera línea** queda en **columna 0** (pegada al `<![CDATA[`), y las **líneas siguientes también arrancan en columna 0** para el nivel base. Error frecuente: dejar un **tab de más** desde la línea 2 — corre todo el bloque y deja `For Each`/`EndFor` (o `If`/`EndIf`) alineados con su propio contenido.
-- Solo el **anidamiento de bloques** (`For Each`, `If`, `Do While`, `Do Case`, `Sub`) suma **+1 tab**; las palabras clave de cierre (`EndFor`, `EndIf`, `EndDo`, `EndCase`, `EndSub`) se alinean con su apertura.
-- La **alineación interna** de los `=` (tabs a mitad de línea, tras el nombre del atributo) es independiente del leading y se conserva.
+- The **first line** stays at **column 0** (flush against `<![CDATA[`), and the **following lines also start at column 0** for the base level. A frequent mistake is leaving **one extra tab** from line 2 onwards — it shifts the whole block and leaves `For Each`/`EndFor` (or `If`/`EndIf`) aligned with their own content.
+- Only **block nesting** (`For Each`, `If`, `Do While`, `Do Case`, `Sub`) adds **+1 tab**; the closing keywords (`EndFor`, `EndIf`, `EndDo`, `EndCase`, `EndSub`) line up with their opening.
+- The **internal alignment** of the `=` signs (tabs mid-line, after the attribute name) is independent of the leading indentation and is preserved.
 
-> **Excepción — PXFlowController**: serializa el código como atributo `data="…"` (no CDATA), así que esta guía de indentación no aplica ahí.
+> **Exception — PXFlowController**: it serializes code as a `data="…"` attribute (not CDATA), so this indentation guidance does not apply there.
 
-## Templates de UI — Personalización total del diseño visual
+## UI Templates — full control over the visual design
 
-### Concepto clave
+### Key concept
 
-Los patterns de UI de PXTools (PXWorkWith, PXParameterRequest, PXComposer, PXFlowController) no imponen un diseño visual fijo. El diseño se define mediante **Templates**: objetos GeneXus que el desarrollador crea y personaliza con total libertad.
+The PXTools UI patterns (PXWorkWith, PXParameterRequest, PXComposer, PXFlowController) do not impose a fixed visual design. The design is defined through **Templates**: GeneXus objects the developer creates and customizes freely.
 
-### Qué es un Template
+### What a Template is
 
-Un Template es un **objeto GeneXus real** que define el diseño visual completo de la pantalla:
+A Template is a **real GeneXus object** defining the complete visual design of the screen:
 
-| Generador | Tipo de Template | Descripción |
-|-----------|-----------------|-------------|
-| Web Desktop | WebPanel con layout HTML | El desarrollador diseña el HTML con total libertad |
-| Web Responsive | WebPanel con Layout Abstracto | El desarrollador usa el layout abstracto de GeneXus |
-| Smart Devices | Panel for SD | El desarrollador diseña el panel móvil |
+| Generator | Template type | Description |
+|-----------|---------------|-------------|
+| Web Desktop | WebPanel with HTML layout | The developer designs the HTML freely |
+| Web Responsive | WebPanel with Abstract Layout | The developer uses the GeneXus abstract layout |
+| Smart Devices | Panel for SD | The developer designs the mobile panel |
 
 ### Template Elements
 
-Dentro del Template, el desarrollador coloca **Template Elements**: placeholders simples donde el generador de PXTools inyecta el contenido específico de cada instancia (grilla, filtros, botones de acción, formulario, etc.).
+Inside the Template the developer places **Template Elements**: simple placeholders where the PXTools generator injects the content specific to each instance (grid, filters, action buttons, form, and so on).
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│  TEMPLATE (WebPanel diseñado por el desarrollador)    │
+│  TEMPLATE (WebPanel designed by the developer)       │
 │                                                      │
-│  ┌─ Logo empresa ─┐  ┌─ Breadcrumb custom ─┐        │
+│  ┌─ Company logo ─┐  ┌─ Custom breadcrumb ─┐        │
 │  └────────────────┘  └─────────────────────┘        │
 │                                                      │
 │  ┌──────────────────────────────────────────┐        │
-│  │  ██ TEMPLATE ELEMENT: Filtros ██         │ ◄─ PXTools inyecta aquí
+│  │  ██ TEMPLATE ELEMENT: Filters ██         │ ◄─ PXTools injects here
 │  └──────────────────────────────────────────┘        │
 │                                                      │
 │  ┌──────────────────────────────────────────┐        │
-│  │  ██ TEMPLATE ELEMENT: Grilla ██          │ ◄─ PXTools inyecta aquí
+│  │  ██ TEMPLATE ELEMENT: Grid ██            │ ◄─ PXTools injects here
 │  └──────────────────────────────────────────┘        │
 │                                                      │
-│  ┌─ Footer custom ──────────────────────────┐        │
+│  ┌─ Custom footer ──────────────────────────┐        │
 │  └──────────────────────────────────────────┘        │
 │                                                      │
-│  Todo lo demás (logo, breadcrumb, footer, CSS,       │
-│  JavaScript, controles extras) es 100% del           │
-│  desarrollador con la flexibilidad de GeneXus        │
+│  Everything else (logo, breadcrumb, footer, CSS,     │
+│  JavaScript, extra controls) is 100% the             │
+│  developer's, with all the flexibility of GeneXus    │
 └──────────────────────────────────────────────────────┘
 ```
 
 ### Template Groups
 
-Los Templates se organizan en **Template Groups** (`templatesGroup`) que agrupan los templates para cada tipo de pantalla generada por un pattern. Esto permite:
+Templates are organised into **Template Groups** (`templatesGroup`) that bundle the templates for each kind of screen a pattern generates. This lets you:
 
-- Tener un grupo "Diseño Estándar" y un grupo "Diseño Minimalista"
-- Aplicar un grupo completo a una instancia o a toda la KB vía Settings
-- Cada level de una instancia puede usar un Template Group diferente o un Template individual (`templateObject`, `templateResponsiveObject`, `templateSDObject`)
+- Keep a "Standard Design" group and a "Minimalist Design" group
+- Apply a whole group to one instance or to the entire KB through Settings
+- Have each level of an instance use a different Template Group, or an individual Template (`templateObject`, `templateResponsiveObject`, `templateSDObject`)
 
-### Por qué es importante
+### Why this matters
 
-Los Templates son la **capacidad más importante para flexibilizar el diseño visual**:
+Templates are the **single most important capability for shaping the visual design**:
 
-1. El generador produce la lógica (variables, eventos, reglas, condiciones)
-2. El Template define el diseño visual completo
-3. Los Template Elements son los puntos de inserción del contenido generado
-4. El desarrollador tiene **libertad total de GeneXus** alrededor de los Template Elements: HTML, CSS, JavaScript, controles de terceros, imágenes, animaciones
+1. The generator produces the logic (variables, events, rules, conditions)
+2. The Template defines the complete visual design
+3. Template Elements are the insertion points for the generated content
+4. The developer has **the full freedom of GeneXus** around the Template Elements: HTML, CSS, JavaScript, third-party controls, images, animations
 
-Esto significa que dos KBs usando el mismo pattern PXWorkWith pueden tener pantallas visualmente completamente diferentes si usan Templates distintos.
+This means two KBs using the same PXWorkWith pattern can end up with visually completely different screens if they use different Templates.
 
-### Catálogo de Template Elements
+### Catalogue of Template Elements
 
-Los Template Elements disponibles para PXWorkWith Selection (extraídos de Templates reales):
+The Template Elements available for PXWorkWith Selection (taken from real Templates):
 
-| Template Element (Type) | Qué inyecta el generador |
-|------------------------|-------------------------|
-| `Grid` | La grilla principal con datos |
-| `Filters` | Panel de filtros avanzados |
-| `UniqueSearchField` | Campo de búsqueda rápida |
-| `UniqueSearchAction` | Botón de búsqueda |
-| `InsertAction` | Botón de insertar |
-| `UpdateAction` | Botón de modificar |
-| `DeleteAction` | Botón de eliminar |
-| `DisplayAction` | Botón de ver detalle |
-| `EditAction` | Botón de editar |
-| `ImageActions` | Acciones con imagen |
-| `ButtonActions` | Acciones con botón |
-| `StandardButtonActions` | Acciones estándar (Aceptar, Cancelar) |
-| `OrderSelector` | Selector de orden |
-| `InsertVariables` | Variables de inserción |
-| `GridPagingStatus` | Estado de paginación |
-| `PageJump` | Salto de página |
-| `PageRowChange` | Cambio de filas por página |
-| `TopGridFixedData` | Datos fijos arriba de la grilla |
-| `BottomGridFixedData` | Datos fijos abajo de la grilla |
-| `FixedDataSection` | Sección de datos fijos (con subtipo: Parameters, Top Grid, Bottom Grid) |
-| `HiddenElements` | Elementos ocultos funcionales |
-| `GridHandlerControl` | Control del grid handler |
-| `GridHandlerAction` | Acción del grid handler |
-| `AddAllAction` | Acción seleccionar todos |
-| `RemoveAllAction` | Acción deseleccionar todos |
-| `Search` | Botón buscar |
-| `ErrorViewer` | Visor de errores |
-| `ProgramName` | Nombre del programa |
+| Template Element (Type) | What the generator injects |
+|-------------------------|----------------------------|
+| `Grid` | The main data grid |
+| `Filters` | Advanced filter panel |
+| `UniqueSearchField` | Quick search field |
+| `UniqueSearchAction` | Search button |
+| `InsertAction` | Insert button |
+| `UpdateAction` | Update button |
+| `DeleteAction` | Delete button |
+| `DisplayAction` | View detail button |
+| `EditAction` | Edit button |
+| `ImageActions` | Image actions |
+| `ButtonActions` | Button actions |
+| `StandardButtonActions` | Standard actions (OK, Cancel) |
+| `OrderSelector` | Order selector |
+| `InsertVariables` | Insert variables |
+| `GridPagingStatus` | Paging status |
+| `PageJump` | Page jump |
+| `PageRowChange` | Rows-per-page change |
+| `TopGridFixedData` | Fixed data above the grid |
+| `BottomGridFixedData` | Fixed data below the grid |
+| `FixedDataSection` | Fixed data section (with subtype: Parameters, Top Grid, Bottom Grid) |
+| `HiddenElements` | Functional hidden elements |
+| `GridHandlerControl` | Grid handler control |
+| `GridHandlerAction` | Grid handler action |
+| `AddAllAction` | Select-all action |
+| `RemoveAllAction` | Deselect-all action |
+| `Search` | Search button |
+| `ErrorViewer` | Error viewer |
+| `ProgramName` | Program name |
 
-### Templates predefinidos por PXTools
+### Templates shipped with PXTools
 
-PXTools incluye una colección de Templates predefinidos en `@PXTools/@APIs/Personalized/Templates/`:
+PXTools includes a collection of predefined Templates in `@PXTools/@APIs/Personalized/Templates/`:
 
-**Para PXWorkWith Selection (Desktop):**
-- `PXToolsSelectionTemplate` — Layout estándar
-- `PXToolsSelectionGXUITemplate` — Con controles GXUI
-- `PXToolsSelectionTwoPaneTemplate` — Dos paneles
-- `PXToolsSelectionButtonsWithImagesTemplate` — Botones con imágenes
-- `PXToolsSelectionComponentLeftRightTemplate` — Componente izq/der
-- `PXToolsSelectionComponentRightTemplate` — Componente a la derecha
-- Y más variantes de layout...
+**For PXWorkWith Selection (Desktop):**
+- `PXToolsSelectionTemplate` — standard layout
+- `PXToolsSelectionGXUITemplate` — with GXUI controls
+- `PXToolsSelectionTwoPaneTemplate` — two panes
+- `PXToolsSelectionButtonsWithImagesTemplate` — buttons with images
+- `PXToolsSelectionComponentLeftRightTemplate` — left/right component
+- `PXToolsSelectionComponentRightTemplate` — component on the right
+- And more layout variants…
 
-**Para PXWorkWith Selection (Responsive):**
-- `PXToolsResponsiveSelectionTemplate` — Layout responsivo estándar
-- `PXToolsResponsiveSelectionTwoPaneTemplate` — Dos paneles responsivo
-- `PXToolsResponsiveSelectionExpandComponentTemplate` — Con panel expandible
+**For PXWorkWith Selection (Responsive):**
+- `PXToolsResponsiveSelectionTemplate` — standard responsive layout
+- `PXToolsResponsiveSelectionTwoPaneTemplate` — responsive two panes
+- `PXToolsResponsiveSelectionExpandComponentTemplate` — with expandable panel
 
-**Para otros nodos:**
+**For other nodes:**
 - `PXToolsViewTemplate` / `PXToolsResponsiveViewTemplate` — View
 - `PXToolsTransactionTemplate` / `PXToolsResponsiveTransactionTemplate` — Transaction
 - `PXToolsTabGridTemplate` / `PXToolsTabGridGXUITemplate` — Tab Grid
@@ -316,43 +316,43 @@ PXTools incluye una colección de Templates predefinidos en `@PXTools/@APIs/Pers
 - `PXToolsComposerTemplate` / `PXToolsResponsiveComposerTemplate` — Composer
 - `PXToolsParameterRequestTemplate` / `PXToolsResponsiveParameterRequestTemplate` — PR
 - `PXToolsParameterRequestLoginTemplate` — Login
-- `PXToolsSDGridTemplate` y variantes — Smart Devices
+- `PXToolsSDGridTemplate` and variants — Smart Devices
 
-### Estilos visuales predefinidos
+### Predefined visual styles
 
-PXTools ofrece variantes de diseño visual por color (Red, Blue, Green, Gray, Violet y otros). Estas variantes se aplican mediante el Theme de GeneXus y definen paletas de colores, tipografía y estilos para todos los elementos de las pantallas generadas.
+PXTools offers visual design variants by colour (Red, Blue, Green, Gray, Violet and others). These variants are applied through the GeneXus Theme and define colour palettes, typography and styles for every element of the generated screens.
 
-## Generación Dual-Platform
+## Dual-Platform Generation
 
-Los patterns de UI (PXWorkWith, PXParameterRequest, PXComposer) y PXFlowController generan **dos versiones** de cada WebPanel:
+The UI patterns (PXWorkWith, PXParameterRequest, PXComposer) and PXFlowController generate **two versions** of each WebPanel:
 
-| Versión | Prefijo nombre | Propiedad |
-|---------|---------------|-----------|
+| Version | Name prefix | Property |
+|---------|-------------|----------|
 | Web Desktop | `WW`, `Wb`, `Pr`, `Ct`, `View` | `generateWeb` |
 | Web Responsive | `RWW`, `RWb`, `RPr`, `RCt`, `RView` | `generateWebResponsive` |
-| Smart Devices | (varía) | `generateSD` |
+| Smart Devices | (varies) | `generateSD` |
 
-Esto permite:
-- Migración progresiva Desktop → Responsive
-- Convivencia simultánea de ambas plataformas
-- Misma definición de instancia genera ambas versiones
+This enables:
+- Progressive Desktop → Responsive migration
+- Both platforms coexisting at once
+- The same instance definition generating both versions
 
-## Módulos @PXTools
+## @PXTools Modules
 
-PXTools incluye 25+ módulos reutilizables que proveen funcionalidad transversal. Cada módulo es un paquete de objetos GeneXus (Procedures, WebPanels, SDTs, DataProviders) que se instala bajo `Knowledge Base/@PXTools/@<NombreModulo>/`. Los módulos incluyen sus propias instancias de patterns (PXWorkWith para ABMs, PXParameterRequest para formularios, PXComposer para vistas compuestas).
+PXTools ships 25+ reusable modules providing cross-cutting functionality. Each module is a package of GeneXus objects (Procedures, WebPanels, SDTs, DataProviders) installed under `Knowledge Base/@PXTools/@<ModuleName>/`. The modules include their own pattern instances (PXWorkWith for CRUD screens, PXParameterRequest for forms, PXComposer for composed views).
 
-Módulos disponibles: @APIs, @Alerts, @CloudTasks, @ControlPreferences, @DynamicCallReferences, @ExportImport, @FileStorage, @MailAccounts, @Menus, @OAV, @ProcessMonitor, @Projects, @ReceiveMails, @Security, @SecurityProjects, @SendMails, @Statistics, @System, @SystemParameters, @TableCleaner, @TaskManager, @WSLayer, @WebServicesLog.
+Available modules: @APIs, @Alerts, @CloudTasks, @ControlPreferences, @DynamicCallReferences, @ExportImport, @FileStorage, @MailAccounts, @Menus, @OAV, @ProcessMonitor, @Projects, @ReceiveMails, @Security, @SecurityProjects, @SendMails, @Statistics, @System, @SystemParameters, @TableCleaner, @TaskManager, @WSLayer, @WebServicesLog.
 
-> **No son módulos PXTools** (aparecen bajo `@PXTools/` solo como glue): `@ResponsiveLayout` y `@SmartMenus` son módulos **de la plataforma GeneXus** que aportan SDTs/APIs de soporte a los User Controls de PXTools.
+> **Not PXTools modules** (they appear under `@PXTools/` only as glue): `@ResponsiveLayout` and `@SmartMenus` are **GeneXus platform** modules contributing supporting SDTs/APIs to the PXTools User Controls.
 
-Ver detalle en [20-modulos-pxtools.md](20-modulos-pxtools.md).
+See the detail in [20-pxtools-modules.md](20-pxtools-modules.md).
 
-## Convenciones de nomenclatura
+## Naming conventions
 
-### Objetos generados por PXWorkWith
+### Objects generated by PXWorkWith
 
-| Objeto generado | Naming | Ejemplo (instancia "Customer") |
-|-----------------|--------|-------------------------------|
+| Generated object | Naming | Example (instance "Customer") |
+|------------------|--------|-------------------------------|
 | Selection (Desktop) | `WW{Name}` | `WWCustomer` |
 | Selection (Responsive) | `RWW{Name}` | `RWWCustomer` |
 | View (Desktop) | `View{Name}` | `ViewCustomer` |
@@ -361,17 +361,17 @@ Ver detalle en [20-modulos-pxtools.md](20-modulos-pxtools.md).
 | Prompt (Responsive) | `RPr{Name}` | `RPrCustomer` |
 | Controller (Desktop) | `Ct{Name}` | `CtCustomer` |
 | Controller (Responsive) | `RCt{Name}` | `RCtCustomer` |
-| Tab Grid Component | `{wcname}` | (definido en la instancia) |
-| Tab Tabular Component | `{wcname}` | (definido en la instancia) |
-| Export Excel | `Ex{Name}` | `ExCustomer` |
+| Tab Grid Component | `{wcname}` | (defined in the instance) |
+| Tab Tabular Component | `{wcname}` | (defined in the instance) |
+| Excel export | `Ex{Name}` | `ExCustomer` |
 | Selected Rows SDT | `PXWW{Name}Rows` | `PXWWCustomerRows` |
 | Grid Handler DP | `PXWW{Name}Rows` | `PXWWCustomerRows` |
 | Transaction (Desktop) | `D{Name}` | `DCustomer` |
 | Transaction (Responsive) | `R{Name}` | `RCustomer` |
 
-### Objetos generados por patterns WS
+### Objects generated by the WS patterns
 
-| Pattern | Objeto | Naming | Ejemplo (Trn "Customer", V1) |
+| Pattern | Object | Naming | Example (Trn "Customer", V1) |
 |---------|--------|--------|------------------------------|
 | PXWSLayer | SOAP Procedure | `SOAPTrnV1` | `SOAPCustomerV1` |
 | PXWSLayer | REST Procedure | `RESTTrnV1Method` | `RESTCustomerV1GetData` |
@@ -384,21 +384,21 @@ Ver detalle en [20-modulos-pxtools.md](20-modulos-pxtools.md).
 | PXWSTransaction | Save Procedure | `WSTransactionTrnV1Save` | `WSTransactionCustomerV1Save` |
 | PXWSTransaction | Delete Procedure | `WSTransactionTrnV1Delete` | `WSTransactionCustomerV1Delete` |
 
-## Metodología: verificar la instancia contra el objeto generado
+## Method: check the instance against the generated object
 
-Los objetos que genera un pattern **se escriben en disco** (KB externalizada) dentro de una carpeta oculta hermana de la instancia:
+The objects a pattern generates **are written to disk** (externalized KB) in a hidden folder next to the instance:
 
 ```
-@Modulo/.../.{Instancia}.{Pattern}.gxPattern.Childs/
-    TrCustomer.WebPanel.gxSource    <- Selection Desktop generado
-    RTrCustomer.WebPanel.gxSource   <- Selection Responsive
+@Module/.../.{Instance}.{Pattern}.gxPattern.Childs/
+    TrCustomer.WebPanel.gxSource    <- generated Desktop Selection
+    RTrCustomer.WebPanel.gxSource   <- Responsive Selection
     ...
 ```
 
-Ante un comportamiento inesperado (un control invisible/deshabilitado, un evento que no dispara, un dato que no llega), la vía más directa es **leer el objeto generado** y buscar qué código lo produce, en vez de adivinar sobre la instancia:
+When something behaves unexpectedly (an invisible/disabled control, an event that does not fire, data that never arrives), the most direct route is to **read the generated object** and find the code that produces it, rather than guessing at the instance:
 
-- `grep` en el `.gxSource` generado por `.Visible`, `.Enabled`, `PIsAuthorized`, `Event '<Accion>'`, el nombre del control (`btn<Accion>`), o la variable/atributo involucrado.
-- Comparar lo generado con la intención de la instancia y localizar la **propiedad** (o la falta de autorización, o la regla del pattern) que causa la diferencia.
-- Corregir en la **instancia** (o en la config, p. ej. seguridad), **nunca** en el objeto generado (se regenera y se pierde).
+- `grep` the generated `.gxSource` for `.Visible`, `.Enabled`, `PIsAuthorized`, `Event '<Action>'`, the control name (`btn<Action>`), or the variable/attribute involved.
+- Compare what was generated against the intent of the instance and locate the **property** (or the missing authorization, or the pattern rule) causing the difference.
+- Fix it in the **instance** (or in configuration, e.g. security), **never** in the generated object — it gets regenerated and the change is lost.
 
-Cada propiedad así descubierta se **documenta** (en el doc del pattern o en `12-acciones-patterns-ui.md`) para que, con el tiempo, **no haga falta** volver a leer el código generado para programar la instancia correctamente. Ejemplos ya catalogados: la gating de visibilidad por `PIsAuthorized` de las acciones que navegan (`12-acciones-patterns-ui.md` §10); el hook `RefreshForm` que no se incluye en el export a Excel (`01-pxworkwith.md` §9.7).
+Every property discovered this way gets **documented** (in the pattern's own doc or in `12-pattern-ui-actions.md`) so that, over time, reading the generated code is **no longer necessary** to write the instance correctly. Examples already catalogued: visibility gating by `PIsAuthorized` on navigating actions (`12-pattern-ui-actions.md` §10); the `RefreshForm` hook not being included in the Excel export (`01-pxworkwith.md` §9.7).
