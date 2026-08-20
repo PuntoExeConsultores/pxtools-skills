@@ -1,118 +1,118 @@
-# Módulo @OAV — Object-Attribute-Value (Atributos Dinámicos)
+# @OAV Module — Object-Attribute-Value (Dynamic Attributes)
 
-> Comportamiento del módulo `@PXTools/@OAV`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@OAV` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@OAV` (`APIs/` core + `Personalized/`).
-- Cualificador: `PXTools.OAV`.
-- **Depende de:** `@APIs` (base), `@DynamicCallReferences` (dominio `DynamicCallReferenceCode` de Prompt/Validation/DynamicReadOnly), `@Menus` (`RetMenusOAV`). En el grafo canónico también `@System` (por `TSystemObjects`), aunque en esta KB no aparece como referencia calificada.
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@OAV` (`APIs/` core + `Personalized/`).
+- Qualifier: `PXTools.OAV`.
+- **Depends on:** `@APIs` (base), `@DynamicCallReferences` (the `DynamicCallReferenceCode` domain for Prompt/Validation/DynamicReadOnly), `@Menus` (`RetMenusOAV`). In the canonical graph also `@System` (because of `TSystemObjects`), although in this KB it does not appear as a qualified reference.
 
-## 1. Qué provee
+## 1. What it provides
 
-Un patrón **EAV (Entity-Attribute-Value)**: permite agregar **atributos dinámicos a cualquier entidad en runtime, sin alterar el esquema** de la transacción base. El módulo `@OAV` aporta la **infraestructura de definición** (catálogo de atributos, valores permitidos, asignación por objeto); el pattern **PXOAV** — aplicado sobre una transacción consumidora — genera el **almacenamiento de valores por instancia** + el editor.
+An **EAV (Entity-Attribute-Value)** pattern: it lets you add **dynamic attributes to any entity at runtime, without altering the base transaction's schema**. The `@OAV` module supplies the **definition infrastructure** (attribute catalogue, allowed values, per-object assignment); the **PXOAV** pattern — applied to a consuming transaction — generates the **per-instance value storage** plus the editor.
 
-**Intención de diseño** (terminología del manual PXTools): busca *asociar dinámicamente atributos a entidades del sistema* para (1) **minimizar el impacto estructural** en la base al agregar atributos, (2) **independizar al usuario del desarrollador** — que puedan definirse atributos nuevos sin tocar código — y (3) construir sistemas **flexibles y adaptables** (enfoque *metadata-driven*: configuración sobre código). Conceptos del pattern: **Entidades/System Objects**, **Atributos** (cada uno con **Data Type** + **Control Type**), **Categorías** (agrupan definiciones), **Clases** (agrupaciones por valor que habilitan definiciones condicionales) y **Values Based On / Generadores** (producen valores de forma condicional/dinámica).
+**Design intent** (in the PXTools manual's terms): to *dynamically associate attributes with system entities* in order to (1) **minimise structural impact** on the database when adding attributes, (2) **decouple the user from the developer** — new attributes can be defined without touching code — and (3) build **flexible, adaptable** systems (a *metadata-driven* approach: configuration over code). Pattern concepts: **Entities/System Objects**, **Attributes** (each with a **Data Type** + a **Control Type**), **Categories** (grouping definitions), **Classes** (value-based groupings enabling conditional definitions) and **Values Based On / Generators** (producing values conditionally or dynamically).
 
-## 2. Concepto central
+## 2. Core concept
 
-Tres capas:
-1. **Definición del atributo** (`TOAVAttributes`): nombre lógico, tipo de dato, control UI, picture, validación, prompt.
-2. **Valores permitidos** (`TOAVAttributeValues`): el "dominio" de un atributo tipo combo/radio/choice.
-3. **Asignación por objeto** (`TSystemObjectOAVAttributes` + `TSystemObjectOAVClasses`): qué atributos cuelgan de qué objeto del sistema, con qué orden/requerido/categoría/fórmula/read-only/default.
+Three layers:
+1. **Attribute definition** (`TOAVAttributes`): logical name, data type, UI control, picture, validation, prompt.
+2. **Allowed values** (`TOAVAttributeValues`): the "domain" of a combo/radio/choice attribute.
+3. **Per-object assignment** (`TSystemObjectOAVAttributes` + `TSystemObjectOAVClasses`): which attributes hang off which system object, with what order/required/category/formula/read-only/default.
 
-Los **valores por instancia** NO viven acá: los genera PXOAV en el consumidor.
+The **per-instance values** do NOT live here: PXOAV generates them in the consumer.
 
-## 3. Transacciones (capa de definición)
+## 3. Transactions (the definition layer)
 
-| Transacción | PK | Rol |
+| Transaction | PK | Role |
 |---|---|---|
-| **TOAVAttributes** | `OAVAttributeId` (autonumber) | Catálogo maestro: `Code` (nombre lógico), `DataType`, `DataLength/Decimals`, `ControlType`, `Picture`, `ReferentialIntegrity`, `Prompt`/`Validation` (referencias dinámicas). |
-| **TOAVAttributeValues** | `OAVAttributeId, OAVAttributeValueCode` | Valores permitidos (subordinada): `Description`, `Order`, `Default`. |
-| **TSystemObjectOAVClasses** | `SystemObjectName, ClassCode` | Agrupa atributos por "clase"/juego dentro de un objeto. |
-| **TSystemObjectOAVAttributes** | `SystemObjectName, ClassCode, OAVAttributeId` | **Asignación**: `Order`, `Category`, `Required`, `ReadOnly` (+ dinámico), `Validation`, `Formula`+`OrderFormula`, `Default`. |
+| **TOAVAttributes** | `OAVAttributeId` (autonumber) | Master catalogue: `Code` (logical name), `DataType`, `DataLength/Decimals`, `ControlType`, `Picture`, `ReferentialIntegrity`, `Prompt`/`Validation` (dynamic references). |
+| **TOAVAttributeValues** | `OAVAttributeId, OAVAttributeValueCode` | Allowed values (subordinate level): `Description`, `Order`, `Default`. |
+| **TSystemObjectOAVClasses** | `SystemObjectName, ClassCode` | Groups attributes by "class"/set within an object. |
+| **TSystemObjectOAVAttributes** | `SystemObjectName, ClassCode, OAVAttributeId` | **The assignment**: `Order`, `Category`, `Required`, `ReadOnly` (+ dynamic), `Validation`, `Formula`+`OrderFormula`, `Default`. |
 
-**Relación con `TSystemObjects` (@System):** `SystemObjectName` es FK a `TSystemObjects`. Un objeto se marca como declaración-OAV con el flag `SystemObjectOAVDeclaration` (los combos de la UI filtran `Where SystemObjectOAVDeclaration`).
+**Relationship with `TSystemObjects` (@System):** `SystemObjectName` is an FK to `TSystemObjects`. An object is marked as an OAV declaration through the `SystemObjectOAVDeclaration` flag (the UI combos filter on `Where SystemObjectOAVDeclaration`).
 
-**Diagrama (definición):**
+**Diagram (definition):**
 ```
 TSystemObjects (@System)  ──1:N──►  TSystemObjectOAVClasses ──1:N──► TSystemObjectOAVAttributes
    SystemObjectName                    (Name, ClassCode)                (Name, ClassCode, OAVAttributeId) ──► TOAVAttributes
                                                                                                               OAVAttributeId ──1:N──► TOAVAttributeValues
 ```
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-> **Nota (dominios legacy en root):** todos los dominios de @OAV viven en el **`#Domains/` root** de la KB, no en un `#Domains/` del módulo. Es una consecuencia histórica: el módulo se creó en versiones GeneXus (Evo1/2/3) previas a los dominios asociados a módulo, así que se definieron en el root. Conceptualmente **pertenecen a @OAV** — solo objetos de @OAV los referencian (vía `DataType = '<dominio>'`).
+> **Note (legacy domains in root):** every @OAV domain lives in the KB's **root `#Domains/`**, not in a module-level `#Domains/`. That is a historical consequence: the module was created in GeneXus versions (Evo1/2/3) predating module-scoped domains, so they were defined in the root. Conceptually they **belong to @OAV** — only @OAV objects reference them (through `DataType = '<domain>'`).
 
-**Enumerados:**
+**Enumerated:**
 
-| Dominio | Tipo | Valores | Rol |
+| Domain | Type | Values | Role |
 |---|---|---|---|
-| **DataType** | Char(3) | Date=`DTE`, Character=`CHR`, Numeric=`NUM`, Memo=`MEM`, Blob=`BLO` | Tipo de dato del atributo (elige qué columna `OAVValue*` se usa). |
-| **ControlType** | Char(3) | EditBox=`EDT`, CheckBox=`CHK`, DynamicComboBox=`DCB`, DynamicRadioButton=`DRB`, DynamicCheckBox=`DCH` | Control UI con que se renderiza el atributo. |
-| **OAVValuesOrdered** | Char(3) | Key=`KEY`, User=`USR` | Orden de la lista de valores permitidos (por clave o definido por usuario). |
-| **Positions** | Char(20) | Up, Down, Left, Right | Posición del label/control en el editor. |
+| **DataType** | Char(3) | Date=`DTE`, Character=`CHR`, Numeric=`NUM`, Memo=`MEM`, Blob=`BLO` | The attribute's data type (it picks which `OAVValue*` column is used). |
+| **ControlType** | Char(3) | EditBox=`EDT`, CheckBox=`CHK`, DynamicComboBox=`DCB`, DynamicRadioButton=`DRB`, DynamicCheckBox=`DCH` | The UI control the attribute is rendered with. |
+| **OAVValuesOrdered** | Char(3) | Key=`KEY`, User=`USR` | Ordering of the allowed-value list (by key or user-defined). |
+| **Positions** | Char(20) | Up, Down, Left, Right | Position of the label/control in the editor. |
 
-**De valor (sin enum):**
+**Value domains (no enum):**
 
-| Dominio | Tipo | Rol |
+| Domain | Type | Role |
 |---|---|---|
-| **DataLength** | Numeric(3.0) | Largo declarado del dato del atributo. |
-| **DataDecimals** | Numeric(2.0) | Decimales declarados del dato. |
-| **OAVAttributeType** | Char(20) | Descriptor del tipo de atributo. |
-| **OAVAttributeCategory** | Char(30) | Categoría/agrupación del atributo. |
-| **OAVAttributePicture** | Char(20) | Picture / máscara de edición. |
-| **OAVAttributeFormula** | LongVarChar(1024) | Expresión de fórmula (atributo calculado). |
-| **OAVAttributeOrder** | VarLen (Numeric(5.0)) | Orden de display/proceso del atributo. |
-| **OAVValueString** | Char(500) | Valor almacenado cuando `DataType = Character`. |
-| **OAVValueNumeric** | Numeric(18.5) | Valor almacenado cuando `DataType = Numeric`. |
-| **OAVValueMemo** | LongVarChar(2048) | Valor almacenado cuando `DataType = Memo`. |
-| **OAVValueBlob** | Blob | Valor almacenado cuando `DataType = Blob`. |
+| **DataLength** | Numeric(3.0) | Declared length of the attribute's data. |
+| **DataDecimals** | Numeric(2.0) | Declared decimals of the data. |
+| **OAVAttributeType** | Char(20) | Descriptor of the attribute's type. |
+| **OAVAttributeCategory** | Char(30) | Category/grouping of the attribute. |
+| **OAVAttributePicture** | Char(20) | Picture / edit mask. |
+| **OAVAttributeFormula** | LongVarChar(1024) | Formula expression (computed attribute). |
+| **OAVAttributeOrder** | VarLen (Numeric(5.0)) | Display/processing order of the attribute. |
+| **OAVValueString** | Char(500) | Value stored when `DataType = Character`. |
+| **OAVValueNumeric** | Numeric(18.5) | Value stored when `DataType = Numeric`. |
+| **OAVValueMemo** | LongVarChar(2048) | Value stored when `DataType = Memo`. |
+| **OAVValueBlob** | Blob | Value stored when `DataType = Blob`. |
 
-**Usa dominios de otros módulos:** `DynamicCallReferenceCode` (de [@DynamicCallReferences](dynamiccallreferences.md), para las referencias de Prompt/Validation/DynamicReadOnly) y tipos base de `@APIs` (`Boolean`, `MaxStr`, `MaxMem`, `Links`, `Objetos`, `ObjectDescription`, `WindowType`, `IdFirstLevel`, …).
+**Domains used from other modules:** `DynamicCallReferenceCode` (from [@DynamicCallReferences](dynamiccallreferences.md), for the Prompt/Validation/DynamicReadOnly references) and base types from `@APIs` (`Boolean`, `MaxStr`, `MaxMem`, `Links`, `Objetos`, `ObjectDescription`, `WindowType`, `IdFirstLevel`, …).
 
-> ⚠️ **No confundir:** `OAVShow` (All/Pending) **no** es de @OAV pese al nombre — lo declara y usa `@APIs` (FormState). `OAVAttributeSistemaId` es un **enum del proyecto**, no del framework.
+> ⚠️ **Do not confuse:** `OAVShow` (All/Pending) does **not** belong to @OAV despite the name — `@APIs` declares and uses it (FormState). `OAVAttributeSistemaId` is a **project** enum, not a framework one.
 
-## 5. Mecanismo Object-Attribute-Value
+## 5. The Object-Attribute-Value mechanism
 
-**Definir un atributo:** alta en `TOAVAttributes` (tipo vía `DataType`; control vía `ControlType`; si es combo/radio se cargan los valores permitidos en `TOAVAttributeValues`). Luego se **asigna** a un objeto del sistema en `TSystemObjectOAVAttributes` (order, required, category, fórmula, validación, read-only dinámico, default). El flag `OAVAttributeReferentialIntegrity` decide si el valor se guarda **WRI** (con code que referencia la lista de valores) o **WORI** (string/memo/blob libre).
+**Defining an attribute:** create it in `TOAVAttributes` (type through `DataType`; control through `ControlType`; for combo/radio, load the allowed values into `TOAVAttributeValues`). Then **assign** it to a system object in `TSystemObjectOAVAttributes` (order, required, category, formula, validation, dynamic read-only, default). The `OAVAttributeReferentialIntegrity` flag decides whether the value is stored **WRI** (with a code referencing the value list) or **WORI** (free string/memo/blob).
 
-**Guardar/leer un valor por (objeto, atributo, instancia):** NO ocurre en `@OAV`. El pattern **PXOAV** genera, sobre la transacción consumidora, las tablas de valores por instancia:
-- **WRI** (`<Entidad>OAVWRIValues`): PK = clave-entidad + `OAVAttributeId`, guarda `OAVAttributeValueCode` (FK a `TOAVAttributeValues`).
-- **WORI** (`<Entidad>OAVWORIValues`): guarda `ValueString`/`ValueMemo`/`ValueBlob` libres.
+**Storing/reading a value per (object, attribute, instance):** this does NOT happen in `@OAV`. The **PXOAV** pattern generates the per-instance value tables on the consuming transaction:
+- **WRI** (`<Entity>OAVWRIValues`): PK = the entity key + `OAVAttributeId`, storing `OAVAttributeValueCode` (FK to `TOAVAttributeValues`).
+- **WORI** (`<Entity>OAVWORIValues`): stores free `ValueString`/`ValueMemo`/`ValueBlob`.
 
-Además PXOAV genera subtipos, procs `Add/Update/Delete AttributeValue` y el editor. Se lee/escribe con esos procs generados, usando `OAVEditorValues`/`OAVAttributeValue` como transporte y `RetOAVAttributeIdFromCode` para resolver el atributo por code.
+PXOAV also generates subtypes, `Add/Update/Delete AttributeValue` procedures and the editor. You read and write through those generated procedures, using `OAVEditorValues`/`OAVAttributeValue` as the transport and `RetOAVAttributeIdFromCode` to resolve an attribute by its code.
 
-**Diferencia con @SystemParameters:** SystemParameters es configuración **global/singleton** (un valor por parámetro para todo el sistema). OAV es **por instancia de objeto** (N valores, uno por cada registro de la entidad).
+**Difference from @SystemParameters:** SystemParameters is **global/singleton** configuration (one value per parameter for the whole system). OAV is **per object instance** (N values, one per entity record).
 
 ## 6. APIs vs Personalized
 
-- **`APIs/`** (core, intocable): las 4 transacciones, los helpers de metadatos/fórmulas/validación, `SaveOAVSystemObjects`, `RetOAVAttributeIdFromCode`, los SDTs de intercambio.
-- **`Personalized/`**: un solo objeto — **`RetMenusOAV`** (DataProvider) que construye el nodo de menú "OAV" (Attributes / Object Attributes). El resto vive en `APIs/`.
+- **`APIs/`** (core, not to be touched): the 4 transactions, the metadata/formula/validation helpers, `SaveOAVSystemObjects`, `RetOAVAttributeIdFromCode`, and the exchange SDTs.
+- **`Personalized/`**: a single object — **`RetMenusOAV`** (DataProvider), which builds the "OAV" menu node (Attributes / Object Attributes). Everything else lives in `APIs/`.
 
-## 7. Instancias de patterns
+## 7. Pattern instances
 
-- **PXWorkWithTOAVAttributes** — WW del catálogo de atributos (tabs Definition/Control/Advanced).
-- **PXWorkWithTOAVAttributeValues** — ABM de la lista de valores permitidos.
-- **PXWorkWithTSystemObjectOAVAttributes** — WW de asignación objeto↔atributo (insert/delete/mover-orden vía procs).
-- **PXParameterRequestSaveOAVSystemObjects** — expone `SaveOAVSystemObjects` como endpoint.
+- **PXWorkWithTOAVAttributes** — WW for the attribute catalogue (Definition/Control/Advanced tabs).
+- **PXWorkWithTOAVAttributeValues** — CRUD for the allowed-value list.
+- **PXWorkWithTSystemObjectOAVAttributes** — WW for the object↔attribute assignment (insert/delete/reorder through procedures).
+- **PXParameterRequestSaveOAVSystemObjects** — exposes `SaveOAVSystemObjects` as an endpoint.
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-| Objeto | `Parm()` | Propósito |
+| Object | `Parm()` | Purpose |
 |---|---|---|
-| `RetOAVAttributeIdFromCode` | `in: &Code; out: &OAVAttributeId` | Resuelve el Id numérico desde el code lógico (entrada típica). |
-| `RetOAVAttributeControlTypeForSD` [WS] | `in: &Id; out: &IsEditBox, &IsDynamicComboBox, …` | Flags de control para render dinámico. |
-| `RetOAVAttributeTypeDataForSD` [WS] | `in: &Id; out: &IsCharacter, &IsNumeric…, &IsDate, &IsMemo` | Flags de tipo de dato. |
-| `SaveOAVSystemObjects` | — | Registra/borra los SystemObjects OAV contra @System. |
+| `RetOAVAttributeIdFromCode` | `in: &Code; out: &OAVAttributeId` | Resolves the numeric Id from the logical code (the typical entry point). |
+| `RetOAVAttributeControlTypeForSD` [WS] | `in: &Id; out: &IsEditBox, &IsDynamicComboBox, …` | Control flags for dynamic rendering. |
+| `RetOAVAttributeTypeDataForSD` [WS] | `in: &Id; out: &IsCharacter, &IsNumeric…, &IsDate, &IsMemo` | Data-type flags. |
+| `SaveOAVSystemObjects` | — | Registers/removes the OAV SystemObjects against @System. |
 
-**SDTs de intercambio** (`APIs/`): `OAVAttributeValue` (valor tipado unificado: Blob/Character/Date/Numeric/Memo), `OAVEditorValues` (colección Id+ValueCode/Memo/Blob — el "sobre" que un editor OAV lee/escribe), `OAVValidationResult` (Ok+ErrorMessage), `OAVFormulaOrderCollection`.
+**Exchange SDTs** (`APIs/`): `OAVAttributeValue` (a unified typed value: Blob/Character/Date/Numeric/Memo), `OAVEditorValues` (a collection of Id+ValueCode/Memo/Blob — the "envelope" an OAV editor reads and writes), `OAVValidationResult` (Ok+ErrorMessage), `OAVFormulaOrderCollection`.
 
-> **Punto clave:** `@OAV/APIs` provee únicamente la **definición** (catálogo, valores permitidos, asignación por objeto) y los helpers de metadatos/validación. La lectura/escritura del **valor por instancia** se hace con los procs que el pattern **PXOAV** genera en la transacción consumidora.
+> **Key point:** `@OAV/APIs` provides only the **definition** (catalogue, allowed values, per-object assignment) and the metadata/validation helpers. Reading and writing the **per-instance value** is done through the procedures the **PXOAV** pattern generates on the consuming transaction.
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- [system.md](system.md) — `TSystemObjects` (los atributos OAV cuelgan de un SystemObject).
-- [systemparameters.md](systemparameters.md) — configuración global (contraste con OAV por instancia).
-- [dynamiccallreferences.md](dynamiccallreferences.md) — Prompt/Validation/DynamicReadOnly se resuelven por referencia dinámica.
-- El pattern `PXOAV` (genera las tablas WRI/WORI + editor en el consumidor) — documentado aparte con los demás patterns.
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- [system.md](system.md) — `TSystemObjects` (OAV attributes hang off a SystemObject).
+- [systemparameters.md](systemparameters.md) — global configuration (in contrast with per-instance OAV).
+- [dynamiccallreferences.md](dynamiccallreferences.md) — Prompt/Validation/DynamicReadOnly are resolved by dynamic reference.
+- The `PXOAV` pattern (it generates the WRI/WORI tables + the editor in the consumer) — documented separately with the other patterns.

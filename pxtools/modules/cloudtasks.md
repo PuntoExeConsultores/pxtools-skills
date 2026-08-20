@@ -1,45 +1,45 @@
-# Módulo @CloudTasks — Tareas Programadas del Servidor
+# @CloudTasks Module — Scheduled Server-Side Tasks
 
-> Comportamiento del módulo `@PXTools/@CloudTasks`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@CloudTasks` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@CloudTasks/` (`APIs/` con subcarpetas por tipo: `General`, `Certificate`, `DeleteFiles`, `PorcessMonitor` *(sic, typo en disco)*, `Debug`; + `Personalized/`).
-- Cualificador: `PXTools.CloudTasks`.
-- **Depende de:** `@APIs` (base), `@ProcessMonitor` (vigilancia de procesos), `@FileStorage`, `@Alerts` (notifica fallos), `@DynamicCallReferences`, `@SystemParameters`, `@Menus`. Lo dispara `@TaskManager`.
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@CloudTasks/` (`APIs/` with one subfolder per type: `General`, `Certificate`, `DeleteFiles`, `PorcessMonitor` *(sic — a typo on disk)*, `Debug`; plus `Personalized/`).
+- Qualifier: `PXTools.CloudTasks`.
+- **Depends on:** `@APIs` (base), `@ProcessMonitor` (process watching), `@FileStorage`, `@Alerts` (failure notifications), `@DynamicCallReferences`, `@SystemParameters`, `@Menus`. It is triggered by `@TaskManager`.
 
-## 1. Qué provee
+## 1. What it provides
 
-Un framework de **tareas recurrentes del lado servidor**, tipadas: verificar/instalar líneas **cron**, verificar/crear **directorios** y **archivos**, instalar/validar **certificados** en keystores, **monitorear procesos** colgados, y **limpiar archivos** temporales. Cada tarea tiene estado, ventana de vigencia y opción de alerta. No corre por sí misma: la dispara **@TaskManager**.
+A framework of typed **recurring server-side tasks**: checking/installing **cron** lines, checking/creating **directories** and **files**, installing/validating **certificates** in keystores, **monitoring** hung processes, and **cleaning up** temporary files. Each task has a status, a validity window and an optional alert. It does not run by itself: **@TaskManager** triggers it.
 
-## 2. Concepto central
+## 2. Core concept
 
-Una "cloud task" es un registro en `CloudTasks` **tipado por `CloudTaskType`**. Un **dispatcher** (`PrcExecuteTask`) hace `Do Case` sobre el tipo y delega en el verificador correspondiente. El **disparo** es externo (dos ejecutores registrados en @TaskManager: uno diario, uno de alta frecuencia).
+A "cloud task" is a row in `CloudTasks` **typed by `CloudTaskType`**. A **dispatcher** (`PrcExecuteTask`) runs a `Do Case` over the type and delegates to the matching checker. The **trigger** is external (two executors registered in @TaskManager: one daily, one high-frequency).
 
-## 3. Transacciones del módulo
+## 3. Module transactions
 
-| Transacción | PK | Rol |
+| Transaction | PK | Role |
 |---|---|---|
-| **CloudTasks** (BC) | `CloudTaskId` (autonum) | **Tabla base** de una tarea (atributos comunes + subtipos Cron y Certificado). |
-| **CloudTasksBC** | `CloudTaskId` | BC "headless" sobre la misma tabla (uso programático). |
-| **CloudTaskDeleteFiles** / **CloudTasksCertificates** | `CloudTaskId` | Vistas/extensiones de la tabla base que fijan `CloudTaskType` (DeleteFiles / CheckCertificateToSign). |
-| **KeyStores** | `KeyStoreId` (+ nivel `StoreCertificate`) | Almacén de claves: archivo, password (`PswEnc`), tipo (JKS/PFX), JSON cache, y detalle de certificados instalados (alias, vigencia, serial, issuer). |
-| **CloudTasksCertificatesEstructure** | `CloudTaskId` + `KeyStore` | Tabla de vínculo N–N tarea-certificado ↔ keystore. |
-| **CloudTasksProcessMonitor** | `CloudTaskProcessMonitorId` | Tarea de vigilancia de procesos. |
+| **CloudTasks** (BC) | `CloudTaskId` (autonumbered) | The task's **base table** (common attributes + Cron and Certificate subtypes). |
+| **CloudTasksBC** | `CloudTaskId` | A "headless" BC over the same table (programmatic use). |
+| **CloudTaskDeleteFiles** / **CloudTasksCertificates** | `CloudTaskId` | Views/extensions of the base table pinning `CloudTaskType` (DeleteFiles / CheckCertificateToSign). |
+| **KeyStores** | `KeyStoreId` (+ a `StoreCertificate` level) | Key store: file, password (`PswEnc`), type (JKS/PFX), JSON cache, and the detail of installed certificates (alias, validity, serial, issuer). |
+| **CloudTasksCertificatesEstructure** | `CloudTaskId` + `KeyStore` | N–N link table between a certificate task and a keystore. |
+| **CloudTasksProcessMonitor** | `CloudTaskProcessMonitorId` | Process-watching task. |
 
-**Atributos clave de `CloudTasks`:** `CloudTaskType`, `CloudTaskStatus`, `CloudTaskStatusMessage`, `CloudTaskPendingExecution` (ejecución diferida al próximo batch), `CloudTaskStartDateTime`/`…EndDateTime` (vigencia), `CloudTaskSendAlert`, `CloudTaskPath`, `CloudTaskFileStorageId`; grupo **Cron** (`…CronSpecialString/User/ExecuteAs/Minutes/Hours/Days/Months/Weekdays`); grupo **Certificado** (`…CertKeyStoreId`, `…CertPrivateKeyAlias`, `…CertPrivateKeyPassword` PswEnc, `…CertContent`, `…CertPublicKey…`).
+**Key `CloudTasks` attributes:** `CloudTaskType`, `CloudTaskStatus`, `CloudTaskStatusMessage`, `CloudTaskPendingExecution` (execution deferred to the next batch), `CloudTaskStartDateTime`/`…EndDateTime` (validity), `CloudTaskSendAlert`, `CloudTaskPath`, `CloudTaskFileStorageId`; the **Cron** group (`…CronSpecialString/User/ExecuteAs/Minutes/Hours/Days/Months/Weekdays`); the **Certificate** group (`…CertKeyStoreId`, `…CertPrivateKeyAlias`, `…CertPrivateKeyPassword` PswEnc, `…CertContent`, `…CertPublicKey…`).
 
 ```
 CloudTasks ──┬─ CloudTaskFileStorageId ─▶ FileStorage        (@FileStorage)
              └─ CloudTaskCertKeyStoreId ─▶ KeyStores
-KeyStores 1──N StoreCertificate                              (certificados instalados)
+KeyStores 1──N StoreCertificate                              (installed certificates)
 CloudTasksProcessMonitor ─ UserCode+ProcessCode ─▶ ProcessStatus  (@ProcessMonitor)
 ```
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-Todos `CloudTask*`/`Cron*`/`KeyStoreType` → @CloudTasks (nomenclatura). Los de la tabla son **root-legacy** (`#Domains/` raíz); solo `DeleteFilesProcessOperation` ya es **module-scoped** (`@CloudTasks/#Domains/`):
+All `CloudTask*`/`Cron*`/`KeyStoreType` domains belong to @CloudTasks (by naming). The table's own are **root-legacy** (root `#Domains/`); only `DeleteFilesProcessOperation` is already **module-scoped** (`@CloudTasks/#Domains/`):
 
-| Dominio | Scope | Valores |
+| Domain | Scope | Values |
 |---|---|---|
 | **CloudTaskType** | root-legacy | CheckCronTask=`CronTask`, CheckDirectory=`CheckDir`, CheckFileExistance=`CheckFile`, CheckCertificateToSign=`CheckCSign`, ProcessMonitor=`ProcessMonitor`, DeleteFiles=`DeleteFiles` |
 | **CloudTaskStatus** | root-legacy | Enabled=`ENA`, Disabled=`DIS`, Finalized=`FIN`, Suspended=`SUS`, Uninstall=`UNI`, WithError=`ERR` |
@@ -49,69 +49,69 @@ Todos `CloudTask*`/`Cron*`/`KeyStoreType` → @CloudTasks (nomenclatura). Los de
 | **CloudTaskErrorCode** | root-legacy | FileNotFound, KeyStoreBadPass, CertBadPassword, MissingKeyStoreInfo, CronTask*, CantCreateDirectory, DirectoryNotFound, ProcessMonitorKill/Check, Other, … |
 | **KeyStoreType** | root-legacy | JKS, PFX |
 | **CronSpecialString** | root-legacy | @reboot, @yearly, @monthly, @weekly, @daily, @midnight, @hourly, … |
-| **CronUser** | root-legacy | *(sin enum — usuario del crontab)* |
+| **CronUser** | root-legacy | *(no enum — the crontab user)* |
 | **DeleteFilesProcessOperation** | **module** | Select, Delete |
 
-## 5. Mecanismo
+## 5. How it works
 
-### 5.1 Alta
-Vía UI (el WW enruta a la transacción específica según el tipo) o `AddCloudTask(in: &SDTCloudTask, …, out: &CloudTaskId)`. Según el system-parameter `InstallCertificateOnBatch`, la tarea nace `Suspended` con `CloudTaskPendingExecution=True` (se ejecuta en el próximo batch) o se ejecuta ya (`ExecuteTaskOnDemand`).
+### 5.1 Creation
+Through the UI (the WW routes to the specific transaction according to the type) or `AddCloudTask(in: &SDTCloudTask, …, out: &CloudTaskId)`. Depending on the `InstallCertificateOnBatch` system parameter, the task is born `Suspended` with `CloudTaskPendingExecution=True` (to be executed in the next batch) or runs immediately (`ExecuteTaskOnDemand`).
 
 ### 5.2 Dispatcher — `PrcExecuteTask`
-`Do Case CloudTaskType` → delega al verificador del tipo (patrón uniforme `PrcCheck*` que valida con `Chk*` y aplica con `Add*`):
-- **CheckCronTask** → escribe la línea cron en el archivo del usuario dentro del crontab configurado.
-- **CheckDirectory / CheckFileExistance** → crea el directorio / verifica el archivo.
-- **CheckCertificateToSign** → instala/valida el certificado en el keystore.
-- **ProcessMonitor** → detecta procesos que exceden el límite hs/min y pide kill (`RequestKillProcess`/`KillProcessStatus` de @ProcessMonitor).
+`Do Case CloudTaskType` → delegates to that type's checker (a uniform `PrcCheck*` pattern that validates with `Chk*` and applies with `Add*`):
+- **CheckCronTask** → writes the cron line into the user's file inside the configured crontab.
+- **CheckDirectory / CheckFileExistance** → creates the directory / verifies the file.
+- **CheckCertificateToSign** → installs/validates the certificate in the keystore.
+- **ProcessMonitor** → detects processes exceeding the hour/minute limit and requests a kill (@ProcessMonitor's `RequestKillProcess`/`KillProcessStatus`).
 - **DeleteFiles** → `PrcCheckDeleteFiles` → `PrcDeleteFileOperation`.
 
-Tras ejecutar, actualiza `CloudTaskStatus`/`…StatusMessage` (`WithError` / `Finalized` si expiró / `Enabled`) y limpia `CloudTaskPendingExecution`.
+After running, it updates `CloudTaskStatus`/`…StatusMessage` (`WithError` / `Finalized` if expired / `Enabled`) and clears `CloudTaskPendingExecution`.
 
-### 5.3 Disparo (scheduler) — vía @TaskManager
-No hay daemon propio. `Personalized/RetDynamicCallReferenceCloudTask` registra en @DynamicCallReferences dos ejecutores `TaskManagerExecution` (`parm(in: &TaskManagerId, out: &TaskManagerExecutionResponse, out: &ErrorMessage)`):
-- **`TskCloudTasksQuickly`** (alta frecuencia): ProcessMonitor (mata colgados) + procesa certificados `PendingExecution`.
-- **`TskCloudTasksDaily`** (diario): habilita `Suspended` cuyo Start llegó, finaliza expiradas, ejecuta todas las `Enabled` (`PrcExecuteTask`), refresca el JSON de keystores y remueve certificados vencidos.
+### 5.3 Triggering (the scheduler) — through @TaskManager
+There is no daemon of its own. `Personalized/RetDynamicCallReferenceCloudTask` registers two `TaskManagerExecution` executors in @DynamicCallReferences (`parm(in: &TaskManagerId, out: &TaskManagerExecutionResponse, out: &ErrorMessage)`):
+- **`TskCloudTasksQuickly`** (high frequency): ProcessMonitor (kills hung processes) + processes `PendingExecution` certificates.
+- **`TskCloudTasksDaily`** (daily): enables `Suspended` tasks whose Start has arrived, finalises expired ones, runs every `Enabled` task (`PrcExecuteTask`), refreshes the keystore JSON and removes expired certificates.
 
-### 5.4 Certificados / keystores
-Para tareas de firma, instala un certificado (PFX/JKS) en un `KeyStore` (`CloudTaskCertKeyStoreId`), guarda el detalle en `KeyStores.StoreCertificate` y en la tabla de vínculo, cachea contenido (`KeyStoreContentJSON`), alerta de "por vencer"/"vencido" y permite desinstalar. Passwords cifradas (`PswEnc`).
+### 5.4 Certificates / keystores
+For signing tasks, it installs a certificate (PFX/JKS) into a `KeyStore` (`CloudTaskCertKeyStoreId`), stores the detail in `KeyStores.StoreCertificate` and in the link table, caches the content (`KeyStoreContentJSON`), alerts about "expiring"/"expired" certificates, and allows uninstalling. Passwords are encrypted (`PswEnc`).
 
-### 5.5 Limpieza de temporales (DeleteFiles)
-`PrcDeleteFileOperation` (`IsMain=True`) selecciona/borra archivos bajo un path (filtro por nombre, antigüedad, recursividad), en modo **Internal** (API `Directory`/`File`) o **CommandLine** (shell `find`). Registra según `CloudTaskLogLevel`.
-> ⚠️ **Caveat:** en modo CommandLine el `-delete` del `find` está **comentado** (`APIs/DeleteFiles/PrcDeleteFileOperation.gxSource` ~L185) → hoy **no borra** en ese modo.
+### 5.5 Temporary file cleanup (DeleteFiles)
+`PrcDeleteFileOperation` (`IsMain=True`) selects/deletes files under a path (filtering by name, age, recursion), in **Internal** mode (the `Directory`/`File` API) or **CommandLine** mode (shell `find`). It logs according to `CloudTaskLogLevel`.
+> ⚠️ **Caveat:** in CommandLine mode the `find`'s `-delete` is **commented out** (`APIs/DeleteFiles/PrcDeleteFileOperation.gxSource` ~L185) → today it **does not delete** in that mode.
 
-### 5.6 Debug / simulación
-- `PXWorkWithSimulateDeleteFiles` (`PuSimulateDeleteFiles`): dry-run (`Operation=Select`) — lista lo que se borraría.
-- `DebugCloudTaskOnDemand` / `DebugCloudTasksUtils` (protegidos por `CloudTaskEnableDebugProgramms`): ejecutar/eliminar una tarea, correr Daily/Quickly forzando fecha/IDs, y utilidades de keystore/certificado.
+### 5.6 Debug / simulation
+- `PXWorkWithSimulateDeleteFiles` (`PuSimulateDeleteFiles`): a dry run (`Operation=Select`) — it lists what would be deleted.
+- `DebugCloudTaskOnDemand` / `DebugCloudTasksUtils` (guarded by `CloudTaskEnableDebugProgramms`): run/delete a task, run Daily/Quickly forcing dates/IDs, and keystore/certificate utilities.
 
 ## 6. APIs vs Personalized
 
-- **`APIs/`** (core): las transacciones, el dispatcher `PrcExecuteTask`, los verificadores por tipo (`PrcCheck*`/`Chk*`/`Add*`), los ejecutores `TskCloudTasks*`, la maquinaria de certificados/keystores y de DeleteFiles, los SDTs.
-- **`Personalized/`** (DataProviders del proyecto):
-  | Objeto | Qué se customiza |
+- **`APIs/`** (core): the transactions, the `PrcExecuteTask` dispatcher, the per-type checkers (`PrcCheck*`/`Chk*`/`Add*`), the `TskCloudTasks*` executors, the certificate/keystore and DeleteFiles machinery, and the SDTs.
+- **`Personalized/`** (the project's DataProviders):
+  | Object | What gets customized |
   |---|---|
-  | `RetMenuCloudTasks` | Ítems de menú (Tasks / Key Stores / Debug). |
-  | `RetSystemParametersCloudTasks` | System-parameters del módulo (paths de crontab/log/working-dir, parties de alerta, flags de batch/debug, tipo de log, días de aviso previo…). |
-  | `RetSystemAlertCategoryTypesCloudTask` | Categorías de alerta que el módulo publica a @Alerts. |
-  | `RetDynamicCallReferenceCloudTask` | Registro en @TaskManager de `TskCloudTasksDaily`/`…Quickly`. |
+  | `RetMenuCloudTasks` | Menu items (Tasks / Key Stores / Debug). |
+  | `RetSystemParametersCloudTasks` | The module's system parameters (crontab/log/working-dir paths, alert parties, batch/debug flags, log type, days of advance warning…). |
+  | `RetSystemAlertCategoryTypesCloudTask` | The alert categories the module publishes to @Alerts. |
+  | `RetDynamicCallReferenceCloudTask` | Registration of `TskCloudTasksDaily`/`…Quickly` in @TaskManager. |
 
-## 7. Instancias de patterns
+## 7. Pattern instances
 
-- **PXWorkWith**: `PXWorkWithCloudTasks` (WW principal — Enable/Disable/Finalize/Run/View Message; enruta el alta según tipo), `PXWorkWithCloudTasksCertificates`, `PXWorkWithKeyStores`, `PXWorkWithCloudTasksProcessMonitor`, `PXWorkWithCloudTaskDeleteFiles`, `PXWorkWithSimulateDeleteFiles`.
-- **PXParameterRequest**: `PXParameterRequestCloudTaskStatusMessage` (ver el mensaje largo), `DebugCloudTaskOnDemand`, `DebugCloudTasksUtils`.
+- **PXWorkWith**: `PXWorkWithCloudTasks` (the main WW — Enable/Disable/Finalize/Run/View Message; routes creation by type), `PXWorkWithCloudTasksCertificates`, `PXWorkWithKeyStores`, `PXWorkWithCloudTasksProcessMonitor`, `PXWorkWithCloudTaskDeleteFiles`, `PXWorkWithSimulateDeleteFiles`.
+- **PXParameterRequest**: `PXParameterRequestCloudTaskStatusMessage` (view the long message), `DebugCloudTaskOnDemand`, `DebugCloudTasksUtils`.
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-**Ciclo de vida**: `AddCloudTask` / `UpdCloudTask` / `DelCloudTask` / `RetCloudTask`, `RetCloudTaskStatusAndMessage`, `PrcChangeCloudTaskStatus(in: &CloudTaskId, in: &NewStatus, out…)`, `PrcExecuteTask` (dispatcher), `ExecuteTaskOnDemand`, `TskCloudTasksDaily`/`…Quickly`, `SendAlert` (→ @Alerts), `SetSystemMessages` (logging).
+**Life cycle**: `AddCloudTask` / `UpdCloudTask` / `DelCloudTask` / `RetCloudTask`, `RetCloudTaskStatusAndMessage`, `PrcChangeCloudTaskStatus(in: &CloudTaskId, in: &NewStatus, out…)`, `PrcExecuteTask` (dispatcher), `ExecuteTaskOnDemand`, `TskCloudTasksDaily`/`…Quickly`, `SendAlert` (→ @Alerts), `SetSystemMessages` (logging).
 
-**Verificadores por tipo** (todos `(in: &CloudTaskId, in: &DateTime, out: &SDTCloudTaskResponse)`): `PrcCheckCronTask`/`ChkCronTask`/`AddCronTask`, `PrcCheckDirectory`/…, `PrcCheckFileExistance`/…, `PrcCheckProcessMonitor`, `PrcCheckCertificateToSign`, `PrcCheckDeleteFiles`.
+**Per-type checkers** (all `(in: &CloudTaskId, in: &DateTime, out: &SDTCloudTaskResponse)`): `PrcCheckCronTask`/`ChkCronTask`/`AddCronTask`, `PrcCheckDirectory`/…, `PrcCheckFileExistance`/…, `PrcCheckProcessMonitor`, `PrcCheckCertificateToSign`, `PrcCheckDeleteFiles`.
 
 **DeleteFiles**: `PrcDeleteFileOperation(in: &SDTProcessDeleteFilesInput, out: &Resume, out: &PairCollection, out…)`.
 
-**Certificados/keystores**: `AddCertificateTask`, `PrcRemoveCertificateFromKeyStore`, `RemoveCertificateAlreadyExpired`, `RegenerateCertificateAlias`, `UpdKeyStoreCertificatesInfo`, `UpdKeyStoreJson`, firma `FirmaTextFromPFX`/`FirmaTextFromJKS`, lecturas `RetCloudTaskPublicKey`, `RetKeyStorePassword`/`SetKeyStorePassword`, `CheckIfAliasExistOnKeyStoreByCommand`.
+**Certificates/keystores**: `AddCertificateTask`, `PrcRemoveCertificateFromKeyStore`, `RemoveCertificateAlreadyExpired`, `RegenerateCertificateAlias`, `UpdKeyStoreCertificatesInfo`, `UpdKeyStoreJson`, signing with `FirmaTextFromPFX`/`FirmaTextFromJKS`, reads through `RetCloudTaskPublicKey`, `RetKeyStorePassword`/`SetKeyStorePassword`, `CheckIfAliasExistOnKeyStoreByCommand`.
 
-**SDTs núcleo**: `SDTCloudTask` (payload con subgrupos Cron/Certificate/Common), `SDTCloudTaskResponse` (`HasError`, `ErrorCode`, `ErrorDescription`), `CloudTaskPartyData`, `SDTProcessDeleteFilesInput`, familia `SDTCertificateInfo*`.
+**Core SDTs**: `SDTCloudTask` (a payload with Cron/Certificate/Common subgroups), `SDTCloudTaskResponse` (`HasError`, `ErrorCode`, `ErrorDescription`), `CloudTaskPartyData`, `SDTProcessDeleteFilesInput`, the `SDTCertificateInfo*` family.
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- [taskmanager.md](taskmanager.md) — dispara `TskCloudTasksDaily`/`…Quickly` (vía `RetDynamicCallReferenceCloudTask`).
-- Módulos **@ProcessMonitor** (kill de procesos colgados), **@Alerts** (alertas de certificado/cron), **@FileStorage** (contenido/certificados), **@SystemParameters** (config).
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- [taskmanager.md](taskmanager.md) — triggers `TskCloudTasksDaily`/`…Quickly` (through `RetDynamicCallReferenceCloudTask`).
+- The **@ProcessMonitor** (killing hung processes), **@Alerts** (certificate/cron alerts), **@FileStorage** (content/certificates) and **@SystemParameters** (configuration) modules.
