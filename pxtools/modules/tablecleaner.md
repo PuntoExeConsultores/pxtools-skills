@@ -1,90 +1,90 @@
-# Módulo @TableCleaner — Limpieza Programada de Tablas
+# @TableCleaner Module — Scheduled Table Cleanup
 
-> Comportamiento del módulo `@PXTools/@TableCleaner`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@TableCleaner` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@TableCleaner` (`APIs/` core + `Personalized/`).
-- Cualificador: `PXTools.TableCleaner`.
-- **Depende de:** `@APIs` (base), `@DynamicCallReferences` (despacho `code → cleaner`), `@SystemParameters` (límites de borrado), `@Menus`. Lo dispara `@TaskManager`.
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@TableCleaner` (`APIs/` core + `Personalized/`).
+- Qualifier: `PXTools.TableCleaner`.
+- **Depends on:** `@APIs` (base), `@DynamicCallReferences` (`code → cleaner` dispatch), `@SystemParameters` (deletion limits), `@Menus`. It is triggered by `@TaskManager`.
 
-## 1. Qué provee
+## 1. What it provides
 
-**Purga programada de datos antiguos por tabla**: una configuración por proceso define la antigüedad de retención; una tarea batch recorre las configuraciones y **despacha dinámicamente** el proceso de limpieza de cada módulo (por nombre, vía @DynamicCallReferences). Es la infraestructura común de "table cleaner" que reutilizan @SendMails, @ReceiveMails, @FileStorage, @Alerts, @WebServicesLog, @TaskManager, etc.
+**Scheduled purging of old data per table**: one configuration per process defines the retention age; a batch task walks the configurations and **dynamically dispatches** each module's cleanup process (by name, through @DynamicCallReferences). It is the shared "table cleaner" infrastructure reused by @SendMails, @ReceiveMails, @FileStorage, @Alerts, @WebServicesLog, @TaskManager, and others.
 
-## 2. Concepto central
+## 2. Core concept
 
-- **`TableCleanerConfiguration`** = una fila por proceso de limpieza registrado, con su **retención** (Years/Months/Days) y límite de lote.
-- Su PK (`TableCleanerProcessCode`) es una **referencia dinámica** de tipo `TableCleanerProcess`; la URL del proceso concreto se hereda de `TDynamicCallReferences`.
-- **`TskTableCleaner`** (batch) itera las configuraciones, calcula la **fecha de corte** y llama a cada `PrcTableCleaner<X>` por nombre.
+- **`TableCleanerConfiguration`** = one row per registered cleanup process, with its **retention** (Years/Months/Days) and batch limit.
+- Its PK (`TableCleanerProcessCode`) is a **dynamic reference** of type `TableCleanerProcess`; the concrete process URL is inherited from `TDynamicCallReferences`.
+- **`TskTableCleaner`** (batch) iterates the configurations, computes the **cut-off date** and calls each `PrcTableCleaner<X>` by name.
 
-## 3. Transacción `TableCleanerConfiguration`
+## 3. The `TableCleanerConfiguration` transaction
 
-| Atributo | Tipo | Rol |
+| Attribute | Type | Role |
 |---|---|---|
-| `TableCleanerProcessCode` (PK) | `DynamicCallReferenceCode` | FK (subtipo) a `TDynamicCallReferences` (tipo `TableCleanerProcess`). |
-| `TableCleanerProcessDescription` / `…URL` | inferidos | Heredados de la referencia dinámica. |
-| `TableCleanerYears` / `Months` / `Days` | num | Antigüedad de retención (se computa la fecha de corte). |
-| `TableCleanerMaxRows` | `IdFirstLevel` (nullable) | Límite de lote (o el global). |
-| `TableCleanerEnableCounter` | Boolean | ¿Reportar conteos? |
+| `TableCleanerProcessCode` (PK) | `DynamicCallReferenceCode` | FK (subtype) to `TDynamicCallReferences` (type `TableCleanerProcess`). |
+| `TableCleanerProcessDescription` / `…URL` | inferred | Inherited from the dynamic reference. |
+| `TableCleanerYears` / `Months` / `Days` | num | Retention age (used to compute the cut-off date). |
+| `TableCleanerMaxRows` | `IdFirstLevel` (nullable) | Batch limit (or the global one). |
+| `TableCleanerEnableCounter` | Boolean | Report counts? |
 
-> Grupo `TableCleanerDynamicCallReference`: `TableCleanerProcessCode : DynamicCallReferenceCode` (+ Description/URL). La config **no** guarda la URL: la hereda del catálogo de referencias dinámicas.
+> The `TableCleanerDynamicCallReference` group: `TableCleanerProcessCode : DynamicCallReferenceCode` (+ Description/URL). The configuration does **not** store the URL: it inherits it from the dynamic reference catalogue.
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-@TableCleaner **no define dominios propios** (no existe ningún dominio `TableCleaner*` — `TableCleanerConfiguration` es una transacción). Usa de otros módulos:
+@TableCleaner **defines no domains of its own** (there is no `TableCleaner*` domain — `TableCleanerConfiguration` is a transaction). It uses these from other modules:
 
-| Dominio | Dueño | Uso |
+| Domain | Owner | Use |
 |---|---|---|
-| `ReferenceType` (valor `TableCleanerProcess`) | @DynamicCallReferences | Tipo de la referencia del cleaner |
-| `DynamicCallReferenceCode` | @DynamicCallReferences | Códigos de cleaner: `TskTableCleaner`, `TableCleanerFileStorage`, `TableCleanerWebServicesLog`, `TableCleanerAlerts`, … (uno por tabla/módulo) |
-| `SystemParameterCode` (`TableCleanerMaxRowsToDeleteDB/SDT`) | @SystemParameters | Límites de borrado |
-| `SDTCounterType` (Failed=`FAI`, Succeed=`SUC`) | @APIs base | Tipo del contador de resultado (anclado en el SDT `SDTCounter` de @APIs; lo usan muchos módulos) |
+| `ReferenceType` (value `TableCleanerProcess`) | @DynamicCallReferences | Type of the cleaner's reference |
+| `DynamicCallReferenceCode` | @DynamicCallReferences | Cleaner codes: `TskTableCleaner`, `TableCleanerFileStorage`, `TableCleanerWebServicesLog`, `TableCleanerAlerts`, … (one per table/module) |
+| `SystemParameterCode` (`TableCleanerMaxRowsToDeleteDB/SDT`) | @SystemParameters | Deletion limits |
+| `SDTCounterType` (Failed=`FAI`, Succeed=`SUC`) | @APIs base | Type of the result counter (anchored in @APIs' `SDTCounter` SDT; many modules use it) |
 
-## 5. Mecanismo
+## 5. How it works
 
-### 5.1 Ejecución — `TskTableCleaner`
-`Parm(in: &TaskManagerId, out: &Error, out: &ErrorMessage)` (registrado como `TaskManagerExecution`):
+### 5.1 Execution — `TskTableCleaner`
+`Parm(in: &TaskManagerId, out: &Error, out: &ErrorMessage)` (registered as a `TaskManagerExecution`):
 1. `&InitialDate = ServerNow`; `&MaxRowsToDelete = RetMaxRowsToDeleteDB`.
-2. `For Each TableCleanerConfiguration` (⋈ `TDynamicCallReferences`): calcula `&Date = &InitialDate.AddYears(-Years).AddMonths(-Months).AddDays(-Days)`, resuelve el `MaxRows` (fila o global), y hace la **llamada dinámica por nombre**:
+2. `For Each TableCleanerConfiguration` (⋈ `TDynamicCallReferences`): computes `&Date = &InitialDate.AddYears(-Years).AddMonths(-Months).AddDays(-Days)`, resolves `MaxRows` (row-level or global), and makes the **dynamic call by name**:
    ```
    Call(TableCleanerProcessURL, TableCleanerProcessCode, &Date, &TableCleanerMaxRows, &TableCleanerEnableCounter, &SDTCounter)
    ```
-   (`TableCleanerProcessURL` = `.Type` del `PrcTableCleaner<X>`). Acumula el `&SDTCounter` en el reporte.
+   (`TableCleanerProcessURL` = the `.Type` of the `PrcTableCleaner<X>`.) It accumulates `&SDTCounter` into the report.
 
-### 5.2 Cómo un módulo registra su cleaner
-1. Escribe un `PrcTableCleaner<X>` con el **contrato**: `Parm(in: &DynamicCallReferenceCode, in: &Date, in: &MaxRowsToDeleteDB, in: &EnableCounter, out: &SDTCounter)`. Borra registros con fecha `<= &Date`, lotea por `RetMaxRowsToDeleteSDT` (default 3000), hace `Commit` al superar `MaxRowsToDeleteDB`, y devuelve `SDTCounter`.
-2. Provee un `RetDynamicCallReference<X>` (en su `Personalized/`) con un item `{ Code = DynamicCallReferenceCode.TableCleaner<X>, Type = ReferenceType.TableCleanerProcess, URL = PrcTableCleaner<X>.Type }`.
-3. `AddDynamicCallReferences` (de @DynamicCallReferences) agrega ese DP y hace upsert en `TDynamicCallReferences`. Desde ahí el proceso se puede configurar/ejecutar.
+### 5.2 How a module registers its cleaner
+1. Write a `PrcTableCleaner<X>` following the **contract**: `Parm(in: &DynamicCallReferenceCode, in: &Date, in: &MaxRowsToDeleteDB, in: &EnableCounter, out: &SDTCounter)`. It deletes records dated `<= &Date`, batches by `RetMaxRowsToDeleteSDT` (default 3000), issues a `Commit` when `MaxRowsToDeleteDB` is exceeded, and returns `SDTCounter`.
+2. Provide a `RetDynamicCallReference<X>` (in its own `Personalized/`) with an item `{ Code = DynamicCallReferenceCode.TableCleaner<X>, Type = ReferenceType.TableCleanerProcess, URL = PrcTableCleaner<X>.Type }`.
+3. `AddDynamicCallReferences` (from @DynamicCallReferences) picks that DataProvider up and upserts into `TDynamicCallReferences`. From then on the process can be configured and executed.
 
 ## 6. APIs vs Personalized
 
-- **`APIs/`** (core): la transacción, `TskTableCleaner` (orquestador), `PrcTableCleaner` (upsert de config), y los helpers de límites (`RetMaxRowsToDeleteDB/SDT`, `RetCountRowsToDeleteDB/SDT`).
+- **`APIs/`** (core): the transaction, `TskTableCleaner` (the orchestrator), `PrcTableCleaner` (config upsert), and the limit helpers (`RetMaxRowsToDeleteDB/SDT`, `RetCountRowsToDeleteDB/SDT`).
 - **`Personalized/`**:
-  | Objeto | Qué se customiza |
+  | Object | What gets customized |
   |---|---|
-  | `RetDynamicCallReferenceTableCleaner` (DataProvider) | Registra la task `TskTableCleaner` en @TaskManager. |
+  | `RetDynamicCallReferenceTableCleaner` (DataProvider) | Registers the `TskTableCleaner` task in @TaskManager. |
   | `RetSystemParametersTableCleaner` (DataProvider) | `TableCleanerMaxRowsToDeleteDB`/`…SDT`. |
-  | `RetMenusTableCleaner` (DataProvider) | Entrada de menú. |
+  | `RetMenusTableCleaner` (DataProvider) | Menu entry. |
 
-> Cada **módulo consumidor** aporta su propio par `RetDynamicCallReference<X>` + `PrcTableCleaner<X>` en su propio `Personalized/`, no acá.
+> Each **consuming module** contributes its own `RetDynamicCallReference<X>` + `PrcTableCleaner<X>` pair in its own `Personalized/`, not here.
 
-## 7. Instancia de pattern
+## 7. Pattern instance
 
-**PXWorkWithTableCleanerConfiguration** — WW de configuraciones (filtro por `TableCleanerProcess`; grilla con Years/Months/Days/MaxRows/EnableCounter editables). Acciones: **"Update Processes"** (`DelDynamicCallReferences` + `AddDynamicCallReferences(True)` — refresca el registro de referencias) y **Apply** (`PrcTableCleaner` por fila — upsert de la config).
+**PXWorkWithTableCleanerConfiguration** — the configurations WW (filter by `TableCleanerProcess`; grid with editable Years/Months/Days/MaxRows/EnableCounter). Actions: **"Update Processes"** (`DelDynamicCallReferences` + `AddDynamicCallReferences(True)` — refreshes the reference registry) and **Apply** (`PrcTableCleaner` per row — upserts the configuration).
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-| Proc | `Parm()` | Propósito |
+| Proc | `Parm()` | Purpose |
 |---|---|---|
-| `TskTableCleaner` | `in: &TaskManagerId, out…` | Entry point de @TaskManager; despacha cada cleaner. |
-| `PrcTableCleaner` | `in: &Code, &Years, &Months, &Days, &MaxRows, &EnableCounter` | Upsert de una config (la **borra** si Years=Months=Days=0). |
-| `RetMaxRowsToDeleteDB` / `…SDT` | `out: &MaxRowsToDelete` | Límites globales (default 100000 / 3000). |
-| **Contrato cleaner** `PrcTableCleaner<X>` | `in: &Code, &Date, &MaxRowsToDeleteDB, &EnableCounter; out: &SDTCounter` | Firma que todo cleaner concreto implementa. |
+| `TskTableCleaner` | `in: &TaskManagerId, out…` | @TaskManager entry point; dispatches every cleaner. |
+| `PrcTableCleaner` | `in: &Code, &Years, &Months, &Days, &MaxRows, &EnableCounter` | Upserts one configuration (**deletes** it if Years=Months=Days=0). |
+| `RetMaxRowsToDeleteDB` / `…SDT` | `out: &MaxRowsToDelete` | Global limits (defaults 100000 / 3000). |
+| **The cleaner contract** `PrcTableCleaner<X>` | `in: &Code, &Date, &MaxRowsToDeleteDB, &EnableCounter; out: &SDTCounter` | The signature every concrete cleaner implements. |
 
-**SDT de retorno** `SDTCounter` (`PXTools.APIs`): colección `{ Table, Type (SDTCounterType), Counter, ErrorMessage }`.
+**Return SDT** `SDTCounter` (`PXTools.APIs`): a collection of `{ Table, Type (SDTCounterType), Counter, ErrorMessage }`.
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- [dynamiccallreferences.md](dynamiccallreferences.md) — el `TableCleanerProcessCode` es una referencia dinámica; la URL sale de ahí.
-- [taskmanager.md](taskmanager.md) — ejecuta `TskTableCleaner` (cola `TableCleaner`).
-- Consumidores: [sendmails.md](sendmails.md), [filestorage.md](filestorage.md), [alerts.md](alerts.md), [webserviceslog.md](webserviceslog.md), etc.
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- [dynamiccallreferences.md](dynamiccallreferences.md) — `TableCleanerProcessCode` is a dynamic reference; the URL comes from there.
+- [taskmanager.md](taskmanager.md) — runs `TskTableCleaner` (the `TableCleaner` queue).
+- Consumers: [sendmails.md](sendmails.md), [filestorage.md](filestorage.md), [alerts.md](alerts.md), [webserviceslog.md](webserviceslog.md), and others.

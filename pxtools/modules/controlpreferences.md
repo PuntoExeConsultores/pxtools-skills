@@ -1,90 +1,90 @@
-# Módulo @ControlPreferences — Preferencias de UI por Control y Usuario
+# @ControlPreferences Module — Per-Control, Per-User UI Preferences
 
-> Comportamiento del módulo `@PXTools/@ControlPreferences`. Índice de módulos: [20-modulos-pxtools.md](../20-modulos-pxtools.md).
+> Behaviour of the `@PXTools/@ControlPreferences` module. Module index: [20-pxtools-modules.md](../20-pxtools-modules.md).
 
-**Ubicación en la KB**
-- Módulo: `Knowledge Base/@PXTools/@ControlPreferences` (`APIs/Basic/`, `APIs/UserControlState/`, `Personalized/`).
-- Cualificador: `PXTools.ControlPreferences`.
-- **Depende de:** `@APIs` (base). A nivel de dominio reutiliza `SecurityUserCode` de @Security, pero no hay llamadas `PXTools.Security` (no es dependencia de código).
+**Location in the KB**
+- Module: `Knowledge Base/@PXTools/@ControlPreferences` (`APIs/Basic/`, `APIs/UserControlState/`, `Personalized/`).
+- Qualifier: `PXTools.ControlPreferences`.
+- **Depends on:** `@APIs` (base). At the domain level it reuses `SecurityUserCode` from @Security, but there are no `PXTools.Security` calls (it is not a code dependency).
 
-## 1. Qué provee
+## 1. What it provides
 
-**Persistencia del estado de UI de un control por usuario**: anchos/orden/visibilidad de columnas y demás configuración de una grilla, para que cada usuario recupere su vista al volver a abrir el objeto. Es la infraestructura que respalda la personalización de grillas de los patterns.
+**Per-user persistence of a control's UI state**: column widths/order/visibility and other grid configuration, so each user gets their view back when they reopen the object. It is the infrastructure behind the grid customization of the patterns.
 
-## 2. Concepto central
+## 2. Core concept
 
-Una tabla de pares **nombre/valor**, deduplicados por una PK de 5 campos = **(alcance, usuario, objeto, control, preferencia)**:
-- El **usuario** se obtiene del contexto (`PGetUserCode`) y se guarda como texto — no hay FK a una tabla de usuarios.
-- El **objeto** (`SystemObjectName`) comparte el dominio `ObjectName, GeneXus` con `TSystemObjects` (@System), pero **sin integridad referencial** — es solo la convención que enlaza la preferencia con el objeto GX cuya grilla se personaliza.
-- El **valor** es un blob serializado (config/JSON).
+A table of **name/value** pairs, deduplicated by a 5-field PK = **(scope, user, object, control, preference)**:
+- The **user** comes from the context (`PGetUserCode`) and is stored as text — there is no FK to a users table.
+- The **object** (`SystemObjectName`) shares the `ObjectName, GeneXus` domain with `TSystemObjects` (@System), but **without referential integrity** — it is just the convention linking the preference to the GX object whose grid is being customized.
+- The **value** is a serialized blob (config/JSON).
 
-## 3. Transacción `ControlPreferences`
+## 3. The `ControlPreferences` transaction
 
-| Atributo | Tipo | Rol |
+| Attribute | Type | Role |
 |---|---|---|
-| `ControlPreferenceTargetType`* | `ControlPreferenceTargetType` | Discriminador de alcance (hoy solo `None`). |
-| `ControlPreferenceTargetId`* | `ObjectName, GeneXus` | **Identidad del usuario** (del contexto). |
-| `ControlPreferenceSystemObjectName`* | `ObjectName, GeneXus` | Objeto GX (panel/WW) dueño de la grilla. |
-| `ControlPreferenceControlName`* | `ObjectName, GeneXus` | Nombre del control/grilla. |
-| `ControlPreferenceName`* | `Character(200)` | Clave de la preferencia individual. |
-| `ControlPreferenceValue` | `MaxMem` | Valor serializado (config/JSON). |
-| `ControlPreferenceFullName`! | fórmula | `SystemObjectName-ControlName-Name`. |
+| `ControlPreferenceTargetType`* | `ControlPreferenceTargetType` | Scope discriminator (today only `None`). |
+| `ControlPreferenceTargetId`* | `ObjectName, GeneXus` | **The user's identity** (from the context). |
+| `ControlPreferenceSystemObjectName`* | `ObjectName, GeneXus` | The GX object (panel/WW) owning the grid. |
+| `ControlPreferenceControlName`* | `ObjectName, GeneXus` | Name of the control/grid. |
+| `ControlPreferenceName`* | `Character(200)` | Key of the individual preference. |
+| `ControlPreferenceValue` | `MaxMem` | Serialized value (config/JSON). |
+| `ControlPreferenceFullName`! | formula | `SystemObjectName-ControlName-Name`. |
 
-## 4. Dominios del módulo
+## 4. Module domains
 
-- **`ControlPreferenceTargetType`** (Char(20), **root-legacy** — vive en el `#Domains/` raíz): único dominio propio; un solo valor `None`. Diseñado para extenderse (rol, global); hoy solo alcance por usuario.
-- **Usa de otros módulos:** `SecurityUserCode` (@Security), `ObjectName`/`MaxMem` (@APIs/GeneXus base).
+- **`ControlPreferenceTargetType`** (Char(20), **root-legacy** — it lives in the root `#Domains/`): the only domain of its own; a single value, `None`. Designed to be extended (role, global); today the scope is per user only.
+- **Used from other modules:** `SecurityUserCode` (@Security), `ObjectName`/`MaxMem` (@APIs/GeneXus base).
 
-## 5. Mecanismo
+## 5. How it works
 
-Hay **dos generaciones** de la API, con la misma tabla de respaldo:
+There are **two generations** of the API, backed by the same table:
 
-### A) `APIs/Basic/` — estado nativo gxui (SaveState/InitState de grilla)
-- `ControlPreferencesSaveState` (Main, HTTP, `gxui.SaveState`): recibe el JSON del cliente, lo parsea a la colección `ControlPreferencesState`, y por ítem hace `Update` / `Delete` (si value=`undefined`) / `New`.
-- `ControlPreferencesInitState` (DataProvider → `gxuiStates`): lee la tabla por TargetType/TargetId/SystemObjectName y devuelve los pares para restaurar la grilla.
-- `CmControlPreferences` (WebComponent): en `Event Start` cablea `gxui_Settings.SaveURL` e `InitState`.
-- `ClearControlPreferences` (proc): borra todo por `TargetId` + `ObjectName`.
+### A) `APIs/Basic/` — native gxui state (grid SaveState/InitState)
+- `ControlPreferencesSaveState` (Main, HTTP, `gxui.SaveState`): receives the client's JSON, parses it into the `ControlPreferencesState` collection, and per item does `Update` / `Delete` (if value=`undefined`) / `New`.
+- `ControlPreferencesInitState` (DataProvider → `gxuiStates`): reads the table by TargetType/TargetId/SystemObjectName and returns the pairs needed to restore the grid.
+- `CmControlPreferences` (WebComponent): in `Event Start` it wires `gxui_Settings.SaveURL` and `InitState`.
+- `ClearControlPreferences` (proc): deletes everything for a `TargetId` + `ObjectName`.
 
-### B) `APIs/UserControlState/` — user control GridHandler (el actual)
-- SDT de intercambio **`ControlPreferencesUCState`**: `Object`, `Control`, colección `Properties{ Name, Value }`.
-- Endpoints HTTP (parsean el JSON y delegan en el proc de negocio):
-  | Endpoint | Delega en |
+### B) `APIs/UserControlState/` — the GridHandler user control (the current one)
+- Exchange SDT **`ControlPreferencesUCState`**: `Object`, `Control`, and a `Properties{ Name, Value }` collection.
+- HTTP endpoints (they parse the JSON and delegate to the business procedure):
+  | Endpoint | Delegates to |
   |---|---|
   | `SaveControlPreferencesUCState(in &data)` | `UpdControlPreferencesUCState` |
   | `LoadControlPreferencesUCState(in &data)` | `RetControlPreferencesUCState` |
-  | `ClearControlPreferencesUCState(in &data)` | (borra las filas que matchean) |
-- `UpdControlPreferencesUCState(in &UCState, out &SaveResult)`: usuario vía `PGetUserCode`; por cada Property hace Update / Delete (valor vacío) / New.
-- `RetControlPreferencesUCState(in &UCState, out &LoadResult)`: si `Properties.Count=1` devuelve un valor puntual; si no, todas las properties como JSON.
-- `RetControlPreferencesURL(in &Operation('save'|'load'|'clear'), out &URL)`: devuelve el `.Link()` del Main correspondiente.
+  | `ClearControlPreferencesUCState(in &data)` | (deletes the matching rows) |
+- `UpdControlPreferencesUCState(in &UCState, out &SaveResult)`: user via `PGetUserCode`; for each Property it does Update / Delete (empty value) / New.
+- `RetControlPreferencesUCState(in &UCState, out &LoadResult)`: if `Properties.Count=1` it returns a single value; otherwise all properties as JSON.
+- `RetControlPreferencesURL(in &Operation('save'|'load'|'clear'), out &URL)`: returns the `.Link()` of the matching Main.
 
-### Integración con grillas configurables
-- `IsGridConfigurable(in &ObjectName, out &Configurable)` (hook en `@APIs/Personalized/`) decide por objeto si se ofrece la UI de configuración.
-- `RetGridHandlerConfig` emite en su salida el nodo `ControlPreferences { SaveURL/LoadURL/ClearURL = RetControlPreferencesURL.Udp(...) }`, de modo que el user control GridHandler sabe a qué endpoints hacer POST del estado. Cada grid handler generado por PXWorkWith repite ese nodo.
+### Integration with configurable grids
+- `IsGridConfigurable(in &ObjectName, out &Configurable)` (a hook in `@APIs/Personalized/`) decides per object whether the configuration UI is offered.
+- `RetGridHandlerConfig` emits a `ControlPreferences { SaveURL/LoadURL/ClearURL = RetControlPreferencesURL.Udp(...) }` node in its output, so the GridHandler user control knows which endpoints to POST the state to. Every grid handler generated by PXWorkWith repeats that node.
 
 ## 6. APIs vs Personalized
 
-- **`APIs/`** (core): la transacción, ambas generaciones de endpoints/procs, los SDTs.
-- **`Personalized/`**: un solo objeto — **`RetControlPreferenceSystemObjectNameLength`** (`out: &Length`, retorna `50`). Punto customizable: cuántos caracteres del prefijo del nombre de objeto se conservan como `ControlPreferenceSystemObjectName`. Lo consumen los save/init de ambas generaciones.
+- **`APIs/`** (core): the transaction, both generations of endpoints/procedures, the SDTs.
+- **`Personalized/`**: a single object — **`RetControlPreferenceSystemObjectNameLength`** (`out: &Length`, returns `50`). The customizable point: how many characters of the object name prefix are kept as `ControlPreferenceSystemObjectName`. Both generations' save/init consume it.
 
-## 7. Instancias de patterns
+## 7. Pattern instances
 
-**Ninguna** — la transacción `ControlPreferences` no tiene PXWorkWith (es infraestructura de respaldo, no un ABM de usuario).
+**None** — the `ControlPreferences` transaction has no PXWorkWith (it is backing infrastructure, not a user-facing CRUD screen).
 
-## 8. Procedimientos / APIs clave
+## 8. Key procedures / APIs
 
-| Objeto | `Parm()` | Propósito |
+| Object | `Parm()` | Purpose |
 |---|---|---|
-| `ControlPreferencesSaveState` (Main) | `in: &TargetType, &TargetId, &SystemObjectName, &SavePreferences` | Persistir estado gxui de grilla. |
-| `ControlPreferencesInitState` (DP) | `in: &TargetType, &TargetId, &SystemObjectName` | Recuperar estado gxui. |
-| `ClearControlPreferences` | `in: &TargetId, &ObjectName` | Borrar preferencias de un usuario+objeto. |
-| `UpdControlPreferencesUCState` | `in: &UCState; out: &SaveResult` | Persistencia real (GridHandler). |
-| `RetControlPreferencesUCState` | `in: &UCState; out: &LoadResult` | Lectura real (valor único o JSON). |
-| `RetControlPreferencesURL` | `in: &Operation; out: &URL` | Resuelve URL save/load/clear para el user control. |
-| `RetControlPreferenceSystemObjectNameLength` (Personalized) | `out: &Length` | Longitud del prefijo del nombre de objeto (=50). |
+| `ControlPreferencesSaveState` (Main) | `in: &TargetType, &TargetId, &SystemObjectName, &SavePreferences` | Persist the grid's gxui state. |
+| `ControlPreferencesInitState` (DP) | `in: &TargetType, &TargetId, &SystemObjectName` | Retrieve the gxui state. |
+| `ClearControlPreferences` | `in: &TargetId, &ObjectName` | Delete a user+object's preferences. |
+| `UpdControlPreferencesUCState` | `in: &UCState; out: &SaveResult` | The real persistence (GridHandler). |
+| `RetControlPreferencesUCState` | `in: &UCState; out: &LoadResult` | The real read (single value or JSON). |
+| `RetControlPreferencesURL` | `in: &Operation; out: &URL` | Resolves the save/load/clear URL for the user control. |
+| `RetControlPreferenceSystemObjectNameLength` (Personalized) | `out: &Length` | Length of the object name prefix (=50). |
 
-> **Aviso — homónimo de otro módulo:** `RetControlPreferencesChosen` (en `@SystemParameters`) **no** pertenece a este módulo; arma la lista de valores elegidos de un *system parameter*. Coincidencia de nombre solamente.
+> **Warning — a namesake from another module:** `RetControlPreferencesChosen` (in `@SystemParameters`) does **not** belong to this module; it builds the list of chosen values of a *system parameter*. The names merely coincide.
 
-## Referencias
-- [20-modulos-pxtools.md](../20-modulos-pxtools.md) — índice de módulos.
-- [system.md](system.md) — `TSystemObjects` comparte dominio con `SystemObjectName` (sin FK).
-- `modulos/apis.md` — `PGetUserCode` (contexto/usuario) y el hook `IsGridConfigurable`.
+## References
+- [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
+- [system.md](system.md) — `TSystemObjects` shares a domain with `SystemObjectName` (no FK).
+- `modules/apis.md` — `PGetUserCode` (context/user) and the `IsGridConfigurable` hook.
