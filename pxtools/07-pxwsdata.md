@@ -1,28 +1,28 @@
-# PXWSData — Pattern de Lectura de Datos vía WebService
+# PXWSData — Web Service Data Read Pattern
 
-## Qué es
+## What it is
 
-PXWSData genera **Procedures de lectura de datos** con hooks de código personalizables. A diferencia de PXWSQuery (que genera DataProviders para listas paginadas), PXWSData genera Procedures para leer un registro específico con lógica custom. Se usa para operaciones de "Get" o "Read" de entidades individuales.
+PXWSData generates **data-read Procedures** with customizable code hooks. Unlike PXWSQuery (which generates DataProviders for paged lists), PXWSData generates Procedures that read one specific record with custom logic. It is used for "Get" or "Read" operations on individual entities.
 
 ## Parent Objects
 
-- `Transaction` — lectura basada en los keys de la transacción
-- `(None)` — lectura independiente
+- `Transaction` — read based on the transaction's keys
+- `(None)` — standalone read
 
-## Objetos que genera
+## Objects it generates
 
-Por cada `version/method`:
+For each `version/method`:
 
-| Objeto | Tipo GeneXus | Naming | Descripción |
-|--------|-------------|--------|-------------|
-| SDTData | SDT | `WSTransaction{Trn}V{ver}Structure` | Estructura de datos compartida |
-| MethodData | Procedure | `WSData{Trn}V{ver}Method` | Procedure de lectura |
-| SDTDataIn | SDT | `WSData{Trn}V{ver}DataIn` | SDT de entrada |
-| SDTDataOut | SDT | `WSData{Trn}V{ver}DataOut` | SDT de salida |
+| Object | GeneXus type | Naming | Description |
+|--------|--------------|--------|-------------|
+| SDTData | SDT | `WSTransaction{Trn}V{ver}Structure` | Shared data structure |
+| MethodData | Procedure | `WSData{Trn}V{ver}Method` | The read Procedure |
+| SDTDataIn | SDT | `WSData{Trn}V{ver}DataIn` | Input SDT |
+| SDTDataOut | SDT | `WSData{Trn}V{ver}DataOut` | Output SDT |
 
-Total: **4 objetos** por cada método de cada versión.
+Total: **4 objects** per method per version.
 
-## Estructura XML de la instancia
+## XML structure of the instance
 
 ```xml
 <instance parentTransaction="Customer"
@@ -33,15 +33,15 @@ Total: **4 objetos** por cada método de cada versión.
     <method name="&lt;default&gt;">
 
       <data>
-        <!-- Keys de entrada -->
+        <!-- Input keys -->
         <key name="CustomerId"
              publicName="id"
-             type="Public" />           <!-- Public: visible al consumidor -->
+             type="Public" />           <!-- Public: visible to the consumer -->
         <key name="CompanyId"
              publicName=""
-             type="Multitenant" />      <!-- Multitenant: automático desde conexión -->
+             type="Multitenant" />      <!-- Multitenant: resolved from the connection -->
 
-        <!-- Atributos de salida -->
+        <!-- Output attributes -->
         <attribute name="CustomerName"
                    publicName="name"
                    description="Customer Name" />
@@ -52,36 +52,36 @@ Total: **4 objetos** por cada método de cada versión.
                    publicName="address"
                    description="Address" />
 
-        <!-- Variables calculadas -->
+        <!-- Computed variables -->
         <variable name="TotalInvoices"
                   publicName="totalInvoices"
                   description="Total invoices count"
                   dataType="Numeric" length="10"
-                  loadPreviousCode="// código previo"
+                  loadPreviousCode="// code to run first"
                   loadCode="&amp;TotalInvoices = Count(InvoiceId)" />
       </data>
 
-      <!-- Hooks de código -->
+      <!-- Code hooks -->
       <codes>
-        <code type="Start" data="// inicialización" />
+        <code type="Start" data="// initialization" />
         <code type="Subroutine" name="ValidateAccess"
-              data="// validar permisos del usuario" />
+              data="// check the user's permissions" />
       </codes>
 
-      <!-- Variables adicionales del Procedure -->
+      <!-- Extra Procedure variables -->
       <variables>
         <variable name="HasAccess"
                   dataType="Boolean"
-                  description="Flag de acceso" />
+                  description="Access flag" />
       </variables>
     </method>
   </version>
 </instance>
 ```
 
-## Nodo Data — Estructura de datos
+## The Data node — data structure
 
-El nodo `data` define qué datos se leen. Acepta tres tipos de hijos mezclados (ChildrenType="Mixed"):
+The `data` node defines what gets read. It accepts three kinds of children, mixed together (ChildrenType="Mixed"):
 
 ### Keys
 
@@ -89,55 +89,55 @@ El nodo `data` define qué datos se leen. Acepta tres tipos de hijos mezclados (
 <key name="CustomerId" publicName="id" type="Public" />
 ```
 
-| type | Descripción |
+| type | Description |
 |------|-------------|
-| `Public` | Visible en el SDT de entrada, proporcionado por el consumidor |
-| `Multitenant` | No visible, obtenido automáticamente de la conexión/sesión |
-| `Private` | Interno, no expuesto al consumidor |
+| `Public` | Visible in the input SDT, supplied by the consumer |
+| `Multitenant` | Not visible, obtained automatically from the connection/session |
+| `Private` | Internal, not exposed to the consumer |
 
 ### Attributes
 
-Atributos de la transacción que se incluyen en la respuesta:
+Transaction attributes included in the response:
 
 ```xml
 <attribute name="CustomerName" publicName="name" description="Name" />
 ```
 
-Solo se deben incluir atributos de la **tabla base** de la transacción.
+Only attributes of the transaction's **base table** should be included.
 
-### Variables calculadas
+### Computed variables
 
-Variables con código de carga personalizado:
+Variables with custom load code:
 
 ```xml
 <variable name="FullName"
           publicName="fullName"
-          loadPreviousCode="// código ejecutado antes de la carga"
+          loadPreviousCode="// code run before loading"
           loadCode="&amp;FullName = CustomerFirstName + ' ' + CustomerLastName" />
 ```
 
-## Diferencia con PXWSQuery
+## Difference from PXWSQuery
 
-| Aspecto | PXWSQuery | PXWSData |
-|---------|-----------|----------|
-| **Propósito** | Listas paginadas con filtros | Lectura de un registro |
-| **Genera** | DataProvider + Procedure | Solo Procedure |
-| **Filtros** | Search, AdvancedSearch, Conditions | Solo Keys |
-| **Ordenamiento** | Si (orders, sort) | No |
-| **Paginación** | Si (maxRows) | No |
-| **Campos calculados** | Si (loadCode en fields) | Si (loadCode en data) |
-| **Multi-tenant** | Si (nodo separado) | Si (key type=Multitenant) |
+| Aspect | PXWSQuery | PXWSData |
+|--------|-----------|----------|
+| **Purpose** | Paged lists with filters | Reading one record |
+| **Generates** | DataProvider + Procedure | Procedure only |
+| **Filters** | Search, AdvancedSearch, Conditions | Keys only |
+| **Ordering** | Yes (orders, sort) | No |
+| **Paging** | Yes (maxRows) | No |
+| **Computed fields** | Yes (loadCode on fields) | Yes (loadCode on data) |
+| **Multi-tenant** | Yes (separate node) | Yes (key type=Multitenant) |
 
-## Hooks de código
+## Code hooks
 
-| type | Cuándo se ejecuta |
-|------|-------------------|
-| `Start` | Al inicio del Procedure |
-| `Subroutine` | Subrutina invocable por nombre desde el código |
+| type | When it runs |
+|------|--------------|
+| `Start` | At the start of the Procedure |
+| `Subroutine` | Subroutine callable by name from the code |
 
-## Relación con PXWSLayer
+## Relationship with PXWSLayer
 
-PXWSData es normalmente invocado desde un método de PXWSLayer:
+PXWSData is normally invoked from a PXWSLayer method:
 
 ```
 PXWSLayer (method callType="PXInstance")
@@ -145,6 +145,6 @@ PXWSLayer (method callType="PXInstance")
     └──► PXWSData (Procedure + SDTs)
 ```
 
-## Relación con PXWSTransaction
+## Relationship with PXWSTransaction
 
-PXWSData y PXWSTransaction comparten la misma estructura SDT (`WSTransaction{Trn}V{ver}Structure`) lo que permite usar el mismo formato de datos para lectura y escritura.
+PXWSData and PXWSTransaction share the same SDT structure (`WSTransaction{Trn}V{ver}Structure`), which means the same data format serves both reading and writing.

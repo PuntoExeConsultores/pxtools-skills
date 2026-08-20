@@ -1,25 +1,25 @@
-# PXWSLayer — Pattern Orquestador de API REST/SOAP
+# PXWSLayer — REST/SOAP API Orchestrator Pattern
 
-## Qué es
+## What it is
 
-PXWSLayer es el **orquestador de servicios web** de PXTools. Genera una capa de API que expone métodos REST y/o SOAP, delegando la lógica a otros patterns de WS (PXWSQuery, PXWSData, PXWSTransaction) o a objetos GeneXus directos. Soporta generación de objetos **API con OpenAPI 3.0**.
+PXWSLayer is the **web service orchestrator** of PXTools. It generates an API layer exposing REST and/or SOAP methods, delegating the logic to the other WS patterns (PXWSQuery, PXWSData, PXWSTransaction) or to plain GeneXus objects. It supports generating **API objects with OpenAPI 3.0**.
 
 ## Parent Objects
 
-- `Transaction` — genera servicios basados en una transacción
-- `(None)` — servicios independientes
+- `Transaction` — generates services based on a transaction
+- `(None)` — standalone services
 
-## Objetos que genera
+## Objects it generates
 
-| Objeto | Tipo GeneXus | Naming | Condición |
-|--------|-------------|--------|-----------|
-| SOAPWS | Procedure | `SOAPTrnV1` | `instance/version` (si generateSOAP=True) |
-| RESTMethod | Procedure | `RESTTrnV1Method` | `instance/version/methods/method` (si generateREST=True) |
-| APIWS | API | `APIWS` | `instance/version` (si generateRESTAPIObject=True) |
-| SDTWSMethodIn | SDT | `WSMethod{Trn}V{ver}In` | Cuando `callType='GXObject'` |
-| SDTWSMethodOut | SDT | `WSMethod{Trn}V{ver}Out` | Cuando `callType='GXObject'` |
+| Object | GeneXus type | Naming | Condition |
+|--------|--------------|--------|-----------|
+| SOAPWS | Procedure | `SOAPTrnV1` | `instance/version` (if generateSOAP=True) |
+| RESTMethod | Procedure | `RESTTrnV1Method` | `instance/version/methods/method` (if generateREST=True) |
+| APIWS | API | `APIWS` | `instance/version` (if generateRESTAPIObject=True) |
+| SDTWSMethodIn | SDT | `WSMethod{Trn}V{ver}In` | When `callType='GXObject'` |
+| SDTWSMethodOut | SDT | `WSMethod{Trn}V{ver}Out` | When `callType='GXObject'` |
 
-## Estructura XML de la instancia
+## XML structure of the instance
 
 ```xml
 <instance parentTransaction="Customer"
@@ -34,7 +34,7 @@ PXWSLayer es el **orquestador de servicios web** de PXTools. Genera una capa de 
            generateOpenAPIInterface="True">
 
     <methods>
-      <!-- Método que delega a PXWSQuery -->
+      <!-- Method delegating to PXWSQuery -->
       <method name="Query"
               callType="PXInstance"
               instanceObject="PXWSQueryCustomer"
@@ -43,7 +43,7 @@ PXWSLayer es el **orquestador de servicios web** de PXTools. Genera una capa de 
               generateOpenAPIInterface="True">
       </method>
 
-      <!-- Método que delega a PXWSTransaction -->
+      <!-- Method delegating to PXWSTransaction -->
       <method name="Load"
               callType="PXInstance"
               instanceObject="PXWSTransactionCustomer"
@@ -51,7 +51,7 @@ PXWSLayer es el **orquestador de servicios web** de PXTools. Genera una capa de 
               instanceMethod="Load">
       </method>
 
-      <!-- Método que delega a PXWSData -->
+      <!-- Method delegating to PXWSData -->
       <method name="GetData"
               callType="PXInstance"
               instanceObject="PXWSDataCustomer"
@@ -59,11 +59,11 @@ PXWSLayer es el **orquestador de servicios web** de PXTools. Genera una capa de 
               instanceMethod="&lt;default&gt;">
       </method>
 
-      <!-- Método que llama a un objeto GeneXus directamente -->
+      <!-- Method calling a GeneXus object directly -->
       <method name="CustomMethod"
               callType="GXObject"
               gxObject="PrcCustomerCustomMethod"
-              actionPreviousCode="// código previo">
+              actionPreviousCode="// code to run first">
         <objectParameters>
           <parameter name="CustomerId" />
         </objectParameters>
@@ -81,7 +81,7 @@ PXWSLayer es el **orquestador de servicios web** de PXTools. Genera una capa de 
         </variables>
       </method>
 
-      <!-- Método con código inline (Event) -->
+      <!-- Method with inline code (Event) -->
       <method name="Ping"
               callType="Event"
               event="&amp;Result = 'OK'">
@@ -91,42 +91,42 @@ PXWSLayer es el **orquestador de servicios web** de PXTools. Genera una capa de 
 </instance>
 ```
 
-## Propiedades de la instancia
+## Instance properties
 
-### Instance (raíz)
+### Instance (root)
 
-| Propiedad | Tipo | Descripción |
-|-----------|------|-------------|
-| `parentTransaction` | reference(Transaction) | Transacción base para keys y multi-tenant |
-| `publicName` | string | Nombre público en el servicio web |
-| `category` | custom(WSCategory) | Categoría de seguridad del WS |
+| Property | Type | Description |
+|----------|------|-------------|
+| `parentTransaction` | reference(Transaction) | Base transaction for keys and multi-tenancy |
+| `publicName` | string | Public name in the web service |
+| `category` | custom(WSCategory) | Security category of the WS |
 
 ### Version
 
-| Propiedad | Tipo | Descripción |
-|-----------|------|-------------|
-| `version` | int | Número de versión |
-| `generateSOAP` | enum{default;True;False} | Generar servicio SOAP |
-| `generateREST` | enum{default;True;False} | Generar servicio REST |
-| `generateRESTAPIObject` | enum{default;True;False} | Generar objeto API (OpenAPI) |
-| `generateRESTProcedureObject` | enum{default;True;False} | Generar Procedure REST |
-| `generateOpenAPIInterface` | enum{default;True;False} | Generar interfaz OpenAPI |
+| Property | Type | Description |
+|----------|------|-------------|
+| `version` | int | Version number |
+| `generateSOAP` | enum{default;True;False} | Generate the SOAP service |
+| `generateREST` | enum{default;True;False} | Generate the REST service |
+| `generateRESTAPIObject` | enum{default;True;False} | Generate the API object (OpenAPI) |
+| `generateRESTProcedureObject` | enum{default;True;False} | Generate the REST Procedure |
+| `generateOpenAPIInterface` | enum{default;True;False} | Generate the OpenAPI interface |
 
 ### Method
 
-| Propiedad | Tipo | Descripción |
-|-----------|------|-------------|
-| `name` | string | Nombre público del método |
-| `callType` | enum{PXInstance;GXObject;Event} | Tipo de invocación |
-| `instanceObject` | reference(PXWSTransaction;PXWSQuery;PXWSData) | Instancia PXTools a invocar |
-| `instanceVersion` | string | Versión de la instancia |
-| `instanceMethod` | string | Método de la instancia |
-| `gxObject` | reference(Procedure;DataProvider) | Objeto GeneXus directo |
-| `actionPreviousCode` | code | Código previo a la ejecución del GXObject |
-| `event` | code | Código inline del método (callType=Event) |
-| `generateOpenAPIInterface` | enum{default;True;False} | OpenAPI para este método |
+| Property | Type | Description |
+|----------|------|-------------|
+| `name` | string | Public name of the method |
+| `callType` | enum{PXInstance;GXObject;Event} | Kind of invocation |
+| `instanceObject` | reference(PXWSTransaction;PXWSQuery;PXWSData) | PXTools instance to invoke |
+| `instanceVersion` | string | Version of that instance |
+| `instanceMethod` | string | Method of that instance |
+| `gxObject` | reference(Procedure;DataProvider) | Plain GeneXus object |
+| `actionPreviousCode` | code | Code run before executing the GXObject |
+| `event` | code | Inline code of the method (callType=Event) |
+| `generateOpenAPIInterface` | enum{default;True;False} | OpenAPI for this method |
 
-## Relación con otros patterns WS
+## Relationship with the other WS patterns
 
 ```
                     PXWSLayer (API Object)
@@ -140,18 +140,18 @@ PXWSLayer es el **orquestador de servicios web** de PXTools. Genera una capa de 
         │           │  │ Save ───────────┼─┼──► PXWSTransaction (Save)
         │           │  │ Delete ─────────┼─┼──► PXWSTransaction (Delete)
         │           │  │ GetData ────────┼─┼──► PXWSData
-        │           │  │ Custom ─────────┼─┼──► Procedure GeneXus
-        │           │  │ Ping ───────────┼─┼──► Event (código inline)
+        │           │  │ Custom ─────────┼─┼──► GeneXus Procedure
+        │           │  │ Ping ───────────┼─┼──► Event (inline code)
         │           │  └─────────────────┘ │
         │           └─────────────────────┘
         │
         ▼
-  Genera: API Object + Procedures REST + Procedure SOAP + SDTs
+  Generates: API Object + REST Procedures + SOAP Procedure + SDTs
 ```
 
-## Variables en métodos
+## Variables in methods
 
-Cuando `callType="GXObject"`, se definen variables que se mapean a SDTs In/Out:
+When `callType="GXObject"`, you declare variables that map to the In/Out SDTs:
 
 ```xml
 <variables>
@@ -164,30 +164,30 @@ Cuando `callType="GXObject"`, se definen variables que se mapean a SDTs In/Out:
 </variables>
 ```
 
-Tipos de variable soportados: Audio, Bitmap, Blob, Boolean, Character, Date, DateTime, Long Varchar, Numeric, VarChar, o basados en Domain, Attribute, SDT, ExternalObject, BusinessComponent.
+Supported variable types: Audio, Bitmap, Blob, Boolean, Character, Date, DateTime, Long Varchar, Numeric, VarChar, or types based on a Domain, Attribute, SDT, ExternalObject or BusinessComponent.
 
-## Versionamiento
+## Versioning
 
-PXWSLayer soporta **versionamiento de API** nativo. Cada `version` puede tener diferentes métodos, generadores y configuraciones. Esto permite evolucionar la API sin romper consumidores existentes:
+PXWSLayer supports **API versioning** natively. Each `version` can have different methods, generators and settings, which lets the API evolve without breaking existing consumers:
 
 ```xml
 <version version="1" generateREST="True" generateSOAP="True">
-  <!-- Métodos v1 -->
+  <!-- v1 methods -->
 </version>
 <version version="2" generateREST="True" generateSOAP="False">
-  <!-- Métodos v2 (solo REST, sin SOAP) -->
+  <!-- v2 methods (REST only, no SOAP) -->
 </version>
 ```
 
 ## Settings (PXWSLayerSettings.xml)
 
-Configuración global para todas las instancias PXWSLayer:
-- Generación por defecto (SOAP, REST, API Object, OpenAPI)
-- Prefijos de nombrado
-- Configuración de seguridad por categoría
+Global configuration for every PXWSLayer instance:
+- Default generation (SOAP, REST, API Object, OpenAPI)
+- Naming prefixes
+- Per-category security configuration
 
-## Integración con módulos @PXTools
+## Integration with the @PXTools modules
 
-- **@WSLayer**: Contiene WhiteList de IPs/dominios permitidos (PXWorkWithWSWhiteList)
-- **@WebServicesLog**: Log y estadísticas de invocaciones de WS
-- **@Security**: Control de acceso por categoría de WS
+- **@WSLayer**: holds the white list of allowed IPs/domains (PXWorkWithWSWhiteList)
+- **@WebServicesLog**: log and statistics of WS invocations
+- **@Security**: access control by WS category

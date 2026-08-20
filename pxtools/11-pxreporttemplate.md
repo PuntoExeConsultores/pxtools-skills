@@ -1,50 +1,50 @@
-# PXReportTemplate — Pattern de Templates para Reportes
+# PXReportTemplate — Report Template Pattern
 
-## Qué es
+## What it is
 
-PXReportTemplate define **templates de configuración para reportes**. A diferencia de los demás patterns, PXReportTemplate **no genera objetos GeneXus directamente** (su sección `<Objects />` está vacía). En su lugar, define un template/schema de configuración que otros patrones y objetos pueden usar para estandarizar la generación de reportes.
+PXReportTemplate defines **configuration templates for reports**. Unlike the other patterns, PXReportTemplate **does not generate GeneXus objects directly** (its `<Objects />` section is empty). Instead it defines a configuration template/schema that other patterns and objects can use to standardise report generation.
 
 ## Parent Objects
 
-- `Procedure` — se asocia a Procedures de reporte
+- `Procedure` — it attaches to report Procedures
 
-## Objetos que genera
+## Objects it generates
 
 ```xml
-<Objects />  <!-- No genera objetos directamente -->
+<Objects />  <!-- Generates no objects directly -->
 ```
 
-PXReportTemplate actúa como un **metadata pattern**: almacena configuración que es leída en runtime por los objetos de reporte.
+PXReportTemplate acts as a **metadata pattern**: it stores configuration that report objects read at runtime.
 
-## Propósito
+## Purpose
 
-El pattern sirve para:
-1. Estandarizar la configuración de reportes (formato, layout, encabezados)
-2. Permitir que los desarrolladores definan templates reutilizables
-3. Proveer un schema de configuración declarativo para reportes
+The pattern exists to:
+1. Standardise report configuration (format, layout, headers)
+2. Let developers define reusable templates
+3. Provide a declarative configuration schema for reports
 
-## Archivos del pattern
+## Pattern files
 
-| Archivo | Descripción |
-|---------|-------------|
-| `PXReportTemplate.Pattern` | Definición del pattern (Objects vacío) |
-| `PXReportTemplateInstance.xml` | Schema de la instancia |
-| `PXReportTemplateSettings.xml` | Preferencias globales |
-| `PXReportTemplateCustomTypes.xml` | Tipos custom |
-| `Resources/PXReportTemplateDefaultSettings.xml` | Settings por defecto |
+| File | Description |
+|------|-------------|
+| `PXReportTemplate.Pattern` | Pattern definition (empty Objects) |
+| `PXReportTemplateInstance.xml` | Instance schema |
+| `PXReportTemplateSettings.xml` | Global preferences |
+| `PXReportTemplateCustomTypes.xml` | Custom types |
+| `Resources/PXReportTemplateDefaultSettings.xml` | Default settings |
 
-## Uso real
+## Real-world use
 
-- El módulo **@ExportImport** tiene una instancia: `PXReportTemplateRepImportResult` (reporte de resultados de importación)
-- Se usa para definir la configuración de reportes PDF/Excel
+- The **@ExportImport** module has one instance: `PXReportTemplateRepImportResult` (import result report)
+- It is used to define the configuration of PDF/Excel reports
 
-## Integración
+## Integration
 
-PXReportTemplate se integra con:
-- **PXWorkWith** (modos de exportación)
-- **@ExportImport** (reportes de importación)
-- Procedures de reporte custom que leen la configuración del template
+PXReportTemplate integrates with:
+- **PXWorkWith** (export modes)
+- **@ExportImport** (import reports)
+- Custom report Procedures that read the template configuration
 
 ## Settings
 
-El pattern tiene un SettingsSpecification (`PXReportTemplateSettings.xml`) con un DefaultSettings (`PXReportTemplateDefaultSettings.xml`), lo que indica que tiene configuración global aplicable a todas las instancias.
+The pattern has a SettingsSpecification (`PXReportTemplateSettings.xml`) with DefaultSettings (`PXReportTemplateDefaultSettings.xml`), which means it carries global configuration applicable to every instance.

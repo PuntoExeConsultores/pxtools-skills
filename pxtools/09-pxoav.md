@@ -1,71 +1,71 @@
-# PXOAV — Pattern de Object Attribute Values (Atributos Dinámicos)
+# PXOAV — Object Attribute Values Pattern (Dynamic Attributes)
 
-## Qué es
+## What it is
 
-PXOAV implementa el patrón **EAV (Entity-Attribute-Value)** en GeneXus. Permite agregar **atributos dinámicos** a cualquier entidad sin modificar la estructura de la transacción base. Los atributos se definen en runtime (no en design-time) y pueden tener diferentes tipos de datos, validaciones, fórmulas y controles.
+PXOAV implements the **EAV (Entity-Attribute-Value)** pattern in GeneXus. It lets you add **dynamic attributes** to any entity without changing the structure of the base transaction. Attributes are defined at runtime (not at design time) and can have different data types, validations, formulas and controls.
 
 ## Parent Objects
 
-- `Transaction` — la transacción a la que se agregan atributos dinámicos
+- `Transaction` — the transaction the dynamic attributes are added to
 
-## Objetos que genera
+## Objects it generates
 
-PXOAV es el pattern que más objetos genera. De una sola instancia:
+PXOAV generates more objects than any other pattern. From a single instance:
 
-### Atributos GeneXus (24+)
+### GeneXus attributes (24+)
 
-| Categoría | Atributos generados |
-|-----------|-------------------|
-| **Valores WRI** (With Referential Integrity) | AttOAVAttributeValuesWRIId, ValuesWRIOAVAttributeId, ValuesWRIOAVAttributeValueCode, OAVAttributeValuesWRIAttributeName (×N), OAVAttributeValuesWRIAttributeDescription (×N) |
-| **Valores WORI** (Without Referential Integrity) | AttOAVAttributeValuesWORIId, ValuesWORIOAVAttributeId, OAVAttributeValuesWORIString, OAVAttributeValuesWORIMemo, OAVAttributeValuesWORIBlob, OAVAttributeValuesWORIAttributeName (×N), OAVAttributeValuesWORIAttributeDescription (×N) |
-| **Definición** | OAVAttributeDefinitionId, OAVAttributeDefinitionParentId, OAVAttributeDefinitionParentValue, OAVAttributeDefinitionOrder, OAVAttributeDefinitionFormula, OAVAttributeDefinitionFormulaOrder, OAVAttributeDefinitionDefaultId, OAVAttributeDefinitionCategory, OAVAttributeDefinitionRequired, OAVAttributeDefinitionReadOnly, OAVAttributeDefinitionDynamicReadOnlyId/URL, OAVAttributeDefinitionValidationId/URL, OAVAttributeDefinitionAttributeName/Description (×N) |
-| **Subtipo OAV** | OAVAttributeSubtypeId, OAVAttributeSubtypeCode, OAVAttributeSubtypeDescription, OAVAttributeSubtypeLargeDescription, OAVAttributeSubtypeDataType, OAVAttributeSubtypeDataLength, OAVAttributeSubtypeDataDecimals, OAVAttributeSubtypeDataDescription, OAVAttributeSubtypeDataFrom/To, OAVAttributeSubtypeControlType, OAVAttributeSubtypeControlShowDescriptions, OAVAttributeSubtypeControlNullDescription, OAVAttributeSubtypeControlCheckBoxSelected/Unselected, OAVAttributeSubtypeOrderedValues, OAVAttributeSubtypeDefaultValues, OAVAttributeSubtypePicture, OAVAttributeSubtypeReferentialIntegrity, OAVAttributeSubtypeValidationId/URL, OAVAttributeSubtypePromptId/URL |
+| Category | Generated attributes |
+|----------|----------------------|
+| **WRI values** (With Referential Integrity) | AttOAVAttributeValuesWRIId, ValuesWRIOAVAttributeId, ValuesWRIOAVAttributeValueCode, OAVAttributeValuesWRIAttributeName (×N), OAVAttributeValuesWRIAttributeDescription (×N) |
+| **WORI values** (Without Referential Integrity) | AttOAVAttributeValuesWORIId, ValuesWORIOAVAttributeId, OAVAttributeValuesWORIString, OAVAttributeValuesWORIMemo, OAVAttributeValuesWORIBlob, OAVAttributeValuesWORIAttributeName (×N), OAVAttributeValuesWORIAttributeDescription (×N) |
+| **Definition** | OAVAttributeDefinitionId, OAVAttributeDefinitionParentId, OAVAttributeDefinitionParentValue, OAVAttributeDefinitionOrder, OAVAttributeDefinitionFormula, OAVAttributeDefinitionFormulaOrder, OAVAttributeDefinitionDefaultId, OAVAttributeDefinitionCategory, OAVAttributeDefinitionRequired, OAVAttributeDefinitionReadOnly, OAVAttributeDefinitionDynamicReadOnlyId/URL, OAVAttributeDefinitionValidationId/URL, OAVAttributeDefinitionAttributeName/Description (×N) |
+| **OAV subtype** | OAVAttributeSubtypeId, OAVAttributeSubtypeCode, OAVAttributeSubtypeDescription, OAVAttributeSubtypeLargeDescription, OAVAttributeSubtypeDataType, OAVAttributeSubtypeDataLength, OAVAttributeSubtypeDataDecimals, OAVAttributeSubtypeDataDescription, OAVAttributeSubtypeDataFrom/To, OAVAttributeSubtypeControlType, OAVAttributeSubtypeControlShowDescriptions, OAVAttributeSubtypeControlNullDescription, OAVAttributeSubtypeControlCheckBoxSelected/Unselected, OAVAttributeSubtypeOrderedValues, OAVAttributeSubtypeDefaultValues, OAVAttributeSubtypePicture, OAVAttributeSubtypeReferentialIntegrity, OAVAttributeSubtypeValidationId/URL, OAVAttributeSubtypePromptId/URL |
 
-### Transacciones (3)
+### Transactions (3)
 
-| Objeto | Naming | Descripción |
+| Object | Naming | Description |
 |--------|--------|-------------|
-| WRITransaction | `WRITransaction` | Transacción de valores con integridad referencial |
-| WORITransaction | `WORITransaction` | Transacción de valores sin integridad referencial |
-| DefinitionTransaction | `DefinitionTransaction` | Transacción de definición de atributos OAV |
+| WRITransaction | `WRITransaction` | Values transaction with referential integrity |
+| WORITransaction | `WORITransaction` | Values transaction without referential integrity |
+| DefinitionTransaction | `DefinitionTransaction` | OAV attribute definition transaction |
 
-### Groups GeneXus (9)
+### GeneXus Groups (9)
 
-| Objeto | Descripción |
+| Object | Description |
 |--------|-------------|
-| DefinitionOAVAttributeGroup | Grupo de definición de subtipos OAV |
-| DefinitionValidationGroup | Grupo de validación |
-| DefinitionDynamicReadOnlyGroup | Grupo de solo lectura dinámica |
-| DefinitionDefaultGroup | Grupo de valores por defecto |
-| DefinitionAttributeGroup (×N) | Grupo por cada atributo definido |
-| ValuesWRIAttributeGroup (×N) | Grupo de atributos WRI |
-| ValuesWORIAttributeGroup (×N) | Grupo de atributos WORI |
-| ValuesWRIOAVAttributeGroup | Grupo OAV de atributos WRI |
-| ValuesWORIOAVAttributeGroup | Grupo OAV de atributos WORI |
+| DefinitionOAVAttributeGroup | OAV subtype definition group |
+| DefinitionValidationGroup | Validation group |
+| DefinitionDynamicReadOnlyGroup | Dynamic read-only group |
+| DefinitionDefaultGroup | Default values group |
+| DefinitionAttributeGroup (×N) | One group per defined attribute |
+| ValuesWRIAttributeGroup (×N) | WRI attributes group |
+| ValuesWORIAttributeGroup (×N) | WORI attributes group |
+| ValuesWRIOAVAttributeGroup | OAV group for WRI attributes |
+| ValuesWORIOAVAttributeGroup | OAV group for WORI attributes |
 
 ### Procedures (10+)
 
-| Objeto | Descripción |
+| Object | Description |
 |--------|-------------|
-| ValuesDeleteAttributeValueProcedure | Eliminar un valor de atributo |
-| ValuesAddAttributeValueDefaultProcedure | Agregar valor por defecto |
-| ValuesUpdateAttributesValuesProcedure | Actualizar valores |
-| ValuesDeleteAttributeValuesProcedure | Eliminar valores múltiples |
-| ValuesAddAttributeValueProcedure | Agregar un valor |
-| ValuesAddAttributeBlobProcedure | Agregar valor blob |
-| ValuesAddAttributeStringProcedure | Agregar valor string |
-| ValuesAddAttributeMemoProcedure | Agregar valor memo |
-| + más Procedures para cada tipo de dato... | |
+| ValuesDeleteAttributeValueProcedure | Delete one attribute value |
+| ValuesAddAttributeValueDefaultProcedure | Add a default value |
+| ValuesUpdateAttributesValuesProcedure | Update values |
+| ValuesDeleteAttributeValuesProcedure | Delete several values |
+| ValuesAddAttributeValueProcedure | Add a value |
+| ValuesAddAttributeBlobProcedure | Add a blob value |
+| ValuesAddAttributeStringProcedure | Add a string value |
+| ValuesAddAttributeMemoProcedure | Add a memo value |
+| + more Procedures for each data type… | |
 
-## Conceptos fundamentales
+## Core concepts
 
-### Modelo EAV (Entity-Attribute-Value)
+### The EAV model (Entity-Attribute-Value)
 
 ```
 ┌──────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│   Entidad    │     │   Definición     │     │    Valores       │
-│  (Customer)  │────►│  de Atributos    │────►│   de Atributos   │
-│              │     │  (OAV Attrs)     │     │  (OAV Values)    │
+│    Entity    │     │    Attribute     │     │    Attribute     │
+│  (Customer)  │────►│    Definition    │────►│      Values      │
+│              │     │   (OAV Attrs)    │     │   (OAV Values)   │
 │  CustomerId  │     │  AttrId          │     │  EntityId        │
 │  Name        │     │  Code            │     │  AttrId          │
 │  ...         │     │  Description     │     │  Value           │
@@ -79,51 +79,51 @@ PXOAV es el pattern que más objetos genera. De una sola instancia:
                      └──────────────────┘
 ```
 
-### Dos tipos de valores
+### Two kinds of values
 
-| Tipo | Tabla | Descripción |
+| Kind | Table | Description |
 |------|-------|-------------|
-| **WRI** (With Referential Integrity) | ValuesWRI | Valores con código que referencia a la tabla de definición. Garantiza integridad referencial. |
-| **WORI** (Without Referential Integrity) | ValuesWORI | Valores libres (string, memo, blob) sin validación de integridad. Más flexible. |
+| **WRI** (With Referential Integrity) | ValuesWRI | Values whose code references the definition table. Guarantees referential integrity. |
+| **WORI** (Without Referential Integrity) | ValuesWORI | Free values (string, memo, blob) with no integrity checking. More flexible. |
 
-### Tipos de datos soportados
+### Supported data types
 
-Los atributos dinámicos soportan múltiples tipos vía el atributo `DataType`:
-- String, Memo, Blob (archivos)
-- Numéricos (con length y decimals)
-- Fecha, DateTime, Boolean
-- Con picture personalizable
+Dynamic attributes support several types through the `DataType` attribute:
+- String, Memo, Blob (files)
+- Numeric (with length and decimals)
+- Date, DateTime, Boolean
+- With a customizable picture
 
-### Tipos de control
+### Control types
 
-Cada atributo puede usar diferentes controles de UI vía `ControlType`:
+Each attribute can use a different UI control through `ControlType`:
 - Input text
-- ComboBox (con ShowDescriptions)
-- CheckBox (con Selected/Unselected values)
-- Prompt (con PromptId/URL)
+- ComboBox (with ShowDescriptions)
+- CheckBox (with Selected/Unselected values)
+- Prompt (with PromptId/URL)
 
-### Características avanzadas
+### Advanced features
 
-- **Fórmulas**: atributos calculados con orden de evaluación
-- **Validaciones**: reglas de validación dinámicas (ValidationId/URL)
-- **ReadOnly dinámico**: solo lectura condicional (DynamicReadOnlyId/URL)
-- **Valores por defecto**: precarga de valores (DefaultId)
-- **Categorías**: agrupación de atributos
-- **Jerarquía**: atributos padre-hijo (ParentId/ParentValue)
-- **Ordenamiento**: orden de visualización (Order)
-- **Required**: campo obligatorio
+- **Formulas**: computed attributes with an evaluation order
+- **Validations**: dynamic validation rules (ValidationId/URL)
+- **Dynamic ReadOnly**: conditional read-only (DynamicReadOnlyId/URL)
+- **Default values**: value preloading (DefaultId)
+- **Categories**: attribute grouping
+- **Hierarchy**: parent-child attributes (ParentId/ParentValue)
+- **Ordering**: display order (Order)
+- **Required**: mandatory field
 
-## Instancia — Nodos principales
+## Instance — main nodes
 
 ```
 instance
 ├── definition
-│   ├── DefinitionTransaction (config de la transacción de definición)
+│   ├── DefinitionTransaction (definition transaction config)
 │   └── Attributes
-│       └── Attribute (×N, cada atributo de la entidad que identifica al "objeto")
+│       └── Attribute (×N, each entity attribute identifying the "object")
 ├── values
-│   ├── ValuesWRITransaction (config de tabla WRI)
-│   ├── ValuesWORITransaction (config de tabla WORI)
+│   ├── ValuesWRITransaction (WRI table config)
+│   ├── ValuesWORITransaction (WORI table config)
 │   ├── DeleteAttributeValue (Procedure)
 │   ├── AddAttributeValueDefault (Procedure)
 │   ├── UpdateAttributesValues (Procedure)
@@ -134,13 +134,13 @@ instance
 │   └── AddAttributeMemo (Procedure)
 ```
 
-## Uso real
+## Real-world use
 
-- El módulo **@OAV** provee la infraestructura base: TOAVAttributes, TOAVAttributeValues, TSystemObjectOAVAttributes con sus respectivos PXWorkWith para ABM
-- Se usa para agregar campos personalizables a entidades sin modificar la base de datos
+- The **@OAV** module provides the base infrastructure: TOAVAttributes, TOAVAttributeValues, TSystemObjectOAVAttributes with their PXWorkWith CRUD screens
+- It is used to add customizable fields to entities without changing the database
 
-## Integración con otros patterns
+## Integration with other patterns
 
-- **PXWorkWith** puede mostrar/editar atributos OAV en tabs de View
-- **PXFlowController** puede invocar instancias PXOAV
-- **@OAV module** proporciona los objetos base para gestionar definiciones y valores
+- **PXWorkWith** can show/edit OAV attributes in View tabs
+- **PXFlowController** can invoke PXOAV instances
+- The **@OAV module** provides the base objects for managing definitions and values

@@ -1,138 +1,138 @@
-# PXEntityParameters — Pattern de Parámetros Configurables por Entidad
+# PXEntityParameters — Per-Entity Configurable Parameters Pattern
 
-## Qué es
+## What it is
 
-PXEntityParameters genera una **infraestructura completa de parámetros configurables** por entidad. Permite definir parámetros tipados (string, numeric, date, boolean, memo, password) que se almacenan como pares clave-valor, con soporte multi-idioma y controles UI especializados (Combo, Chosen).
+PXEntityParameters generates a **complete infrastructure of configurable parameters** per entity. It lets you define typed parameters (string, numeric, date, boolean, memo, password) stored as key-value pairs, with multi-language support and specialised UI controls (Combo, Chosen).
 
 ## Parent Objects
 
-- `Transaction` — la transacción que contiene los parámetros
+- `Transaction` — the transaction holding the parameters
 
-## Objetos que genera
+## Objects it generates
 
-De una sola instancia genera un conjunto muy extenso de objetos:
+A single instance generates a very large set of objects:
 
 ### Domains (2)
 
-| Objeto | Naming | Descripción |
+| Object | Naming | Description |
 |--------|--------|-------------|
-| DomainEntityParameterCode | `EntityParameterCode` | Dominio para códigos de parámetro |
-| DomainEntityParameterCategory | `EntityParameterCategory` | Dominio para categorías |
+| DomainEntityParameterCode | `EntityParameterCode` | Domain for parameter codes |
+| DomainEntityParameterCategory | `EntityParameterCategory` | Domain for categories |
 
 ### Attributes (7)
 
-| Objeto | Naming | Descripción |
+| Object | Naming | Description |
 |--------|--------|-------------|
-| AttributeEntityParameterCode | `EntityParameterCode` | Código del parámetro |
-| AttributeEntityParameterDescription | `EntityParameterDescription` | Descripción |
-| AttributeEntityParameterType | `EntityParameterType` | Tipo de dato |
-| AttributeEntityParameterCategory | `EntityParameterCategory` | Categoría |
-| AttributeEntityParameterMultiLanguage | `EntityParameterMultiLanguage` | Flag multi-idioma |
-| AttributeEntityParameterPreferenceCode | `EntityParameterPreferenceCode` | Código de preferencia |
-| + 3 más para preferencias | | Language, Value, MemoValue |
+| AttributeEntityParameterCode | `EntityParameterCode` | Parameter code |
+| AttributeEntityParameterDescription | `EntityParameterDescription` | Description |
+| AttributeEntityParameterType | `EntityParameterType` | Data type |
+| AttributeEntityParameterCategory | `EntityParameterCategory` | Category |
+| AttributeEntityParameterMultiLanguage | `EntityParameterMultiLanguage` | Multi-language flag |
+| AttributeEntityParameterPreferenceCode | `EntityParameterPreferenceCode` | Preference code |
+| + 3 more for preferences | | Language, Value, MemoValue |
 
 ### Transactions (3)
 
-| Objeto | Naming | Descripción |
+| Object | Naming | Description |
 |--------|--------|-------------|
-| TransactionEntityParameters | `EntityParameters` | Definición de parámetros |
-| TransactionEntityParametersPreferences | `EntityParametersPreferences` | Valores de preferencias |
-| TransactionEntityParametersPreferencesComponent | `EntityParametersPreferencesComponent` | Componente de preferencias |
+| TransactionEntityParameters | `EntityParameters` | Parameter definitions |
+| TransactionEntityParametersPreferences | `EntityParametersPreferences` | Preference values |
+| TransactionEntityParametersPreferencesComponent | `EntityParametersPreferencesComponent` | Preferences component |
 
 ### Groups (1)
 
-| Objeto | Naming | Descripción |
+| Object | Naming | Description |
 |--------|--------|-------------|
-| GroupEntityParametersPreferences | `EntityParametersPreferences` | Grupo de estructura |
+| GroupEntityParametersPreferences | `EntityParametersPreferences` | Structure group |
 
 ### SDTs (1)
 
-| Objeto | Naming | Descripción |
+| Object | Naming | Description |
 |--------|--------|-------------|
-| SDTEntityParameters | `SDTEntityParameters` | SDT para manejo programático |
+| SDTEntityParameters | `SDTEntityParameters` | SDT for programmatic handling |
 
 ### Procedures (14+)
 
-| Objeto | Descripción |
+| Object | Description |
 |--------|-------------|
-| ProcedureAddEntityParameters | Agregar múltiples parámetros |
-| ProcedureReturnEntityParameters | Obtener parámetros de una entidad |
-| ProcedureAddEntityParameter | Agregar un parámetro individual |
-| ProcedureCheckEntityParametersExistence | Verificar existencia |
-| ProcedureReturnEntityParameterType | Obtener tipo de un parámetro |
-| ProcedureReturnEntityParameterDescription | Obtener descripción |
-| ProcedureReturnEntityParameterPreferenceBoolean | Obtener valor boolean |
-| ProcedureReturnEntityParameterPreferenceDate | Obtener valor date |
-| ProcedureReturnEntityParameterPreferenceInteger | Obtener valor integer |
-| ProcedureReturnEntityParameterPreferenceMemo | Obtener valor memo |
-| ProcedureReturnEntityParameterPreferencePassword | Obtener valor password |
-| ProcedureReturnEntityParameterPreferenceString | Obtener valor string |
-| ProcedureReturnEntityParameterPreferenceLanguage* | Versiones multi-idioma (×6) |
-| ProcedureUpdateEntityParameterPreferenceChosen | Actualizar valor Chosen |
-| ProcedureReturnEntityParameterComboValues | Obtener valores de combo |
+| ProcedureAddEntityParameters | Add several parameters |
+| ProcedureReturnEntityParameters | Get an entity's parameters |
+| ProcedureAddEntityParameter | Add a single parameter |
+| ProcedureCheckEntityParametersExistence | Check existence |
+| ProcedureReturnEntityParameterType | Get a parameter's type |
+| ProcedureReturnEntityParameterDescription | Get the description |
+| ProcedureReturnEntityParameterPreferenceBoolean | Get a boolean value |
+| ProcedureReturnEntityParameterPreferenceDate | Get a date value |
+| ProcedureReturnEntityParameterPreferenceInteger | Get an integer value |
+| ProcedureReturnEntityParameterPreferenceMemo | Get a memo value |
+| ProcedureReturnEntityParameterPreferencePassword | Get a password value |
+| ProcedureReturnEntityParameterPreferenceString | Get a string value |
+| ProcedureReturnEntityParameterPreferenceLanguage* | Multi-language versions (×6) |
+| ProcedureUpdateEntityParameterPreferenceChosen | Update a Chosen value |
+| ProcedureReturnEntityParameterComboValues | Get combo values |
 
 ### DataProviders (2)
 
-| Objeto | Descripción |
+| Object | Description |
 |--------|-------------|
-| DataProviderReturnEntityParametersGeneral | DP general de parámetros |
-| DataProviderReturnEntityParameterChosenValues | DP de valores Chosen |
+| DataProviderReturnEntityParametersGeneral | General parameters DP |
+| DataProviderReturnEntityParameterChosenValues | Chosen values DP |
 
-Total: **30+ objetos** de una sola instancia.
+Total: **30+ objects** from a single instance.
 
-## Modelo de datos
+## Data model
 
 ```
 ┌──────────────────────┐
-│  EntityParameters    │  ← Definición de parámetros
+│  EntityParameters    │  ← Parameter definitions
 │  ────────────────    │
 │  ParameterCode (PK)  │
 │  Description         │
 │  Type                │  ← String|Numeric|Date|Boolean|Memo|Password
 │  Category            │
-│  MultiLanguage       │  ← Soporte multi-idioma
+│  MultiLanguage       │  ← Multi-language support
 └──────────┬───────────┘
            │
            ▼
 ┌──────────────────────────────┐
-│  EntityParametersPreferences │  ← Valores de cada parámetro
+│  EntityParametersPreferences │  ← The value of each parameter
 │  ────────────────────────    │
-│  EntityId (PK)               │  ← La entidad a la que pertenece
+│  EntityId (PK)               │  ← The entity it belongs to
 │  ParameterCode (PK, FK)      │
-│  Language (PK)               │  ← Para multi-idioma
-│  Value                       │  ← Valor string
-│  MemoValue                   │  ← Valor memo (textos largos)
+│  Language (PK)               │  ← For multi-language
+│  Value                       │  ← String value
+│  MemoValue                   │  ← Memo value (long text)
 └──────────────────────────────┘
 ```
 
-## Tipos de parámetro
+## Parameter types
 
-| Tipo | Procedure de lectura | Almacenamiento |
-|------|---------------------|---------------|
-| `String` | ReturnEntityParameterPreferenceString | Campo Value |
-| `Integer` | ReturnEntityParameterPreferenceInteger | Campo Value (parseado) |
-| `Date` | ReturnEntityParameterPreferenceDate | Campo Value (parseado) |
-| `Boolean` | ReturnEntityParameterPreferenceBoolean | Campo Value ("True"/"False") |
-| `Memo` | ReturnEntityParameterPreferenceMemo | Campo MemoValue |
-| `Password` | ReturnEntityParameterPreferencePassword | Campo Value (encriptado) |
+| Type | Read Procedure | Storage |
+|------|----------------|---------|
+| `String` | ReturnEntityParameterPreferenceString | Value field |
+| `Integer` | ReturnEntityParameterPreferenceInteger | Value field (parsed) |
+| `Date` | ReturnEntityParameterPreferenceDate | Value field (parsed) |
+| `Boolean` | ReturnEntityParameterPreferenceBoolean | Value field ("True"/"False") |
+| `Memo` | ReturnEntityParameterPreferenceMemo | MemoValue field |
+| `Password` | ReturnEntityParameterPreferencePassword | Value field (encrypted) |
 
-## Soporte Multi-idioma
+## Multi-language support
 
-Cuando `MultiLanguage=true`, cada parámetro puede tener un valor diferente por idioma. Los Procedures `*Language*` manejan la lectura/escritura con el parámetro `Language` adicional.
+When `MultiLanguage=true`, each parameter can hold a different value per language. The `*Language*` Procedures handle reading and writing with the extra `Language` parameter.
 
-## Controles UI
+## UI controls
 
-- **Combo**: valores predefinidos seleccionables (ReturnEntityParameterComboValues)
-- **Chosen**: selector múltiple avanzado (ReturnEntityParameterChosenValues, UpdateEntityParameterPreferenceChosen)
+- **Combo**: predefined selectable values (ReturnEntityParameterComboValues)
+- **Chosen**: advanced multi-selector (ReturnEntityParameterChosenValues, UpdateEntityParameterPreferenceChosen)
 
-## Uso real
+## Real-world use
 
-- El módulo **@SystemParameters** usa este pattern para parámetros globales del sistema (PXWorkWithSystemParametersPreferences)
+- The **@SystemParameters** module uses this pattern for global system parameters (PXWorkWithSystemParametersPreferences)
 
-## Diferencia con @SystemParameters
+## Difference from @SystemParameters
 
-| Aspecto | PXEntityParameters (pattern) | @SystemParameters (módulo) |
-|---------|------------------------------|---------------------------|
-| Alcance | Parámetros por entidad | Parámetros globales del sistema |
-| Asociación | Vinculado a una Transaction | Módulo standalone |
-| Personalización | Genera estructura custom | Estructura predefinida |
+| Aspect | PXEntityParameters (pattern) | @SystemParameters (module) |
+|--------|------------------------------|----------------------------|
+| Scope | Parameters per entity | Global system parameters |
+| Attachment | Bound to a Transaction | Standalone module |
+| Customization | Generates a custom structure | Predefined structure |
