@@ -10,6 +10,29 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-08-20
+
+### Added
+- **`pxtools/modulos/menus.md`** — new subsection *Apuntar a la pantalla: `InstanceReference`, no el
+  nombre del objeto*, plus two warnings at the head of *Declarar y sembrar*. Between them they cover
+  the three ways a menu entry gets added wrong. The first is treating the menu as data: `TMnuWeb` has
+  a WorkWith and can be edited by hand, which makes it look like a table to load, but the tree is
+  **declared in code** and seeded from there — an option typed into the screen is missing from its
+  module's `RetMenus<X>`, so it never travels to another installation and the next seeding does not
+  reproduce it. The second is where the DataProvider lives: `RetMenus<X>` belongs to the
+  `Personalized/` **of the module that contributes the options** — `RetMenusSecurity` under
+  `@Security/`, `RetMenusOAuthService` under `@OAuthService/` — and only the sections without a module
+  of their own stay in `@Menus/Personalized/`, several of them empty shells. Looking in
+  `@Menus/Personalized/` alone and concluding a module has no menu leads to writing a **second**
+  DataProvider with the same name in another module, which compiles and seeds the tree twice;
+  `AddDefaultMenus` is the reliable catalogue of what actually gets seeded. The third is how a leaf
+  names its target: `InstanceReference` with the **entity** and the node type, letting the framework
+  resolve the generated object per platform, rather than `Program = RetObjectName.Udp(<Object>.Type)`,
+  which ties the menu to one platform's object name and loses the responsive override. The subsection
+  also records that PXWorkWith names the listing screen `Tr<Entity>` (`Ct<Entity>` is the query
+  screen) and not `WW<Entity>` — searching for "WW" finds nothing and makes an existing menu
+  declaration look absent
+
 ## 2026-08-19
 
 ### Added

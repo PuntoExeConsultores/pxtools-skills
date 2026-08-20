@@ -46,8 +46,50 @@ Tres piezas:
 ## 5. Mecanismo
 
 ### 5.1 Declarar y sembrar
+
+> ⚠️ **El menú NO es un dato que se carga a mano.** `TMnuWeb` se ve y se edita desde su WorkWith, pero
+> el árbol se **declara en código** y se siembra desde ahí. Agregar una opción editando la tabla la
+> deja fuera del `RetMenus<X>` de su módulo: no viaja a otra instalación y la próxima siembra no la
+> reproduce. La opción se agrega al DataProvider, no a la pantalla.
+
+> 📍 **Dónde vive el `RetMenus<X>`: en el `Personalized/` DEL MÓDULO que aporta las opciones**, no en
+> `@Menus/Personalized/`. `RetMenusSecurity` está en `@Security/Personalized/`, `RetMenusOAuthService`
+> en `@OAuthService/Personalized/`, `RetMenusFileStorage` en `@FileStorage/Personalized/`, y así.
+> En `@Menus/Personalized/` quedan sólo los de secciones sin módulo propio, varios de ellos cascarones
+> vacíos. **Antes de crear un `RetMenus<X>`, buscarlo en todo el árbol** (`find . -name
+> "RetMenus*.DataProvider.gxSource"`) o revisar la lista de `AddDefaultMenus`, que es el catálogo
+> completo de los que se siembran: crear un segundo DataProvider con el mismo nombre en otro módulo
+> compila y siembra el árbol dos veces.
+
 - **Declarar**: cada módulo aporta un DataProvider **`RetMenus<X>`** con `Output = SDTMenus` que devuelve su porción del árbol. `SDTMenus` es una colección recursiva (`Item` con `Name/Description/Program/Module/InstanceReference/Image…/SecurityCode/Category`, `Parent`, y `Childs : SDTMenus`; + colección `ApplicationPlatform` para overrides).
 - **Sembrar** (idempotente): `PDefaultMenus` → `ChkMenusExistance` (si no hay `Origin=Development`, siembra) → **`AddDefaultMenus`** (`Personalized/`, la lista de `RetMenus<X>()` a agregar) → `AddMenus` → **`AddMenusRecursive`**: por cada item resuelve el padre (`RetParentMenu`), verifica el módulo, hace `New … When Duplicate` (upsert por `MnWName`) en `TMnuWeb` con `MnWOri=Development`, genera las filas de `ApplicationPlatform` (una por plataforma soportada) y desciende en `Childs`.
+
+### 5.1.0 Apuntar a la pantalla: `InstanceReference`, no el nombre del objeto
+
+Una hoja puede declarar su destino de dos formas, y **la buena es `InstanceReference`**: se nombra la
+**entidad** y el tipo de nodo, y el framework resuelve el objeto generado según la plataforma
+(`RetNodeTypePlatformPrefix`: Selection→`Tr`, Prompt→`Pr`, WebPanel→`Wb`, y `R` delante en Responsive).
+
+```
+Item
+{
+	Description	= 'Pending Actions'
+	Module		= PXToolsModules.Messaging
+	InstanceReference
+	{
+		LevelName	= !'MessagingPendingAction'      // ✅ la ENTIDAD, no el objeto
+		NodeType	= NodeType.Selection
+	}
+}
+```
+
+`Program = RetObjectName.Udp(<Objeto>.Type)` es la forma vieja y sólo tiene sentido para un objeto
+suelto que no salió de un pattern. Usarla para una pantalla generada ata el menú al nombre del objeto
+de **una** plataforma y se pierde el override responsive.
+
+De paso, el nombre del objeto generado por PXWorkWith para el listado es **`Tr<Entidad>`** (`Ct<Entidad>`
+es la consulta) — no `WW<Entidad>`. Buscar por "WW" no encuentra nada y hace parecer que el menú no
+está declarado cuando sí lo está.
 
 ### 5.1.1 `Parent`: SOLO en el nodo raíz de cada `RetMenus<X>`
 
@@ -182,7 +224,7 @@ AddSystemModule.Call("PXTools.Messaging")     // mismo string exacto
   | Objeto | Qué se customiza |
   |---|---|
   | `AddDefaultMenus` | La **lista de `RetMenus<X>()` a sembrar** (una línea por sección/módulo). |
-  | `RetMenus<X>` (DataProviders) | **Un DP por sección de menú**: el proyecto declara ahí el árbol de esa sección. Pueden quedar vacíos (cascarón `Output=SDTMenus`) si la sección no aplica. |
+  | `RetMenus<X>` (DataProviders) | **Un DP por sección de menú**: el proyecto declara ahí el árbol de esa sección. Pueden quedar vacíos (cascarón `Output=SDTMenus`) si la sección no aplica. **Los de un módulo con nombre propio NO viven acá sino en el `Personalized/` de ese módulo** — ver el aviso de §5.1. |
   | `PCheckMenuSecurity` | Hook de seguridad por hoja (default `True`; lógica extra opcional). |
   | `PLoadOrigin` | El `Origin` activo al insertar nodos (default `Development`). |
   | `PGetNotGenericOrigins` | Orígenes a excluir del armado estándar (default agrega `Favorites`). |
