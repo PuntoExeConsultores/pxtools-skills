@@ -1,65 +1,57 @@
-# PXParameterRequest — Documentación Completa del Pattern
+# PXParameterRequest — Complete Pattern Documentation
 
-## 1. Qué es y para qué sirve
+## 1. What it is and what it is for
 
-PXParameterRequest es un pattern de PXTools que genera **WebPanels modales/popup para captura de parámetros**. Su propósito principal es crear formularios que:
+PXParameterRequest is a PXTools pattern generating **modal/popup WebPanels for capturing parameters**. Its main purpose is to create forms that:
 
-- Capturan datos del usuario antes de ejecutar una acción (reportes, procesos, exportaciones)
-- Muestran diálogos de confirmación ("¿Está seguro que desea eliminar?")
-- Proveen formularios de login, cambio de contraseña, registro
-- Abren popups de ingreso de datos que retornan valores al llamador
-- Permiten selección de archivos para importación
+- Capture user data before running an action (reports, processes, exports)
+- Show confirmation dialogs ("Are you sure you want to delete this?")
+- Provide login, password change and registration forms
+- Open data-entry popups returning values to the caller
+- Allow selecting a file for import
 
-Se asocia a objetos de tipo: **WebPanel**, **Procedure**, **Report**, **Transaction** o **(None)**.
+It attaches to objects of type: **WebPanel**, **Procedure**, **Report**, **Transaction** or **(None)**.
 
-### Diferencia clave con PXWorkWith
+### The key difference from PXWorkWith
 
-Mientras PXWorkWith genera pantallas completas con grillas de selección, vistas y edición de datos basados en transacciones, PXParameterRequest genera **formularios de captura simples** que típicamente se abren como popups/modales y retornan valores al llamador.
+While PXWorkWith generates complete screens with selection grids, views and data editing over transactions, PXParameterRequest generates **simple capture forms** typically opened as popups/modals that return values to the caller.
 
-## 2. Objetos que genera
+## 2. Objects it generates
 
-| Object ID | Tipo GeneXus | Patrón de nombre | Element (XPath) | Descripción |
-|-----------|-------------|-------------------|-----------------|-------------|
-| Level | WebPanel | `Wb{Instance.Name}` | `instance/level` | Formulario de parámetros (Web Desktop, template HTML) |
-| LevelResponsive | WebPanel | `Wb{Instance.Name}` | `instance/level` | Formulario de parámetros (Web Responsive, layout abstracto) |
-| ChkChosenValueSelected | Procedure | `Chk{Instance.Name}ChosenValueSelected` | `instance//variable/controlInfo[@controlType='Chosen']` | Validación de controles Chosen |
-| RetChosenValues | DataProvider | `Ret{Instance.Name}ChosenValues` | (mismo que anterior) | DataProvider de valores Chosen |
-| RetChosenResults | Procedure | `Ret{Instance.Name}ChosenResults` | (mismo que anterior) | Procedimiento de resultados Chosen |
+| Object ID | GeneXus type | Name pattern | Element (XPath) | Description |
+|-----------|--------------|--------------|-----------------|-------------|
+| Level | WebPanel | `Wb{Instance.Name}` | `instance/level` | The parameter form (Web Desktop, HTML template) |
+| LevelResponsive | WebPanel | `Wb{Instance.Name}` | `instance/level` | The parameter form (Web Responsive, abstract layout) |
+| ChkChosenValueSelected | Procedure | `Chk{Instance.Name}ChosenValueSelected` | `instance//variable/controlInfo[@controlType='Chosen']` | Validation of Chosen controls |
+| RetChosenValues | DataProvider | `Ret{Instance.Name}ChosenValues` | (same as above) | DataProvider of the Chosen values |
+| RetChosenResults | Procedure | `Ret{Instance.Name}ChosenResults` | (same as above) | Procedure returning the Chosen results |
 
-### Nomenclatura dual-platform: caso especial
+### Dual-platform naming: a special case
 
-A diferencia de PXWorkWith que usa prefijos diferentes para cada plataforma (`WW` vs `RWW`, `View` vs `RView`), PXParameterRequest usa el **MISMO nombre** para ambas versiones:
+Unlike PXWorkWith, which uses a different prefix per platform (`WW` vs `RWW`, `View` vs `RView`), PXParameterRequest uses the **SAME name** for both versions:
 
 ```
-PXWorkWith:          WWFactura (Desktop)  /  RWWFactura (Responsive)
-PXParameterRequest:  WbLogin   (Desktop)  /  WbLogin    (Responsive)  ← MISMO NOMBRE
+PXWorkWith:          WWInvoice (Desktop)  /  RWWInvoice (Responsive)
+PXParameterRequest:  WbLogin   (Desktop)  /  WbLogin    (Responsive)  ← THE SAME NAME
 ```
 
-Esto significa que en un KB dado, se genera solo una versión activa (Desktop O Responsive), controlada por las propiedades `generateWeb` y `generateWebResponsive`.
+That means a given KB only generates one active version (Desktop OR Responsive), controlled by the `generateWeb` and `generateWebResponsive` properties.
 
-## 3. Tipos de behaviour
+## 3. behaviour types
 
-> ⚠️ **En el `.gxPattern` el behaviour se escribe como el atributo `type` del `<level>`, no como un
-> nodo `<behaviour>`.** El nodo `behaviour` y los nombres largos de la tabla de abajo son los de la
-> **definición** del pattern; en las instancias externalizadas a disco no aparece ninguno. Verificado
-> sobre las 57 instancias de esta KB: cero nodos `<behaviour>`.
+> ⚠️ **In the `.gxPattern` the behaviour is written as the `<level>`'s `type` attribute, not as a `<behaviour>` node.** The `behaviour` node and the long names in the table below belong to the pattern's **definition**; neither appears in the instances externalized to disk. Verified across the 57 instances of this KB: zero `<behaviour>` nodes.
 >
 > ```xml
-> <level name="MiFormulario" description="Mi Formulario" caption="Mi Formulario" type="Popup">
+> <level name="MyForm" description="My Form" caption="My Form" type="Popup">
 > ```
 >
-> Valores observados en instancias reales, con su frecuencia: `Popup` (44), `Component` (8),
-> `Web Panel` (2), `Prompt` (2), `Process` (1).
+> Values observed in real instances, with their frequency: `Popup` (44), `Component` (8), `Web Panel` (2), `Prompt` (2), `Process` (1).
 >
-> **Esto importa cuando el panel se invoca como modal**: si el level no declara `type="Popup"`, el
-> WebPanel generado no es un popup y una invocación con `.Popup()` lo muestra sin el marco, el título
-> ni la barra de acciones — se ve como un formulario suelto pegado sobre la página.
+> **This matters when the panel is invoked as a modal**: if the level does not declare `type="Popup"`, the generated WebPanel is not a popup, and invoking it with `.Popup()` shows it without the frame, the title or the action bar — it looks like a stray form pasted onto the page.
 >
-> El **tamaño** del popup no se declara acá: `popupWidth`, `popupHeight` y `popupBehaviour` van en la
-> **acción del llamador** (junto a `target="Modal"`), porque son propiedades de esa invocación y no
-> del formulario. Un mismo formulario puede abrirse con distintos tamaños desde distintos lugares.
+> The popup's **size** is not declared here: `popupWidth`, `popupHeight` and `popupBehaviour` go on the **caller's action** (alongside `target="Modal"`), because they are properties of that invocation and not of the form. The same form can be opened at different sizes from different places.
 
-El nodo `behaviour` define cómo se presenta y comporta el formulario. Es la propiedad más importante del level.
+The `behaviour` node defines how the form is presented and behaves. It is the level's most important property.
 
 ```
 level/behaviour
@@ -68,35 +60,35 @@ level/behaviour
 └── closeOnReturn: bool
 ```
 
-### Tabla de tipos de behaviour
+### Table of behaviour types
 
-| Tipo | Presentación | Uso típico | Retorno de valores |
-|------|-------------|------------|-------------------|
-| `None` | Panel simple sin comportamiento especial | Formularios embebidos como WebComponents | No aplica |
-| `Panel` | Panel estándar | Formularios independientes que no actúan como popup | Via parámetros |
-| `PopupParameterRequest` | **Popup modal** (ventana emergente) | Confirmaciones, captura rápida de datos, selección | Retorna valores al llamador via popup |
-| `ParameterRequest` | Página completa de parámetros | Captura de parámetros antes de ejecutar reportes/procesos | Redirige al objeto destino con los valores |
-| `FloatingParameterRequest` | Overlay flotante sobre la página actual | Captura rápida sin perder contexto de la pantalla principal | Retorna valores sin navegar |
+| Type | Presentation | Typical use | Returning values |
+|------|--------------|-------------|------------------|
+| `None` | A simple panel with no special behaviour | Forms embedded as WebComponents | Not applicable |
+| `Panel` | A standard panel | Standalone forms not acting as popups | Through parameters |
+| `PopupParameterRequest` | **A modal popup** (a pop-up window) | Confirmations, quick data capture, selection | Returns values to the caller through the popup |
+| `ParameterRequest` | A full parameters page | Capturing parameters before running reports/processes | Redirects to the target object with the values |
+| `FloatingParameterRequest` | A floating overlay above the current page | Quick capture without losing the main screen's context | Returns values without navigating |
 
-### returnType y closeOnReturn
-
-```
-returnType = Link     → Al confirmar, navega a la URL/objeto destino
-returnType = Message  → Al confirmar, envía un mensaje al llamador (útil para WebComponents)
-
-closeOnReturn = true  → Cierra el popup automáticamente al confirmar
-closeOnReturn = false → Permanece abierto (útil para formularios de ingreso repetitivo)
-```
-
-### Diagrama de flujo según behaviour
+### returnType and closeOnReturn
 
 ```
-                    Usuario hace clic en acción
+returnType = Link     → On confirming, it navigates to the target URL/object
+returnType = Message  → On confirming, it sends a message to the caller (useful for WebComponents)
+
+closeOnReturn = true  → Closes the popup automatically on confirming
+closeOnReturn = false → Stays open (useful for repetitive data entry forms)
+```
+
+### Flow diagram by behaviour
+
+```
+                    The user clicks an action
                               │
                               ▼
               ┌───────────────────────────────┐
-              │  ¿Qué behaviour tiene el      │
-              │  PXParameterRequest?           │
+              │  Which behaviour does the     │
+              │  PXParameterRequest have?     │
               └───────────────┬───────────────┘
          ┌────────┬───────────┼───────────┬──────────────┐
          ▼        ▼           ▼           ▼              ▼
@@ -107,86 +99,86 @@ closeOnReturn = false → Permanece abierto (útil para formularios de ingreso r
       └──┬───┘ └──┬───┘ └────┬─────┘ └────┬─────┘ └──────┬───────┘
          │        │          │             │              │
          ▼        ▼          ▼             ▼              ▼
-      Embebido  Página    Popup modal   Página        Overlay
-      en otro   indepen-  se abre      completa      flotante
-      WebPanel  diente    sobre caller  reemplaza     sobre la
-                          ┌────────┐   la actual      página
-                          │Captura │                   actual
-                          │datos   │
+      Embedded  Stand-    A modal popup  A full page   A floating
+      in another alone    opens over     replaces the  overlay on
+      WebPanel  page      the caller     current one   the current
+                          ┌────────┐                    page
+                          │Captures│
+                          │ data   │
                           └───┬────┘
                               │
                           ┌───▼────┐
-                          │Retorna │
-                          │valores │
-                          │al      │
+                          │Returns │
+                          │values  │
+                          │to the  │
                           │caller  │
                           └────────┘
 ```
 
-## 4. Estructura XML de la instancia
+## 4. XML structure of the instance
 
-Esquema completo del nodo `instance` definido en `PXParameterRequestInstance.xml` (203 KB):
+The complete schema of the `instance` node defined in `PXParameterRequestInstance.xml` (203 KB):
 
 ```xml
 <instance>
-  <level name="Main" description="Formulario principal"
+  <level name="Main" description="Main form"
          masterPage="MasterPage" theme="PXTheme"
          generateWeb="true" generateWebResponsive="true" generateSD="false"
          platform="Any">
 
-    <!-- Comportamiento del formulario -->
+    <!-- The form's behaviour -->
     <behaviour type="PopupParameterRequest"
                returnType="Link"
                closeOnReturn="true" />
 
-    <!-- Layout del formulario -->
+    <!-- The form's layout -->
     <form>
       <attributes>
-        <!-- Campos del formulario basados en atributos de la KB -->
+        <!-- Form fields based on KB attributes -->
       </attributes>
       <variables>
-        <!-- Variables custom en el formulario -->
+        <!-- Custom variables in the form -->
       </variables>
     </form>
 
-    <!-- Acciones (botones) -->
+    <!-- Actions (buttons) -->
     <actions>
-      <action name="Confirm" caption="Aceptar" />
-      <action name="Cancel" caption="Cancelar" />
+      <action name="Confirm" caption="Accept" />
+      <action name="Cancel" caption="Cancel" />
     </actions>
 
-    <!-- Eventos personalizados -->
+    <!-- Custom events -->
     <events>
       <event name="OnConfirm">
-        <!-- Código GeneXus -->
+        <!-- GeneXus code -->
       </event>
     </events>
 
-    <!-- Hooks de código en puntos específicos del ciclo de vida -->
+    <!-- Code hooks at specific points of the life cycle -->
     <codes>
-      <code section="Start">/* Código al iniciar */</code>
-      <code section="Refresh">/* Código en Refresh */</code>
-      <code section="Load">/* Código en Load */</code>
-      <code section="Subroutine">/* Subrutinas auxiliares */</code>
+      <code section="Start">/* Code at startup */</code>
+      <code section="Refresh">/* Code in Refresh */</code>
+      <code section="Load">/* Code in Load */</code>
+      <code section="Subroutine">/* Helper subroutines */</code>
     </codes>
 
-    <!-- Parámetros de entrada/salida del WebPanel -->
+    <!-- The WebPanel's input/output parameters -->
     <parameters>
       <parameter name="CustomerId" type="in" />
       <parameter name="SelectedDate" type="out" />
     </parameters>
 
-    <!-- Variables adicionales -->
+    <!-- Extra variables -->
     <variables>
       <variable name="&Total" type="Numeric" length="12" decimals="2" />
     </variables>
 
-    <!-- Condiciones (filtros, where) -->
+    <!-- Conditions (filters, where) -->
     <conditions>
       <condition>CustomerStatus = 'A'</condition>
     </conditions>
 
-    <!-- Grilla opcional dentro del formulario -->
+    <!-- An optional grid inside the form -->
     <grid>
       <attributes />
       <filter />
@@ -195,41 +187,41 @@ Esquema completo del nodo `instance` definido en `PXParameterRequestInstance.xml
       <modes />
     </grid>
 
-    <!-- Llamadas al confirmar (qué objeto se invoca con los parámetros) -->
+    <!-- Calls on confirming (which object is invoked with the parameters) -->
     <calls>
-      <call object="RptVentas" parameters="..." />
+      <call object="RptSales" parameters="..." />
     </calls>
 
-    <!-- Campos ocultos -->
+    <!-- Hidden fields -->
     <hidden>
       <attribute name="CompanyId" />
     </hidden>
 
-    <!-- Layouts condicionales -->
+    <!-- Conditional layouts -->
     <layouts>
       <layout condition="&Mode = 'Edit'" />
     </layouts>
 
-    <!-- Documentación y ayuda -->
+    <!-- Documentation and help -->
     <documentation />
     <help />
   </level>
 </instance>
 ```
 
-### Diagrama jerárquico completo
+### The complete hierarchy
 
 ```
 instance
-├── level (puede haber múltiples levels)
-│   ├── @name              → Nombre del level
-│   ├── @description       → Descripción
-│   ├── @masterPage         → MasterPage GeneXus a usar
-│   ├── @theme              → Theme GeneXus
-│   ├── @generateWeb        → bool: generar versión Desktop
-│   ├── @generateWebResponsive → bool: generar versión Responsive
-│   ├── @generateSD         → bool: generar versión Smart Devices
-│   ├── @platform           → enum{Any;Web Desktop}
+├── level (there can be several levels)
+│   ├── @name              → The level's name
+│   ├── @description       → Description
+│   ├── @masterPage        → The GeneXus MasterPage to use
+│   ├── @theme             → The GeneXus Theme
+│   ├── @generateWeb       → bool: generate the Desktop version
+│   ├── @generateWebResponsive → bool: generate the Responsive version
+│   ├── @generateSD        → bool: generate the Smart Devices version
+│   ├── @platform          → enum{Any;Web Desktop}
 │   │
 │   ├── behaviour
 │   │   ├── @type           → enum{None;Panel;PopupParameterRequest;
@@ -238,11 +230,11 @@ instance
 │   │   └── @closeOnReturn  → bool
 │   │
 │   ├── form
-│   │   ├── attributes[]    → Campos basados en atributos GeneXus
+│   │   ├── attributes[]    → Fields based on GeneXus attributes
 │   │   │   └── attribute
 │   │   │       ├── @name, @description, @readonly, @visible
-│   │   │       └── controlInfo → tipo de control (Edit, Combo, Chosen, etc.)
-│   │   └── variables[]     → Variables custom en el form
+│   │   │       └── controlInfo → the control type (Edit, Combo, Chosen, etc.)
+│   │   └── variables[]     → Custom variables in the form
 │   │       └── variable
 │   │           ├── @name, @domain, @type, @length
 │   │           └── controlInfo
@@ -254,12 +246,12 @@ instance
 │   │       ├── @name, @caption, @tooltip
 │   │       ├── @type       → enum{Standard;Custom}
 │   │       ├── @position   → enum{Top;Bottom;Both}
-│   │       └── @condition  → expresión de visibilidad
+│   │       └── @condition  → a visibility expression
 │   │
 │   ├── events[]
 │   │   └── event
-│   │       ├── @name       → Nombre del evento
-│   │       └── (código GeneXus inline)
+│   │       ├── @name       → The event's name
+│   │       └── (inline GeneXus code)
 │   │
 │   ├── codes
 │   │   ├── code[@section='Start']
@@ -269,285 +261,280 @@ instance
 │   │
 │   ├── parameters[]
 │   │   └── parameter
-│   │       ├── @name       → Nombre del parámetro
+│   │       ├── @name       → The parameter's name
 │   │       └── @type       → enum{in;out;inout}
 │   │
-│   ├── variables[]         → Variables del WebPanel (no del form)
-│   ├── conditions[]        → Condiciones/Where
+│   ├── variables[]         → The WebPanel's variables (not the form's)
+│   ├── conditions[]        → Conditions/Where
 │   │
-│   ├── grid (opcional)
-│   │   ├── attributes[]    → Columnas de la grilla
-│   │   ├── filter          → Filtros de la grilla
-│   │   ├── orders[]        → Órdenes disponibles
-│   │   ├── actions[]       → Acciones por fila
+│   ├── grid (optional)
+│   │   ├── attributes[]    → The grid's columns
+│   │   ├── filter          → The grid's filters
+│   │   ├── orders[]        → Available orderings
+│   │   ├── actions[]       → Per-row actions
 │   │   └── modes           → Insert/Update/Delete/Display
 │   │
-│   ├── calls[]             → Objetos a invocar al confirmar
+│   ├── calls[]             → Objects to invoke on confirming
 │   │   └── call
-│   │       ├── @object     → Nombre del objeto GeneXus destino
-│   │       └── @parameters → Mapeo de parámetros
+│   │       ├── @object     → The target GeneXus object's name
+│   │       └── @parameters → Parameter mapping
 │   │
-│   ├── hidden[]            → Campos ocultos (se pasan pero no se muestran)
-│   ├── layouts[]           → Layouts condicionales
-│   ├── documentation       → Documentación del level
-│   └── help                → Ayuda contextual
+│   ├── hidden[]            → Hidden fields (passed but not displayed)
+│   ├── layouts[]           → Conditional layouts
+│   ├── documentation       → The level's documentation
+│   └── help                → Contextual help
 ```
 
-## 5. Formulario y campos
+## 5. The form and its fields
 
-El nodo `form` define los campos visibles del formulario de captura. Los campos pueden ser **atributos** (de la base de datos) o **variables** (definidas localmente).
+The `form` node defines the capture form's visible fields. Fields can be **attributes** (from the database) or **variables** (defined locally).
 
-### Tipos de control disponibles
+### Available control types
 
-Cada campo del formulario tiene un `controlInfo` que define cómo se renderiza:
+Each form field has a `controlInfo` defining how it is rendered:
 
-| controlType | Descripción | Ejemplo de uso |
-|-------------|-------------|---------------|
-| `Edit` | Campo de texto libre | Nombre, descripción, observaciones |
-| `Combo` | Lista desplegable | Estado, tipo, categoría |
-| `CheckBox` | Casilla de verificación | Activo/Inactivo, aceptar términos |
-| `RadioButton` | Botones de opción | Tipo de documento, género |
-| `Chosen` | Selector múltiple con búsqueda (genera objetos adicionales) | Tags, categorías múltiples |
-| `DatePicker` | Selector de fecha | Fecha desde, fecha hasta |
-| `File` | Selector de archivo | Importar archivo CSV/Excel |
-| `Image` | Imagen | Logo, foto |
-| `TextBlock` | Texto estático (no editable) | Instrucciones, advertencias |
+| controlType | Description | Example use |
+|-------------|-------------|-------------|
+| `Edit` | Free text field | Name, description, notes |
+| `Combo` | Drop-down list | Status, type, category |
+| `CheckBox` | A check box | Active/Inactive, accept terms |
+| `RadioButton` | Option buttons | Document type, gender |
+| `Chosen` | Multi-selector with search (it generates extra objects) | Tags, multiple categories |
+| `DatePicker` | Date selector | Date from, date to |
+| `File` | File selector | Importing a CSV/Excel file |
+| `Image` | An image | Logo, photo |
+| `TextBlock` | Static (non-editable) text | Instructions, warnings |
 
-### Controles tipo Chosen: objetos adicionales
+### Chosen controls: extra objects
 
-Cuando un campo usa `controlType='Chosen'`, el pattern genera tres objetos adicionales automáticamente:
+When a field uses `controlType='Chosen'`, the pattern automatically generates three extra objects:
 
 ```
-Variable con controlType='Chosen'
+A variable with controlType='Chosen'
         │
         ├──► Chk{Instance.Name}ChosenValueSelected  (Procedure)
-        │    Valida que se haya seleccionado al menos un valor
+        │    Validates that at least one value was selected
         │
         ├──► Ret{Instance.Name}ChosenValues          (DataProvider)
-        │    Retorna la lista de valores posibles para el selector
+        │    Returns the list of possible values for the selector
         │
         └──► Ret{Instance.Name}ChosenResults         (Procedure)
-             Retorna los resultados seleccionados por el usuario
+             Returns the results the user selected
 ```
 
-### Ejemplo de form con múltiples tipos de control
+### A form example with several control types
 
 ```xml
 <form>
   <attributes>
-    <attribute name="FechaDesde" description="Fecha desde">
+    <attribute name="DateFrom" description="Date from">
       <controlInfo controlType="DatePicker" />
     </attribute>
-    <attribute name="FechaHasta" description="Fecha hasta">
+    <attribute name="DateTo" description="Date to">
       <controlInfo controlType="DatePicker" />
     </attribute>
-    <attribute name="ClienteId" description="Cliente">
+    <attribute name="CustomerId" description="Customer">
       <controlInfo controlType="Edit" />
     </attribute>
   </attributes>
   <variables>
-    <variable name="&TipoReporte" domain="TipoReporte">
+    <variable name="&ReportType" domain="ReportType">
       <controlInfo controlType="Combo" />
     </variable>
-    <variable name="&IncluirAnulados">
+    <variable name="&IncludeCancelled">
       <controlInfo controlType="CheckBox" />
     </variable>
-    <variable name="&ArchivoImportar">
+    <variable name="&FileToImport">
       <controlInfo controlType="File" />
     </variable>
   </variables>
 </form>
 ```
 
-## 6. Sistema de acciones y calls
+## 6. The action and call system
 
-### Acciones (botones)
+### Actions (buttons)
 
-Las acciones definen los botones del formulario. Típicamente un PXParameterRequest tiene al menos dos acciones: **Confirm** y **Cancel**.
+Actions define the form's buttons. A PXParameterRequest typically has at least two: **Confirm** and **Cancel**.
 
 ```xml
 <actions>
-  <!-- Acción estándar de confirmación -->
-  <action name="Confirm" caption="Aceptar"
+  <!-- The standard confirmation action -->
+  <action name="Confirm" caption="Accept"
           type="Standard" position="Bottom" />
 
-  <!-- Acción estándar de cancelación -->
-  <action name="Cancel" caption="Cancelar"
+  <!-- The standard cancellation action -->
+  <action name="Cancel" caption="Cancel"
           type="Standard" position="Bottom" />
 
-  <!-- Acción personalizada -->
-  <action name="Preview" caption="Vista previa"
+  <!-- A custom action -->
+  <action name="Preview" caption="Preview"
           type="Custom" position="Bottom"
-          condition="&TipoReporte = 'PDF'" />
+          condition="&ReportType = 'PDF'" />
 </actions>
 ```
 
-### Calls (invocación al confirmar)
+### Calls (invocation on confirming)
 
-El nodo `calls` define qué objetos se ejecutan cuando el usuario confirma el formulario. Los parámetros capturados en el form se pasan como argumentos.
+The `calls` node defines which objects run when the user confirms the form. The parameters captured in the form are passed as arguments.
 
 ```xml
 <calls>
-  <!-- Llama a un reporte con los parámetros capturados -->
-  <call object="RptVentasPorPeriodo"
-        parameters="&FechaDesde, &FechaHasta, &ClienteId, &TipoReporte" />
+  <!-- Calls a report with the captured parameters -->
+  <call object="RptSalesByPeriod"
+        parameters="&DateFrom, &DateTo, &CustomerId, &ReportType" />
 </calls>
 ```
 
-### Flujo de ejecución
+### The execution flow
 
 ```
 ┌──────────────────────────────┐
-│  PXParameterRequest abierto  │
-│  (popup/página/floating)     │
+│  PXParameterRequest is open  │
+│  (popup/page/floating)       │
 │                              │
 │  ┌────────────────────────┐  │
-│  │  Campos del formulario │  │
-│  │  FechaDesde: [       ] │  │
-│  │  FechaHasta: [       ] │  │
-│  │  Cliente:    [       ] │  │
-│  │  Tipo:       [▼ PDF  ] │  │
+│  │  The form's fields     │  │
+│  │  Date from:  [       ] │  │
+│  │  Date to:    [       ] │  │
+│  │  Customer:   [       ] │  │
+│  │  Type:       [▼ PDF  ] │  │
 │  └────────────────────────┘  │
 │                              │
-│  [Vista previa]  [Aceptar]   │
-│                  [Cancelar]  │
+│  [Preview]       [Accept]    │
+│                  [Cancel]    │
 └──────────────┬───────────────┘
-               │ Clic en "Aceptar"
+               │ Click on "Accept"
                ▼
 ┌──────────────────────────────┐
-│  1. Ejecuta validaciones     │
-│  2. Ejecuta evento OnConfirm │
-│  3. Invoca calls:            │
-│     RptVentasPorPeriodo(     │
-│       &FechaDesde,           │
-│       &FechaHasta,           │
-│       &ClienteId,            │
-│       &TipoReporte           │
+│  1. Runs the validations     │
+│  2. Runs the OnConfirm event │
+│  3. Invokes the calls:       │
+│     RptSalesByPeriod(        │
+│       &DateFrom,             │
+│       &DateTo,               │
+│       &CustomerId,           │
+│       &ReportType            │
 │     )                        │
-│  4. Si closeOnReturn=true,   │
-│     cierra el popup          │
+│  4. If closeOnReturn=true,   │
+│     closes the popup         │
 └──────────────────────────────┘
 ```
 
-## 7. Grilla opcional
+## 7. The optional grid
 
-Un PXParameterRequest puede incluir opcionalmente una **grilla** dentro del formulario. Esto es útil cuando el formulario necesita mostrar una lista de registros para que el usuario seleccione o revise antes de confirmar.
+A PXParameterRequest can optionally include a **grid** inside the form. That is useful when the form needs to show a list of records for the user to select or review before confirming.
 
 ```xml
 <grid>
-  <!-- Columnas de la grilla -->
+  <!-- The grid's columns -->
   <attributes>
-    <attribute name="ProductoId" />
-    <attribute name="ProductoDescripcion" />
-    <attribute name="ProductoPrecio" />
+    <attribute name="ProductId" />
+    <attribute name="ProductDescription" />
+    <attribute name="ProductPrice" />
   </attributes>
 
-  <!-- Filtros de la grilla -->
+  <!-- The grid's filters -->
   <filter>
-    <condition>ProductoActivo = true</condition>
+    <condition>ProductActive = true</condition>
   </filter>
 
-  <!-- Órdenes disponibles -->
+  <!-- Available orderings -->
   <orders>
-    <order name="PorNombre" attributes="ProductoDescripcion" />
-    <order name="PorPrecio" attributes="ProductoPrecio" />
+    <order name="ByName" attributes="ProductDescription" />
+    <order name="ByPrice" attributes="ProductPrice" />
   </orders>
 
-  <!-- Acciones por fila -->
+  <!-- Per-row actions -->
   <actions>
-    <action name="Select" caption="Seleccionar" />
+    <action name="Select" caption="Select" />
   </actions>
 
-  <!-- Modos permitidos -->
+  <!-- Allowed modes -->
   <modes insert="false" update="false" delete="false" display="true" />
 </grid>
 ```
 
-### Caso de uso típico
+### A typical use case
 
 ```
 ┌──────────────────────────────────────┐
-│  Seleccionar productos a exportar    │
+│  Select the products to export       │
 │                                      │
-│  Formato: [▼ Excel ]                 │
+│  Format: [▼ Excel ]                  │
 │                                      │
 │  ┌──┬────────────┬──────────┬──────┐ │
-│  │✓ │ Producto   │ Precio   │      │ │
+│  │✓ │ Product    │ Price    │      │ │
 │  ├──┼────────────┼──────────┼──────┤ │
 │  │☑ │ Widget A   │ $100.00  │ [Sel]│ │
 │  │☐ │ Widget B   │ $250.00  │ [Sel]│ │
 │  │☑ │ Widget C   │ $75.00   │ [Sel]│ │
 │  └──┴────────────┴──────────┴──────┘ │
 │                                      │
-│         [Exportar]  [Cancelar]       │
+│         [Export]    [Cancel]         │
 └──────────────────────────────────────┘
 ```
 
-## 8. Hooks de código
+## 8. Code hooks
 
-El nodo `codes` permite inyectar código GeneXus en puntos específicos del ciclo de vida del WebPanel generado. Esto es fundamental para personalizar el comportamiento sin modificar el código generado directamente.
+The `codes` node lets you inject GeneXus code at specific points of the generated WebPanel's life cycle. This is essential for customizing the behaviour without editing the generated code directly.
 
-### Secciones disponibles
+### Available sections
 
-| Sección | Momento de ejecución | Uso típico |
-|---------|---------------------|------------|
-| `Start` | Evento `Start` del WebPanel | Inicializar variables, verificar permisos, cargar valores por defecto |
-| `Refresh` | Evento `Refresh` | Recalcular valores, actualizar estado de controles |
-| `Load` | Evento `Load` de la grilla (si existe) | Calcular campos derivados por fila |
-| `Subroutine` | Se declaran como subrutinas del WebPanel | Lógica reutilizable dentro del formulario |
+| Section | When it runs | Typical use |
+|---------|--------------|-------------|
+| `Start` | The WebPanel's `Start` event | Initialising variables, checking permissions, loading default values |
+| `Refresh` | The `Refresh` event | Recomputing values, updating control states |
+| `Load` | The grid's `Load` event (when there is one) | Computing derived per-row fields |
+| `Subroutine` | Declared as the WebPanel's subroutines | Reusable logic inside the form |
 
-### `Subroutine`: un nodo por subrutina, y el `name` ES el nombre
+### `Subroutine`: one node per subroutine, and the `name` IS the name
 
-⚠️ A diferencia de `Start`, `Refresh` y `Load` —que son puntos únicos del ciclo de vida— el tipo
-`Subroutine` se declara **una vez por cada subrutina**, con su nombre en el atributo `name`, y el
-CDATA lleva **solamente el cuerpo**: el `Sub 'Nombre'` y el `EndSub` los genera el pattern.
+⚠️ Unlike `Start`, `Refresh` and `Load` — which are single points of the life cycle — the `Subroutine` type is declared **once per subroutine**, with its name in the `name` attribute, and the CDATA carries **only the body**: the pattern generates the `Sub 'Name'` and the `EndSub`.
 
 ```xml
 <codes>
-  <code type="Start"><![CDATA[Do 'Leer Datos'
-Do 'Mostrar Estado']]></code>
+  <code type="Start"><![CDATA[Do 'Read Data'
+Do 'Show Status']]></code>
 
-  <code type="Subroutine" name="Leer Datos"><![CDATA[&Cargar = False
+  <code type="Subroutine" name="Read Data"><![CDATA[&Load = False
 For Each
-	Where EmisorRUT = &EmisorRUT
-	&Cargar = True
+	Where CompanyTaxId = &CompanyTaxId
+	&Load = True
 	Exit
 EndFor]]></code>
 
-  <code type="Subroutine" name="Mostrar Estado"><![CDATA[&Mensaje.Visible = &Cargar]]></code>
+  <code type="Subroutine" name="Show Status"><![CDATA[&Message.Visible = &Load]]></code>
 </codes>
 ```
 
-**El error fácil** es meter todas las subrutinas en un solo nodo, escribiendo los `Sub … EndSub` a
-mano dentro del CDATA. El pattern **no las separa**: queda un único nodo con el `name` vacío, que en
-el editor visual se ve como *Code Subroutine* sin nombre, y las subrutinas no se generan.
+**The easy mistake** is putting every subroutine into a single node, writing the `Sub … EndSub` by hand inside the CDATA. The pattern **does not split them**: you end up with one node with an empty `name`, which the visual editor shows as an unnamed *Code Subroutine*, and the subroutines are never generated.
 
-Los nombres pueden llevar espacios (`name="Busco Emisor"`), y se invocan como es habitual:
-`Do 'Busco Emisor'`.
+Names may contain spaces (`name="Find Company"`), and they are invoked as usual: `Do 'Find Company'`.
 
-### Ejemplo de hooks de código
+### A code hooks example
 
 ```xml
 <codes>
   <code section="Start">
-    // Verificar permisos
+    // Check permissions
     if not &PXSession.IsAuthenticated()
       return
     endif
-    // Valores por defecto
-    &FechaDesde = Today() - 30
-    &FechaHasta = Today()
+    // Default values
+    &DateFrom = Today() - 30
+    &DateTo = Today()
   </code>
 
   <code section="Refresh">
-    // Actualizar total estimado según filtros
-    &TotalEstimado = CalcTotalVentas(&FechaDesde, &FechaHasta, &ClienteId)
+    // Update the estimated total according to the filters
+    &EstimatedTotal = CalcSalesTotal(&DateFrom, &DateTo, &CustomerId)
   </code>
 
   <code section="Subroutine">
-    Sub 'ValidarFechas'
-      if &FechaDesde > &FechaHasta
-        msg('La fecha desde no puede ser mayor a la fecha hasta')
+    Sub 'ValidateDates'
+      if &DateFrom > &DateTo
+        msg('The from date cannot be later than the to date')
         &OK = false
       endif
     EndSub
@@ -555,305 +542,305 @@ Los nombres pueden llevar espacios (`name="Busco Emisor"`), y se invocan como es
 </codes>
 ```
 
-> **Formato e indentación del CDATA**: en el `.gxPattern` real cada hook es `<code type="Start"><![CDATA[…]]></code>`; la primera línea va en **columna 0** y solo el anidamiento de bloques indenta (+1 tab). Regla completa (común a los patterns) en [`00-overview.md`](00-overview.md) → *Hooks de código: formato e indentación del CDATA*.
+> **CDATA formatting and indentation**: in the real `.gxPattern` each hook is `<code type="Start"><![CDATA[…]]></code>`; the first line goes at **column 0** and only block nesting indents (+1 tab). The full rule (shared by the patterns) is in [`00-overview.md`](00-overview.md) → *Code hooks: CDATA formatting and indentation*.
 
-### Eventos personalizados
+### Custom events
 
-Además de los hooks de código, el nodo `events` permite definir eventos GeneXus completos:
+Beyond the code hooks, the `events` node lets you define complete GeneXus events:
 
 ```xml
 <events>
-  <event name="'Validar'">
-    Do 'ValidarFechas'
+  <event name="'Validate'">
+    Do 'ValidateDates'
     if &OK
-      msg('Parámetros válidos', status)
+      msg('Valid parameters', status)
     endif
   </event>
 </events>
 ```
 
-## 9. Capacidad dual-platform
+## 9. Dual-platform capability
 
-PXParameterRequest soporta generación para **Web Desktop** y **Web Responsive** desde la misma definición de instancia.
+PXParameterRequest supports generation for **Web Desktop** and **Web Responsive** from the same instance definition.
 
-### Propiedades de control de plataforma
+### Platform control properties
 
 ```xml
 <level name="Login"
-       generateWeb="true"              <!-- Genera versión Desktop -->
-       generateWebResponsive="true"    <!-- Genera versión Responsive -->
-       generateSD="false"              <!-- No genera versión Smart Devices -->
+       generateWeb="true"              <!-- Generate the Desktop version -->
+       generateWebResponsive="true"    <!-- Generate the Responsive version -->
+       generateSD="false"              <!-- Do not generate the Smart Devices version -->
        platform="Any">                 <!-- Any | Web Desktop -->
 ```
 
-### Propiedad platform
+### The platform property
 
-| Valor | Efecto |
+| Value | Effect |
 |-------|--------|
-| `Any` | El level se genera para todas las plataformas habilitadas (Web Desktop + Responsive) |
-| `Web Desktop` | El level se genera **solo** para Web Desktop, incluso si `generateWebResponsive=true` |
+| `Any` | The level is generated for every enabled platform (Web Desktop + Responsive) |
+| `Web Desktop` | The level is generated for Web Desktop **only**, even when `generateWebResponsive=true` |
 
-### Objetos generados según plataforma
+### Objects generated per platform
 
 ```
-level con generateWeb=true, generateWebResponsive=true
+a level with generateWeb=true, generateWebResponsive=true
 │
 ├──► Level (Desktop)
-│    Objeto: WebPanel "Wb{Instance.Name}"
-│    Form:   HTML layout (template *WebForm.dll)
-│    Genera: Formulario con tabla HTML, controles posicionados
+│    Object: WebPanel "Wb{Instance.Name}"
+│    Form:   HTML layout (the *WebForm.dll template)
+│    Result: a form with an HTML table and positioned controls
 │
 └──► LevelResponsive (Responsive)
-     Objeto: WebPanel "Wb{Instance.Name}"    ← MISMO NOMBRE
-     Form:   Abstract layout (template *AbstractForm.dll)
-     Genera: Formulario con layout abstracto responsive
+     Object: WebPanel "Wb{Instance.Name}"    ← THE SAME NAME
+     Form:   Abstract layout (the *AbstractForm.dll template)
+     Result: a form with a responsive abstract layout
 ```
 
-**Nota importante**: Dado que ambas versiones comparten el mismo nombre, en la práctica solo una puede estar activa en el KB. La propiedad `generateWeb`/`generateWebResponsive` controla cuál se genera.
+**Important note**: since both versions share the same name, in practice only one can be active in the KB. The `generateWeb`/`generateWebResponsive` property controls which one is generated.
 
-### Diferencias en templates de generación
+### Differences in the generation templates
 
-| Parte del objeto | Template Desktop | Template Responsive |
-|------------------|-----------------|-------------------|
+| Part of the object | Desktop template | Responsive template |
+|--------------------|------------------|---------------------|
 | WebForm | `*WebForm.dll` (HTML) | `*AbstractForm.dll` (Abstract) |
-| Variables | Compartido | Compartido |
-| Events | Compartido (con ajustes) | Compartido (con ajustes) |
-| Rules | Compartido | Compartido |
+| Variables | Shared | Shared |
+| Events | Shared (with adjustments) | Shared (with adjustments) |
+| Rules | Shared | Shared |
 
-## 10. Relación con otros patterns
+## 10. Relationship with the other patterns
 
-PXParameterRequest se integra con los demás patterns de PXTools de múltiples formas:
+PXParameterRequest integrates with the other PXTools patterns in several ways:
 
-### Con PXWorkWith
+### With PXWorkWith
 
 ```
 ┌────────────────────────────────────────┐
-│  PXWorkWith (Selection de Facturas)    │
+│  PXWorkWith (Invoices Selection)       │
 │                                        │
-│  [Nueva] [Eliminar] [Exportar Excel]   │
+│  [New] [Delete] [Export to Excel]      │
 │  ┌──────────────────────────────────┐  │
-│  │  Grilla de facturas              │  │
+│  │  The invoices grid               │  │
 │  └──────────────────────────────────┘  │
 │                                        │
-│  Clic en [Exportar Excel] ──────────── │ ──► Abre PXParameterRequest
-└────────────────────────────────────────┘     como popup para capturar
-                                               FechaDesde, FechaHasta,
-                                               Formato de exportación
+│  Click on [Export to Excel] ────────── │ ──► Opens a PXParameterRequest
+└────────────────────────────────────────┘     as a popup to capture
+                                               DateFrom, DateTo and
+                                               the export format
 ```
 
-Las acciones de PXWorkWith (en Selection, View, etc.) pueden configurarse para abrir un PXParameterRequest como popup antes de ejecutar la acción real.
+PXWorkWith actions (in Selection, View, and so on) can be configured to open a PXParameterRequest as a popup before running the real action.
 
-### Con PXFlowController
+### With PXFlowController
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  PXFlowController (Proceso de facturación)      │
+│  PXFlowController (invoicing process)           │
 │                                                 │
-│  Paso 1: Seleccionar cliente ──► PXWorkWith     │
-│  Paso 2: Confirmar datos ─────► PXParameterReq. │  ← Confirmación
-│  Paso 3: Procesar ────────────► Procedure       │
-│  Paso 4: Resultado ──────────► PXParameterReq.  │  ← Muestra resultado
+│  Step 1: select the customer ──► PXWorkWith     │
+│  Step 2: confirm the data ────► PXParameterReq. │  ← Confirmation
+│  Step 3: process ─────────────► Procedure       │
+│  Step 4: result ─────────────► PXParameterReq.  │  ← Shows the result
 └─────────────────────────────────────────────────┘
 ```
 
-PXFlowController puede invocar PXParameterRequest como un paso del flujo, típicamente para confirmación de datos o captura de parámetros intermedios.
+PXFlowController can invoke a PXParameterRequest as a step of the flow, typically to confirm data or capture intermediate parameters.
 
-### Con PXComposer
+### With PXComposer
 
 ```
 ┌────────────────────────────────────────────────┐
 │  PXComposer (Dashboard)                        │
 │  ┌─────────────────┐  ┌─────────────────────┐  │
-│  │  PXWorkWith     │  │  PXParameterRequest  │  │
-│  │  (lista resumida│  │  (filtros globales)  │  │  ← Embebido
-│  │   de ventas)    │  │  FechaDesde: [    ]  │  │     como
-│  │                 │  │  FechaHasta: [    ]  │  │     WebComponent
-│  │                 │  │  [Aplicar filtro]    │  │
+│  │  PXWorkWith     │  │ PXParameterRequest  │  │
+│  │  (summary list  │  │ (global filters)    │  │  ← Embedded
+│  │   of sales)     │  │  Date from: [    ]  │  │     as a
+│  │                 │  │  Date to:   [    ]  │  │     WebComponent
+│  │                 │  │  [Apply filter]     │  │
 │  └─────────────────┘  └─────────────────────┘  │
 └────────────────────────────────────────────────┘
 ```
 
-PXComposer puede embeber un PXParameterRequest como WebComponent, útil para paneles de filtros en dashboards.
+PXComposer can embed a PXParameterRequest as a WebComponent, which is useful for filter panels on dashboards.
 
-### Mapa completo de relaciones
+### The complete relationship map
 
 ```
-┌──────────────┐         invoca como popup
+┌──────────────┐         invokes it as a popup
 │  PXWorkWith  │ ──────────────────────────────► ┌─────────────────────┐
-│  (acciones)  │                                 │  PXParameterRequest │
+│  (actions)   │                                 │  PXParameterRequest │
 └──────────────┘                                 │                     │
-                                                 │  Captura parámetros │
-┌──────────────┐         invoca como paso        │  y retorna valores  │
+                                                 │  Captures parameters│
+┌──────────────┐         invokes it as a step    │  and returns values │
 │PXFlowContro- │ ──────────────────────────────► │                     │
 │ ller (steps) │                                 └──────────┬──────────┘
 └──────────────┘                                            │
-                                                            │ calls → invoca
-┌──────────────┐         embebe como WebComponent           ▼
+                                                            │ calls → invokes
+┌──────────────┐         embeds it as a WebComponent        ▼
 │  PXComposer  │ ──────────────────────────────► ┌─────────────────────┐
 │  (dashboard) │                                 │  Procedure / Report │
 └──────────────┘                                 │  Transaction / WP   │
                                                  └─────────────────────┘
 ```
 
-## 11. Ejemplos de uso real
+## 11. Real-world usage examples
 
-PXParameterRequest se usa extensivamente, tanto en los propios módulos @PXTools como en las aplicaciones que los integran.
+PXParameterRequest is used extensively, both in the @PXTools modules themselves and in the applications integrating them.
 
-### Ejemplos por categoría
+### Examples by category
 
-#### Formularios de login y seguridad
+#### Login and security forms
 
-| Instancia | Módulo | Behaviour | Descripción |
-|-----------|--------|-----------|-------------|
-| `Login` | @Security | Panel | Formulario de inicio de sesión |
-| `Registration` | @Security | ParameterRequest | Registro de nuevo usuario |
-| `ChangePassword` | @Security | PopupParameterRequest | Cambio de contraseña |
-| `RecoverPassword` | @Security | ParameterRequest | Recuperación de contraseña |
+| Instance | Module | Behaviour | Description |
+|----------|--------|-----------|-------------|
+| `Login` | @Security | Panel | The sign-in form |
+| `Registration` | @Security | ParameterRequest | New user registration |
+| `ChangePassword` | @Security | PopupParameterRequest | Password change |
+| `RecoverPassword` | @Security | ParameterRequest | Password recovery |
 
-#### Diálogos de confirmación
+#### Confirmation dialogs
 
-| Instancia | Módulo | Behaviour | Descripción |
-|-----------|--------|-----------|-------------|
-| `Confirm` | @APIs | PopupParameterRequest | Confirmación genérica "¿Está seguro?" |
-| `ConfirmDelete` | @APIs | PopupParameterRequest | Confirmación de eliminación |
+| Instance | Module | Behaviour | Description |
+|----------|--------|-----------|-------------|
+| `Confirm` | @APIs | PopupParameterRequest | Generic "Are you sure?" confirmation |
+| `ConfirmDelete` | @APIs | PopupParameterRequest | Deletion confirmation |
 
-#### Captura de parámetros para reportes
+#### Capturing report parameters
 
 ```xml
-<!-- Ejemplo: Parámetros para reporte de ventas -->
+<!-- Example: parameters for a sales report -->
 <instance>
-  <level name="VentasPorPeriodo" description="Reporte de ventas por período"
+  <level name="SalesByPeriod" description="Sales report by period"
          generateWeb="true" generateWebResponsive="false">
     <behaviour type="ParameterRequest" returnType="Link" closeOnReturn="true" />
     <form>
       <attributes>
-        <attribute name="FechaDesde" />
-        <attribute name="FechaHasta" />
+        <attribute name="DateFrom" />
+        <attribute name="DateTo" />
       </attributes>
       <variables>
-        <variable name="&Categoria">
+        <variable name="&Category">
           <controlInfo controlType="Combo" />
         </variable>
-        <variable name="&Etiquetas">
+        <variable name="&Tags">
           <controlInfo controlType="Chosen" />
         </variable>
       </variables>
     </form>
     <actions>
-      <action name="Confirm" caption="Generar reporte" />
-      <action name="Cancel" caption="Cancelar" />
+      <action name="Confirm" caption="Generate report" />
+      <action name="Cancel" caption="Cancel" />
     </actions>
     <calls>
-      <call object="RptVentasPorPeriodo" />
+      <call object="RptSalesByPeriod" />
     </calls>
   </level>
 </instance>
 ```
 
-#### Importación de archivos
+#### File import
 
-| Instancia | Módulo | Behaviour | Descripción |
-|-----------|--------|-----------|-------------|
-| `ImportCSV` | @ExportImport | PopupParameterRequest | Selección de archivo CSV para importar |
-| `ImportExcel` | @ExportImport | PopupParameterRequest | Selección de archivo Excel |
+| Instance | Module | Behaviour | Description |
+|----------|--------|-----------|-------------|
+| `ImportCSV` | @ExportImport | PopupParameterRequest | Selecting a CSV file to import |
+| `ImportExcel` | @ExportImport | PopupParameterRequest | Selecting an Excel file |
 
-#### Gestión de tareas y correos
+#### Task and mail management
 
-| Instancia | Módulo | Behaviour | Descripción |
-|-----------|--------|-----------|-------------|
-| `SendMail` | @SendMails | PopupParameterRequest | Formulario para enviar email |
-| `TaskCreate` | @TaskManager | PopupParameterRequest | Creación rápida de tarea |
+| Instance | Module | Behaviour | Description |
+|----------|--------|-----------|-------------|
+| `SendMail` | @SendMails | PopupParameterRequest | The form for sending an email |
+| `TaskCreate` | @TaskManager | PopupParameterRequest | Quick task creation |
 
-### Módulos @PXTools que usan PXParameterRequest
+### @PXTools modules using PXParameterRequest
 
-| Módulo | Cantidad de instancias | Uso principal |
-|--------|----------------------|---------------|
-| @APIs | Varias | Confirmaciones genéricas |
-| @Security | 4+ | Login, registro, cambio/recuperación de contraseña |
-| @SendMails | 1+ | Formulario de envío de email |
-| @TaskManager | 2+ | Creación y edición rápida de tareas |
-| @ExportImport | 2+ | Selección de archivos para importar |
+| Module | Number of instances | Main use |
+|--------|---------------------|----------|
+| @APIs | Several | Generic confirmations |
+| @Security | 4+ | Login, registration, password change/recovery |
+| @SendMails | 1+ | The email sending form |
+| @TaskManager | 2+ | Quick task creation and editing |
+| @ExportImport | 2+ | Selecting files to import |
 
-## 12. Settings del pattern
+## 12. Pattern settings
 
-Los settings globales del pattern se definen en `PXParameterRequestSettings.xml` (56 KB) y configuran valores por defecto para todas las instancias.
+The pattern's global settings are defined in `PXParameterRequestSettings.xml` (56 KB) and configure defaults for every instance.
 
-### Grupos principales de settings
+### Main settings groups
 
-| Grupo | Propósito |
-|-------|-----------|
-| `Context` | Información de contexto (KB, módulo, prefijos) |
-| `Form` | Configuración por defecto del formulario (ancho, alto, estilos) |
-| `Grid` | Configuración por defecto de la grilla opcional |
-| `Help` | Sistema de ayuda contextual |
-| `Images` | Imágenes por defecto para botones y acciones |
-| `Labels` | Textos/etiquetas por defecto (Aceptar, Cancelar, etc.) |
-| `MasterPages` | MasterPages por defecto por plataforma |
-| `PagingButtons` | Configuración de paginación de la grilla |
-| `Prefixes` | Prefijos de nombres de objetos generados |
-| `Security` | Configuración de seguridad (permisos, autenticación) |
-| `StandardActions` | Acciones estándar y sus propiedades por defecto |
-| `Tab` | Configuración de tabs si el formulario tiene tabs |
-| `Template` | Template GeneXus por defecto |
-| `Templates` | Templates de generación de código (DLL/DKT) |
-| `ThemeClasses` | Clases de tema CSS por defecto para cada elemento |
-| `Default Instance` | Instancia por defecto al crear un nuevo PXParameterRequest |
-| `Navigation` | Configuración de navegación (breadcrumbs, menús) |
-| `Objects` | Configuración de objetos generados |
+| Group | Purpose |
+|-------|---------|
+| `Context` | Context information (KB, module, prefixes) |
+| `Form` | The form's defaults (width, height, styles) |
+| `Grid` | Defaults for the optional grid |
+| `Help` | The contextual help system |
+| `Images` | Default images for buttons and actions |
+| `Labels` | Default texts/labels (Accept, Cancel, etc.) |
+| `MasterPages` | Default MasterPages per platform |
+| `PagingButtons` | The grid's paging configuration |
+| `Prefixes` | Name prefixes for the generated objects |
+| `Security` | Security configuration (permissions, authentication) |
+| `StandardActions` | Standard actions and their default properties |
+| `Tab` | Tab configuration when the form has tabs |
+| `Template` | The default GeneXus template |
+| `Templates` | Code generation templates (DLL/DKT) |
+| `ThemeClasses` | Default CSS theme classes for each element |
+| `Default Instance` | The default instance when creating a new PXParameterRequest |
+| `Navigation` | Navigation configuration (breadcrumbs, menus) |
+| `Objects` | Configuration of the generated objects |
 
-## 13. Sistema de acciones
+## 13. The action system
 
-Las acciones de PXParameterRequest comparten la misma estructura que PXWorkWith y PXComposer. La referencia completa del nodo Action (propiedades, callTypes, ConditionalCalls, ciclo de ejecucion, reglas de PXInstance) esta en [12-acciones-patterns-ui.md](12-acciones-patterns-ui.md).
+PXParameterRequest's actions share the same structure as PXWorkWith's and PXComposer's. The complete Action node reference (properties, callTypes, ConditionalCalls, execution cycle, PXInstance rules) is in [12-pattern-ui-actions.md](12-pattern-ui-actions.md).
 
-### Propiedad exclusiva: execute
+### The exclusive property: execute
 
-PXParameterRequest tiene una propiedad exclusiva **`execute`** en las acciones que controla que validaciones se aplican antes de ejecutar. Dado que PXParameterRequest tiene funcion principal de **data entry**, pueden existir condiciones de datos obligatorios definidas en el nodo `conditions` del level que son comunes a muchas acciones:
+PXParameterRequest has an exclusive **`execute`** property on its actions, controlling which validations apply before executing. Since PXParameterRequest's main job is **data entry**, there may be mandatory-data conditions defined in the level's `conditions` node that are shared by many actions:
 
 ```xml
-<!-- Condiciones generales del formulario (datos obligatorios) -->
+<!-- The form's general conditions (mandatory data) -->
 <conditions>
-  <condition>not &FechaDesde.IsEmpty()</condition>
-  <condition>not &ClienteId.IsEmpty()</condition>
+  <condition>not &DateFrom.IsEmpty()</condition>
+  <condition>not &CustomerId.IsEmpty()</condition>
 </conditions>
 ```
 
-| Valor de execute | Comportamiento |
-|------------------|---------------|
-| **General Conditions** | Ejecuta las `conditions` generales del level **y** las condiciones locales de la accion. Para acciones que requieren todos los datos completos (Aceptar, Confirmar) |
-| **Action Conditions Only** | Ejecuta **solo** las condiciones locales de la accion, ignorando las generales. Para acciones que no requieren validacion de todos los campos (Vista previa, Buscar) |
+| execute value | Behaviour |
+|---------------|-----------|
+| **General Conditions** | Runs the level's general `conditions` **and** the action's local ones. For actions requiring all the data to be complete (Accept, Confirm) |
+| **Action Conditions Only** | Runs **only** the action's local conditions, ignoring the general ones. For actions that do not require every field validated (Preview, Search) |
 
-Ejemplo con `execute`:
+An example with `execute`:
 
 ```xml
 <actions>
-  <action name="Confirm" caption="Aceptar"
+  <action name="Confirm" caption="Accept"
           execute="General Conditions"
-          callType="Call" gxObject="GenerarReporte" />
+          callType="Call" gxObject="GenerateReport" />
 
-  <action name="Preview" caption="Vista previa"
+  <action name="Preview" caption="Preview"
           execute="Action Conditions Only"
-          condition="&TipoReporte = 'PDF'"
-          callType="Link" gxObject="PreviewReporte" />
+          condition="&ReportType = 'PDF'"
+          callType="Link" gxObject="PreviewReport" />
 
-  <action name="Cancel" caption="Cancelar" callType="Return" />
+  <action name="Cancel" caption="Cancel" callType="Return" />
 </actions>
 ```
 
-### Estructura del nodo Action (resumen)
+### The Action node's structure (summary)
 
-Cada accion soporta codigo pre/post invocacion:
+Every action supports pre/post invocation code:
 
 ```xml
-<action name="Aceptar"
-        caption="Aceptar"
+<action name="Accept"
+        caption="Accept"
         type="Standard"
         position="Bottom"
-        conditionPreviousCode="// Codigo previo para evaluar condicion"
-        condition="&EsValido = true"
-        actionPreviousCode="// Codigo que se ejecuta ANTES de la invocacion principal"
+        conditionPreviousCode="// Code run before evaluating the condition"
+        condition="&IsValid = true"
+        actionPreviousCode="// Code run BEFORE the main invocation"
         callType="Call"
-        gxObject="MiProcedimiento"
-        actionPostCode="// Codigo que se ejecuta DESPUES de la invocacion principal"
+        gxObject="MyProcedure"
+        actionPostCode="// Code run AFTER the main invocation"
         refreshAction="...">
   <parameters>
     <parameter name="Param1" />
@@ -861,139 +848,139 @@ Cada accion soporta codigo pre/post invocacion:
 </action>
 ```
 
-### Tipos de callType en acciones
+### callType kinds in actions
 
-| callType | Descripcion | Ejemplo de uso |
-|----------|-------------|----------------|
-| `Call` | Invoca un Procedure (sin interfaz) | Procesar, calcular, actualizar registros |
-| `Link` | Navega a otro WebPanel/Transaction | Abrir pantalla de detalle |
-| `External Link` | Abre WebPanel no generado por PXTools | Abrir WebPanel manual |
-| `Prompt` | Abre dialogo modal | Abrir otro PXParameterRequest como popup |
-| `Subroutine` | Ejecuta subrutina local | Logica interna reutilizable |
-| `Event` | Ejecuta codigo inline (sin objeto principal) | Cuando toda la logica es codigo procedural |
-| `Submit` | Somete proceso batch | Ejecutar tarea asincrona |
-| `None` | No ejecuta nada | Placeholder, solo el pre/post code importa |
-| `Return` | Solo retorna/cierra popup | Cancelar, salir |
+| callType | Description | Example use |
+|----------|-------------|-------------|
+| `Call` | Invokes a Procedure (no UI) | Processing, computing, updating records |
+| `Link` | Navigates to another WebPanel/Transaction | Opening a detail screen |
+| `External Link` | Opens a WebPanel not generated by PXTools | Opening a hand-written WebPanel |
+| `Prompt` | Opens a modal dialog | Opening another PXParameterRequest as a popup |
+| `Subroutine` | Runs a local subroutine | Reusable internal logic |
+| `Event` | Runs inline code (no main object) | When all the logic is procedural code |
+| `Submit` | Submits a batch process | Running an asynchronous task |
+| `None` | Does nothing | A placeholder; only the pre/post code matters |
+| `Return` | Only returns/closes the popup | Cancel, exit |
 
-### Regla critica: linkType y migracion Responsive
+### Critical rule: linkType and Responsive migration
 
-Solo las acciones con `callType="Link"` necesitan `linkType="PXInstance"` para ser independientes de la plataforma. Los demas callTypes (`Call`, `Submit`, `Event`, etc.) apuntan a Procedures cuyos nombres no cambian entre Desktop y Responsive.
-
-```
-callType="Link"  + linkType="PXInstance" → CORRECTO (independiente de plataforma)
-callType="Link"  + linkType="GXObject"  → PROBLEMA (se rompe al cambiar de plataforma)
-callType="Call"  + gxObject="MiProc"    → OK (Procedures no cambian de nombre)
-callType="Event" + (codigo inline)      → OK (no depende de nombres externos)
-```
-
-### Ciclo de ejecucion de una accion
+Only actions with `callType="Link"` need `linkType="PXInstance"` to be platform-independent. The other callTypes (`Call`, `Submit`, `Event`, and so on) point at Procedures whose names do not change between Desktop and Responsive.
 
 ```
-1. conditionPreviousCode  → Codigo para preparar evaluacion de condicion
-2. condition              → Si es false, la accion no se ejecuta
-3. actionPreviousCode     → Validaciones, preparacion de datos
-4. [Invocacion principal] → Segun callType (Call/Link/Event/etc.)
-5. actionPostCode         → Logica posterior (actualizar estados, WebSession, etc.)
-6. refreshAction          → Refresco de pantalla/grilla
+callType="Link"  + linkType="PXInstance" → RIGHT (platform-independent)
+callType="Link"  + linkType="GXObject"   → PROBLEM (it breaks when the platform changes)
+callType="Call"  + gxObject="MyProc"     → OK (Procedures do not change name)
+callType="Event" + (inline code)         → OK (it depends on no external names)
 ```
 
-## 14. Alcance real de PXParameterRequest — Guia ampliada para IAs
+### An action's execution cycle
 
-### Principio fundamental
+```
+1. conditionPreviousCode  → Code preparing the condition's evaluation
+2. condition              → If false, the action does not run
+3. actionPreviousCode     → Validations, preparing data
+4. [The main invocation]  → Per callType (Call/Link/Event/etc.)
+5. actionPostCode         → Follow-up logic (updating states, WebSession, etc.)
+6. refreshAction          → Refreshing the screen/grid
+```
 
-**Toda logica de negocio es migrable a hooks.** No importa la cantidad de subrutinas, For Each, validaciones, uso de WebSession, SDTs, o llamadas a Procedures. PXParameterRequest provee hooks en todos los puntos del ciclo de vida del WebPanel:
+## 14. PXParameterRequest's real reach — an extended guide for AIs
 
-| Codigo original | Hook destino |
-|-----------------|-------------|
+### The fundamental principle
+
+**All business logic can be migrated into hooks.** It does not matter how many subroutines, For Each loops, validations, WebSession uses, SDTs or Procedure calls there are. PXParameterRequest provides hooks at every point of the WebPanel's life cycle:
+
+| Original code | Target hook |
+|---------------|-------------|
 | Event Start | `codes/Start` |
-| Sub 'MiSubrutina' | `codes/Subroutine` |
+| Sub 'MySubroutine' | `codes/Subroutine` |
 | Event Refresh | `codes/Refresh` |
-| Event Load (grilla) | `codes/Load` |
-| Event 'Aceptar' (validaciones) | Action `actionPreviousCode` |
-| Event 'Aceptar' (invocacion principal) | Action `callType` + `gxObject` |
-| Event 'Aceptar' (logica post) | Action `actionPostCode` |
-| Event 'MiEvento' custom | `events/event` |
+| Event Load (grid) | `codes/Load` |
+| Event 'Accept' (validations) | The action's `actionPreviousCode` |
+| Event 'Accept' (main invocation) | The action's `callType` + `gxObject` |
+| Event 'Accept' (post logic) | The action's `actionPostCode` |
+| A custom Event 'MyEvent' | `events/event` |
 
-### Catalogo ampliado de casos de uso
+### An extended catalogue of use cases
 
-Basado en el análisis de cientos de WebPanels manuales de aplicaciones reales (nombres de objeto **ilustrativos**, siguiendo la convención de naming):
+Based on analysing hundreds of hand-written WebPanels from real applications (object names are **illustrative**, following the naming convention):
 
-| Caso de uso | behaviour | Elementos clave | Ejemplo (ilustrativo) |
-|-------------|-----------|-----------------|--------------|
-| **Confirmacion simple** | PopupParameterRequest | Mensaje + Aceptar/Cancelar | `ConfirmChange`, `ConfirmDeleteCategory` |
-| **Confirmacion con causal** | PopupParameterRequest | Mensaje + campo texto + validacion min 10 chars | `ConfirmCancelWithReason` |
-| **Activar/Inactivar entidad** | PopupParameterRequest | Start evalua estado, Aceptar llama proc toggle | `ConfirmToggleCustomer`, `ConfirmToggleCity` |
-| **Activar/Inactivar con validacion arbol** | PopupParameterRequest | Start recorre jerarquia padre/hijos, valida dependencias | `ConfirmToggleNode`, `ConfirmToggleCategory` |
-| **Borrar con validaciones** | PopupParameterRequest | Start verifica dependencias, oculta Aceptar si hay | `ConfirmDeleteEntity` |
-| **Seleccion simple con grilla** | PopupParameterRequest | Grid + filtros + Enter retorna valor | `SelCustomers`, `SelProducts` |
-| **Seleccion con creacion de registros** | PopupParameterRequest | Grid + seleccion + crea registro temporal via proc | `SelWithCreateOrder`, `SelWithCreateItem` |
-| **Seleccion con validacion compleja** | PopupParameterRequest | Grid + Load con lógica condicional por configuración | `SelTypeByContext` |
-| **Seleccion con checkbox multi-fila** | PopupParameterRequest | Grid con boolean por fila + valor editable | `SelMultiRowItems` |
-| **Seleccion con creacion inline** | PopupParameterRequest | Grid + form mini para crear nuevo registro | `SelWithInlineCreate` |
-| **Anulacion de proceso** | PopupParameterRequest | Observacion + validacion estado + proc de anulacion | `CancelProcess`, `CancelDocument` |
-| **Reversa de registro** | PopupParameterRequest | Start valida, Aceptar reversa + registros relacionados | `ConfirmReverseEntity` |
-| **Captura de parametros para reporte** | ParameterRequest | Form con fechas/filtros + calls a reporte | `PXReportParameters` |
-| **Generacion de archivos** | PopupParameterRequest | Form + callType Event + genera TXT/Excel | `ExportRecordsFile` |
-| **Carga/Upload de archivos** | PopupParameterRequest | Form con controlType File + validacion extension | `UploadAttachment`, `UploadSignature`, `UploadLogo` |
-| **Edicion de campo unico** | PopupParameterRequest | Form con un campo editable + Confirmar | `EditFieldName` |
-| **Visor de errores con grilla** | PopupParameterRequest | Grid readonly cargada desde SDT/WebSession | `ErrorViewer`, `ImportErrorViewer` |
-| **Visor readonly de datos** | Panel o None | Solo display, Salir | `ViewEntityDetail`, `ViewConcepts` |
-| **Ajuste/calculo con form** | PopupParameterRequest | Form con inputs + logica de calculo + proc | `AdjustEntity` |
-| **Asignacion con validacion de numeracion** | PopupParameterRequest | Start valida numeración, Aceptar asigna + registra | `AssignEntity` |
-| **CRUD de detalle** | PopupParameterRequest | Form INS/UPD/DSP con imagen, fechas, validaciones | `CreateEditDetail` |
-| **Ejecucion one-shot** | Panel | Un solo boton que dispara un proceso | EjecucionPagos |
+| Use case | behaviour | Key elements | Example (illustrative) |
+|----------|-----------|--------------|------------------------|
+| **Simple confirmation** | PopupParameterRequest | A message + Accept/Cancel | `ConfirmChange`, `ConfirmDeleteCategory` |
+| **Confirmation with a reason** | PopupParameterRequest | Message + text field + a min-10-chars validation | `ConfirmCancelWithReason` |
+| **Activate/deactivate an entity** | PopupParameterRequest | Start evaluates the state, Accept calls a toggle procedure | `ConfirmToggleCustomer`, `ConfirmToggleCity` |
+| **Activate/deactivate with tree validation** | PopupParameterRequest | Start walks the parent/child hierarchy, validating dependencies | `ConfirmToggleNode`, `ConfirmToggleCategory` |
+| **Delete with validations** | PopupParameterRequest | Start checks dependencies, hides Accept when there are any | `ConfirmDeleteEntity` |
+| **Simple selection with a grid** | PopupParameterRequest | Grid + filters + Enter returns the value | `SelCustomers`, `SelProducts` |
+| **Selection that creates records** | PopupParameterRequest | Grid + selection + creates a temporary record through a procedure | `SelWithCreateOrder`, `SelWithCreateItem` |
+| **Selection with complex validation** | PopupParameterRequest | Grid + Load with per-configuration conditional logic | `SelTypeByContext` |
+| **Selection with multi-row checkboxes** | PopupParameterRequest | Grid with a per-row boolean + an editable value | `SelMultiRowItems` |
+| **Selection with inline creation** | PopupParameterRequest | Grid + a mini form to create a new record | `SelWithInlineCreate` |
+| **Cancelling a process** | PopupParameterRequest | A note + state validation + the cancellation procedure | `CancelProcess`, `CancelDocument` |
+| **Reversing a record** | PopupParameterRequest | Start validates, Accept reverses it plus the related records | `ConfirmReverseEntity` |
+| **Capturing report parameters** | ParameterRequest | A form with dates/filters + calls to the report | `PXReportParameters` |
+| **Generating files** | PopupParameterRequest | A form + callType Event + generates TXT/Excel | `ExportRecordsFile` |
+| **Uploading files** | PopupParameterRequest | A form with controlType File + extension validation | `UploadAttachment`, `UploadSignature`, `UploadLogo` |
+| **Editing a single field** | PopupParameterRequest | A form with one editable field + Confirm | `EditFieldName` |
+| **Error viewer with a grid** | PopupParameterRequest | A read-only grid loaded from an SDT/WebSession | `ErrorViewer`, `ImportErrorViewer` |
+| **Read-only data viewer** | Panel or None | Display only, Exit | `ViewEntityDetail`, `ViewConcepts` |
+| **Adjustment/computation with a form** | PopupParameterRequest | A form with inputs + computation logic + a procedure | `AdjustEntity` |
+| **Assignment with numbering validation** | PopupParameterRequest | Start validates the numbering, Accept assigns and records | `AssignEntity` |
+| **Detail CRUD** | PopupParameterRequest | An INS/UPD/DSP form with an image, dates and validations | `CreateEditDetail` |
+| **One-shot execution** | Panel | A single button firing a process | PaymentRun |
 
-### Errores comunes de clasificacion por IAs
+### Common classification mistakes by AIs
 
-**NO marcar como "Manual" un WebPanel solo porque:**
+**Do NOT mark a WebPanel as "Manual" merely because:**
 
-1. **Tiene mucha logica en Start/Aceptar** → Toda va en hooks (`codes/Start`, `actionPreviousCode`, `actionPostCode`)
-2. **Usa WebSession** → WebSession es mecanismo estandar de comunicacion entre pantallas, no impide migracion
-3. **Tiene muchas subrutinas** → Todas van en `codes/Subroutine`
-4. **Crea/modifica registros** → La accion puede usar `callType="Call"` o `callType="Event"`
-5. **Tiene grilla con Load complejo** → La grilla es un nodo opcional con su propio hook Load
-6. **Oculta/muestra controles en Start** → Logica estandar en hook Start
-7. **Usa SDTs para pasar datos** → Totalmente soportado en variables y hooks
-8. **Tiene validaciones complejas** → Van en `actionPreviousCode` o `conditionPreviousCode`
+1. **It has a lot of logic in Start/Accept** → all of it goes into hooks (`codes/Start`, `actionPreviousCode`, `actionPostCode`)
+2. **It uses WebSession** → WebSession is the standard mechanism for communicating between screens; it does not prevent migration
+3. **It has many subroutines** → they all go into `codes/Subroutine`
+4. **It creates/modifies records** → the action can use `callType="Call"` or `callType="Event"`
+5. **It has a grid with a complex Load** → the grid is an optional node with its own Load hook
+6. **It hides/shows controls in Start** → standard logic in the Start hook
+7. **It uses SDTs to pass data** → fully supported in variables and hooks
+8. **It has complex validations** → they go into `actionPreviousCode` or `conditionPreviousCode`
 
-**SI marcar como "Manual" solo cuando:**
+**DO mark it "Manual" only when:**
 
-1. Es una **pantalla de Login** (flujo de autenticacion custom, IsMain=True, sin MasterPage)
-2. Es una **utilidad de testing/ejemplo** (no es funcionalidad de produccion)
-3. Depende de un **framework externo** (Scheduler, controles de terceros especificos)
-4. Es un **redirect automatico** sin interaccion de usuario
+1. It is a **Login screen** (a custom authentication flow, IsMain=True, no MasterPage)
+2. It is a **testing/example utility** (not production functionality)
+3. It depends on an **external framework** (a Scheduler, specific third-party controls)
+4. It is an **automatic redirect** with no user interaction
 
-## Resumen rapido para IA
+## A quick summary for an AI
 
 ```
-PXParameterRequest = Formulario modal/popup/panel para CUALQUIER interaccion
-                     que no sea un CRUD maestro-detalle (eso es PXWorkWith)
+PXParameterRequest = a modal/popup/panel form for ANY interaction
+                     that is not master-detail CRUD (that is PXWorkWith)
 
-CUANDO USAR:
-  - Captura de datos antes de ejecutar algo → ParameterRequest
-  - Popup de confirmacion (simple o complejo) → PopupParameterRequest
-  - Formulario flotante → FloatingParameterRequest
-  - Embeber en otro panel → None o Panel
-  - Visor readonly de datos → Panel o None (sin acciones de modificacion)
-  - Seleccion con grilla (popup) → PopupParameterRequest + grid node
-  - Carga/upload de archivos → PopupParameterRequest + controlType File
-  - Generacion de archivos/reportes → ParameterRequest + callType Event
-  - Ejecucion de proceso one-shot → Panel + un Action con callType Call/Event
+WHEN TO USE IT:
+  - Capturing data before running something → ParameterRequest
+  - A confirmation popup (simple or complex) → PopupParameterRequest
+  - A floating form → FloatingParameterRequest
+  - Embedding it in another panel → None or Panel
+  - A read-only data viewer → Panel or None (no modification actions)
+  - Selection with a grid (popup) → PopupParameterRequest + a grid node
+  - Uploading files → PopupParameterRequest + controlType File
+  - Generating files/reports → ParameterRequest + callType Event
+  - Running a one-shot process → Panel + one Action with callType Call/Event
 
-TODA LA LOGICA VA EN HOOKS:
+ALL THE LOGIC GOES IN HOOKS:
   - Start → codes/Start
-  - Subrutinas → codes/Subroutine
+  - Subroutines → codes/Subroutine
   - Refresh → codes/Refresh
-  - Load (grilla) → codes/Load
-  - Boton Aceptar → Action (actionPreviousCode + callType + actionPostCode)
-  - Eventos custom → events/event
+  - Load (the grid) → codes/Load
+  - The Accept button → an Action (actionPreviousCode + callType + actionPostCode)
+  - Custom events → events/event
 
-QUE GENERA:
-  - 1 WebPanel (mismo nombre Desktop y Responsive)
-  - 3 objetos extra por cada control Chosen
+WHAT IT GENERATES:
+  - 1 WebPanel (the same name on Desktop and Responsive)
+  - 3 extra objects per Chosen control
 
-SE INTEGRA CON:
-  - PXWorkWith → acciones abren PXParameterRequest como popup
-  - PXFlowController → pasos del flujo usan PXParameterRequest
-  - PXComposer → embebe PXParameterRequest como WebComponent
+IT INTEGRATES WITH:
+  - PXWorkWith → its actions open a PXParameterRequest as a popup
+  - PXFlowController → the flow's steps use PXParameterRequest
+  - PXComposer → it embeds PXParameterRequest as a WebComponent
 ```
