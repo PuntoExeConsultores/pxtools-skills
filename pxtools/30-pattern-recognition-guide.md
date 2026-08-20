@@ -1,426 +1,426 @@
-# Guía de Reconocimiento de Patterns en WebPanels Existentes
+# Guide to Recognising Patterns in Existing WebPanels
 
-## Propósito
+## Purpose
 
-Esta guía permite a una IA analizar **WebPanels desarrollados a mano** (sin patterns) y determinar **a qué pattern (o combinación de patterns) de PXTools** se podría migrar cada uno.
+This guide lets an AI analyse **hand-written WebPanels** (built without patterns) and decide **which PXTools pattern (or combination of patterns)** each of them could be migrated to.
 
-## Metodología de análisis
+## Analysis method
 
-Para cada WebPanel, analizar:
-1. **Estructura del layout** (grillas, formularios, tabs, popups)
-2. **Comportamiento** (CRUD, consulta, flujo, composición)
-3. **Relación con transacciones** (tabla base, navegación)
-4. **Acciones disponibles** (botones, links, exports)
-5. **Parámetros de entrada/salida**
+For each WebPanel, analyse:
+1. **Layout structure** (grids, forms, tabs, popups)
+2. **Behaviour** (CRUD, query, flow, composition)
+3. **Relationship with transactions** (base table, navigation)
+4. **Available actions** (buttons, links, exports)
+5. **Input/output parameters**
 
-> **Importante sobre grids**: la sola presencia de un grid no implica PXWorkWith. Hay grids "fantasma" usados solo para perdurar variables SDT (legacy GeneXus Evo1) que deben ignorarse al clasificar. Ver [13-semantica-grids-webpanels.md](13-semantica-grids-webpanels.md) para el detalle de cómo identificar grids reales vs fantasma, multiples grids, y For Each Line.
+> **Important about grids**: the mere presence of a grid does not imply PXWorkWith. There are "phantom" grids used only to persist SDT variables (legacy GeneXus Evo1) that must be ignored when classifying. See [13-grid-webpanel-semantics.md](13-grid-webpanel-semantics.md) for the detail of how to tell real grids from phantoms, multiple grids, and For Each Line.
 
 ---
 
-## Señales de reconocimiento por pattern
+## Recognition signals per pattern
 
-### PXWorkWith — CRUD Maestro-Detalle
+### PXWorkWith — Master-Detail CRUD
 
-PXWorkWith genera tres tipos de pantalla: **Selection**, **View** y **Prompt**. Es fundamental distinguir Selection de Prompt porque ambos tienen grilla pero su propósito es diferente.
+PXWorkWith generates three kinds of screen: **Selection**, **View** and **Prompt**. Telling Selection from Prompt is essential because both have a grid but their purpose differs.
 
 #### PXWorkWith Selection
 
-Pantalla principal de listado CRUD. El usuario navega, filtra, y ejecuta acciones sobre registros.
+The main CRUD listing screen. The user browses, filters, and runs actions on records.
 
-**Señales en el Form (.gxForm):**
-- Grilla principal con datos
-- Botón/imagen de búsqueda
-- MaxRows en la grilla (paginación)
-- Acciones CRUD (Insert, Update, Delete, Display)
+**Signals in the Form (.gxForm):**
+- A main data grid
+- A search button/image
+- MaxRows on the grid (paging)
+- CRUD actions (Insert, Update, Delete, Display)
 
-**Señales en el Source (.gxSource):**
-- No tiene parámetros `out:` en Parm (no retorna valores al llamador)
-- Acciones con Link a Transaction para Insert/Update
-- Puede tener Delete con confirmación
-- Titulo descriptivo del listado (ej: "Facturas", "Comprobantes")
+**Signals in the Source (.gxSource):**
+- No `out:` parameters in Parm (it returns no values to the caller)
+- Actions with a Link to a Transaction for Insert/Update
+- It may have a Delete with confirmation
+- A title describing the listing (e.g. "Invoices", "Documents")
 
-**Señales en el código:**
+**Signals in the code:**
 ```
-// Señal: For each sobre la tabla base de una transacción
+// Signal: a For each over a transaction's base table
 For each
-    where <filtros>
-    order <atributos>
-    // Carga grilla
+    where <filters>
+    order <attributes>
+    // Loads the grid
 EndFor
 
-// Señal: Link a transacción con modo Insert/Update
-Link(TrnFactura, FacturaId)
+// Signal: a Link to a transaction with Insert/Update mode
+Link(TrnInvoice, InvoiceId)
 ```
 
 #### PXWorkWith Prompt
 
-Popup de búsqueda/lookup que el usuario abre para **seleccionar un registro y retornar valores** al llamador. Es un selector de registros, no un data entry.
+A search/lookup popup the user opens to **select a record and return values** to the caller. It is a record selector, not a data entry.
 
-**Señales en el Form (.gxForm):**
-- Grilla con datos (igual que Selection)
-- Botón/imagen de búsqueda
-- `MaxRows` en la grilla (paginación) — descarta que sea grilla auxiliar de PXParameterRequest
-- Una columna con `eventGX="Enter"` o imagen de selección por fila
+**Signals in the Form (.gxForm):**
+- A data grid (same as Selection)
+- A search button/image
+- `MaxRows` on the grid (paging) — this rules out an auxiliary PXParameterRequest grid
+- A column with `eventGX="Enter"`, or a per-row selection image
 
-**Señales en el Source (.gxSource):**
-- `Parm` con parámetros `out:` — **indicador definitivo** de que retorna valores al llamador
-- Event Enter que carga variables Out y hace `Return`
-- Titulo como "Seleccionar \<Entidad\>" — indica selector de registros
-- No tiene acciones CRUD (no Insert, no Update, no Delete)
+**Signals in the Source (.gxSource):**
+- A `Parm` with `out:` parameters — **the definitive indicator** that it returns values to the caller
+- An Enter event that loads the Out variables and does a `Return`
+- A title like "Select \<Entity\>" — it is a record selector
+- No CRUD actions (no Insert, no Update, no Delete)
 
-**Señales en el código:**
+**Signals in the code:**
 ```
-// Señal DEFINITIVA de Prompt: Parm con out
-Parm(in:&EmpCod, out:&BanCod, out:&BanDes);
+// DEFINITIVE Prompt signal: a Parm with out
+Parm(in:&CompanyCode, out:&BankCode, out:&BankName);
 
-// Señal DEFINITIVA: Event Enter carga Out y retorna
+// DEFINITIVE signal: an Enter event loading Out and returning
 Event Enter
-    &BanCod = BanCod
-    &BanDes = BanDes
+    &BankCode = BankCode
+    &BankName = BankName
     Return
 EndEvent
 ```
 
-#### PXWorkWith Prompt — Caso especial: grilla cargada desde SDT/WebSession
+#### PXWorkWith Prompt — special case: a grid loaded from an SDT/WebSession
 
-Un Prompt puede tener su grilla cargada **manualmente** con `Grid.Load` a partir de un SDT o de datos en WebSession, en vez de leer directamente de una tabla base. Esto es muy frecuente en selectores filtrados por contexto previo (por funcionario, por almacén, por tercero, por lote, etc.) y en selectores multi-fila donde el llamador deja datos en WebSession antes de invocar al popup.
+A Prompt may have its grid loaded **manually** with `Grid.Load` from an SDT or from data in WebSession, instead of reading a base table directly. This is very common in selectors filtered by prior context (by employee, by warehouse, by third party, by batch, and so on) and in multi-row selectors where the caller leaves data in WebSession before invoking the popup.
 
-**No confundir con grilla auxiliar de PXParameterRequest.** Sigue siendo Prompt si:
-- El elemento principal del WebPanel es la grilla (no un formulario tabular de campos editables)
-- El propósito es **seleccionar uno o varios registros y retornar al llamador**
-- La grilla puede tener `Rows`/`MaxRows` y filtros, aunque sus datos vengan de SDT/WebSession
-- El título suele ser "Seleccionar...", "Elegir...", "Lista de..."
+**Do not confuse it with an auxiliary PXParameterRequest grid.** It is still a Prompt when:
+- The WebPanel's main element is the grid (not a tabular form of editable fields)
+- The purpose is to **select one or more records and return to the caller**
+- The grid may have `Rows`/`MaxRows` and filters, even though its data comes from an SDT/WebSession
+- The title is usually "Select…", "Choose…", "List of…"
 
-**Señales en el código:**
+**Signals in the code:**
 ```
-// Señal: carga manual del grid desde SDT/WebSession
-&SDTBajas.FromJson(&WebSession.Get("BajasAF"))
-For &i = 1 to &SDTBajas.Count
+// Signal: the grid is loaded manually from an SDT/WebSession
+&SDTItems.FromJson(&WebSession.Get("Items"))
+For &i = 1 to &SDTItems.Count
     Grid1.Load
 EndFor
 
-// Señal: marcar fila(s) y retornar via WebSession (ver caso "Prompt sin Parm out")
-Event 'Aceptar'
-    &WebSession.Set("BajasAF", &SDTBajas.ToJson())
+// Signal: flag the row(s) and return through WebSession (see the "Prompt with no Parm out" case)
+Event 'Accept'
+    &WebSession.Set("Items", &SDTItems.ToJson())
     &Window.Close()
 EndEvent
 ```
 
-#### PXWorkWith Prompt — Caso especial: retorno por WebSession (sin Parm out)
+#### PXWorkWith Prompt — special case: returning through WebSession (no Parm out)
 
-En KBs legacy (especialmente migradas desde Evolution 1) es común que un Prompt **no use `Parm` con `out:`** y en su lugar deje el resultado de la selección en **WebSession**, para que el llamador lo lea al refrescarse cuando el popup se cierra. Esto es típico en selectores invocados con `target=New` (popup) que terminan con `&Window.Close()` o cierre del form.
+In legacy KBs (especially ones migrated from Evolution 1) it is common for a Prompt **not to use `Parm` with `out:`** and instead leave the selection's result in **WebSession**, for the caller to read when it refreshes as the popup closes. This is typical of selectors invoked with `target=New` (popup) that end with `&Window.Close()` or by closing the form.
 
-**Sigue siendo PXWorkWith Prompt** — el origen del retorno (Parm out vs WebSession) NO determina el pattern; lo que importa es el **propósito**: el WebPanel sirve para que el usuario elija un registro (o varios) y vuelva al llamador con esa elección.
+**It is still a PXWorkWith Prompt** — where the return travels (Parm out vs WebSession) does NOT determine the pattern; what matters is the **purpose**: the WebPanel exists so the user can pick a record (or several) and come back to the caller with that choice.
 
-**Señales:**
-- Invocado con `target=New` desde otro WebPanel (popup)
-- No tiene `Parm` con `out:`, o no tiene `Parm` en absoluto
-- Tiene grilla principal con registros (de tabla base, SDT o WebSession)
-- Acción "Aceptar"/"Seleccionar" que guarda en WebSession y hace `&Window.Close()` o cierra el form
-- El llamador lee la WebSession en su Refresh/Start
+**Signals:**
+- Invoked with `target=New` from another WebPanel (a popup)
+- It has no `Parm` with `out:`, or no `Parm` at all
+- It has a main grid of records (from a base table, an SDT or WebSession)
+- An "Accept"/"Select" action storing into WebSession and calling `&Window.Close()`, or closing the form
+- The caller reads WebSession in its Refresh/Start
 
-**Migrar como Prompt** con la lógica de "guardar selección en WebSession" en `actionPostCode` de la acción de selección.
+**Migrate it as a Prompt**, with the "store the selection in WebSession" logic in the selection action's `actionPostCode`.
 
-#### Heurísticas de naming (referencia secundaria)
+#### Naming heuristics (a secondary reference)
 
-Como **señal de apoyo** (nunca decisiva por sí sola), los prefijos comunes en KBs GeneXus suelen indicar:
+As a **supporting signal** (never decisive on its own), the common prefixes in GeneXus KBs usually indicate:
 
-| Prefijo | Pattern probable |
-|---------|------------------|
+| Prefix | Likely pattern |
+|--------|----------------|
 | `Sel*`, `prmt*`, `Prompt*`, `Gx00*` | PXWorkWith Prompt |
-| `Con*`, `Vis*`, `Ver*` | PXWorkWith Selection (visor readonly) |
+| `Con*`, `Vis*`, `Ver*` | PXWorkWith Selection (read-only viewer) |
 | `Reg*`, `New*`, `Mod*`, `Cam*`, `Ins*` | PXParameterRequest |
 | `WW*`, `WB*`, `Wrk*` | PXWorkWith Selection (CRUD) |
 
-**Importante**: estos paneles fueron desarrollados a mano, por lo que puede haber **incoherencias en la nomenclatura**. La heurística por prefijo solo sirve para **confirmar** una clasificación obtenida del análisis del Form/Source, nunca para reemplazarla. Y existen excepciones explícitas: por ejemplo `SelRanRep*` ("Seleccionar Rango para Reporte") es un PXParameterRequest porque captura parámetros (fechas), no un registro.
+**Important**: these panels were hand-written, so the naming may well be **inconsistent**. The prefix heuristic only serves to **confirm** a classification obtained by analysing the Form/Source, never to replace it. And there are explicit exceptions: `SelRanRep*` ("Select Range for Report"), for instance, is a PXParameterRequest because it captures parameters (dates), not a record.
 
-**Diferencia clave Selection vs Prompt:**
+**The key Selection vs Prompt difference:**
 
-| Criterio | Selection | Prompt |
-|----------|-----------|--------|
-| Parm con `out:` | NO | **SI** |
-| Event Enter que retorna valores | NO | **SI** |
-| Acciones CRUD (Insert/Update/Delete) | SI | NO |
-| Titulo | Descriptivo del listado | "Seleccionar..." |
-| Propósito | Navegar y operar sobre datos | Elegir un registro y retornar |
+| Criterion | Selection | Prompt |
+|-----------|-----------|--------|
+| Parm with `out:` | NO | **YES** |
+| An Enter event returning values | NO | **YES** |
+| CRUD actions (Insert/Update/Delete) | YES | NO |
+| Title | Describes the listing | "Select…" |
+| Purpose | Browse and operate on data | Pick a record and return |
 
-#### Nodos PXWorkWith correspondientes
+#### The matching PXWorkWith nodes
 
-| Lo que se ve en el WebPanel | Nodo PXWorkWith |
-|----------------------------|-----------------|
-| Grilla con registros (Selection) | `selection/grid` |
-| Grilla con registros (Prompt) | `prompt/grid` |
-| Campo de búsqueda rápida | `filter/search` |
-| Filtros avanzados (combos, rangos) | `filter/advancedSearch` |
-| Condiciones fijas (WHERE) | `filter/conditions` |
-| Ordenamientos | `orders` |
-| Botón "Nuevo" | `selection/actions` (Insert) |
-| Botón "Editar" en grilla | `selection/actions` (Update) |
-| Botón "Eliminar" | `selection/actions` (Delete) |
-| Botón "Exportar Excel" | `selection/modes/exportExcel` |
-| Pantalla de detalle con tabs | `view` + `view/sections` |
-| Tab con datos tabulares | `view/sections/section[@type='Tabular']` |
-| Tab con sub-grilla | `view/sections/section[@type='Grid']` |
+| What you see in the WebPanel | PXWorkWith node |
+|------------------------------|-----------------|
+| A grid of records (Selection) | `selection/grid` |
+| A grid of records (Prompt) | `prompt/grid` |
+| A quick search field | `filter/search` |
+| Advanced filters (combos, ranges) | `filter/advancedSearch` |
+| Fixed conditions (WHERE) | `filter/conditions` |
+| Orderings | `orders` |
+| A "New" button | `selection/actions` (Insert) |
+| An "Edit" button in the grid | `selection/actions` (Update) |
+| A "Delete" button | `selection/actions` (Delete) |
+| An "Export to Excel" button | `selection/modes/exportExcel` |
+| A detail screen with tabs | `view` + `view/sections` |
+| A tab with tabular data | `view/sections/section[@type='Tabular']` |
+| A tab with a sub-grid | `view/sections/section[@type='Grid']` |
 
-**Migrable como PXWorkWith si:**
-- [x] Tiene grilla con datos de transacción
-- [x] Tiene filtros/búsqueda
-- [x] Si tiene Parm out + Enter que retorna → **Prompt**
-- [x] Si tiene acciones CRUD → **Selection**
-- [x] Si tiene grilla readonly (variables/campos no editables) + acción de navegación por fila → **Selection** (visor de datos con detalle)
+**Migratable as PXWorkWith when:**
+- [x] It has a grid with transaction data
+- [x] It has filters/search
+- [x] If it has a Parm out + an Enter that returns → **Prompt**
+- [x] If it has CRUD actions → **Selection**
+- [x] If it has a read-only grid (non-editable variables/fields) + a per-row navigation action → **Selection** (a data viewer with a detail)
 
-#### PXWorkWith Selection — Caso especial: Visor readonly con grilla
+#### PXWorkWith Selection — special case: a read-only viewer with a grid
 
-Un WebPanel con grilla de **solo lectura** (todos los campos readonly/display) también es un PXWorkWith Selection, no un PXParameterRequest. La clave es que el elemento principal es una **grilla con registros**, no un formulario de data entry.
+A WebPanel with a **read-only** grid (all fields readonly/display) is also a PXWorkWith Selection, not a PXParameterRequest. The key is that its main element is a **grid of records**, not a data entry form.
 
-**Señales definitivas de Selection readonly:**
-- Grilla principal con `Rows` o `MaxRows` (paginación)
-- Todos los campos/variables de la grilla son **readonly** (no editables por el usuario)
-- Puede tener datos tabulares arriba de la grilla (encabezado) también **readonly**
-- Acción por fila para navegar a detalle (ej: `Ver_Registro`, `Ver_Detalle`)
-- Solo `Parm` con `In:` (no retorna valores, solo consulta)
-- Botón Salir/Cerrar como única acción global
-- Los datos pueden venir de tabla base (con `#Conditions`) o de SDT/WebSession (con `Grid.Load` manual)
+**Definitive signals of a read-only Selection:**
+- A main grid with `Rows` or `MaxRows` (paging)
+- Every field/variable in the grid is **readonly** (the user cannot edit them)
+- It may have tabular data above the grid (a header), also **readonly**
+- A per-row action navigating to a detail (e.g. `View_Record`, `View_Detail`)
+- Only `Parm` with `In:` (it returns nothing, it only queries)
+- An Exit/Close button as the only global action
+- The data may come from a base table (with `#Conditions`) or from an SDT/WebSession (with a manual `Grid.Load`)
 
-**Señales en el código:**
+**Signals in the code:**
 ```
-// Señal: Grilla paginada
+// Signal: a paged grid
 Grid1.Rows = 10
 
-// Señal: Datos tabulares readonly (encabezado del registro)
+// Signal: read-only tabular data (the record's header)
 &CustomerName = CustomerName
 &ItemLabel = CategoryCode.Trim() + " - " + ItemCode.Trim()
 &Status = "Pending"
 
-// Señal: Acción de navegación por fila (ver detalle)
-Event 'Ver_Detalle'
+// Signal: a per-row navigation action (view the detail)
+Event 'View_Detail'
     &Window.Url = Link(TrnDetail, TrnMode.Display, ...)
     &Window.Open()
 EndEvent
 
-// Señal: Solo Salir como acción global
-Event 'Salir'
+// Signal: Exit as the only global action
+Event 'Exit'
     Return
 EndEvent
 ```
 
-**Diferencia clave con PXParameterRequest:**
-- PXParameterRequest es un **data entry** — el usuario ingresa/edita datos en campos
-- Selection readonly es un **visor** — el usuario solo ve datos y puede navegar a detalle
-- Si todos los campos son readonly → NO es data entry → es Selection
+**The key difference from PXParameterRequest:**
+- PXParameterRequest is a **data entry** — the user enters/edits data in fields
+- A read-only Selection is a **viewer** — the user only looks at data and can navigate to a detail
+- If every field is readonly → it is NOT data entry → it is a Selection
 
 ---
 
-### PXParameterRequest — Formulario de Parámetros
+### PXParameterRequest — Parameter Form
 
-PXParameterRequest es un **data entry tabular** (formulario), NO una pantalla de búsqueda con grilla.
+PXParameterRequest is a **tabular data entry** (a form), NOT a search screen with a grid.
 
-**Señales principales:**
-- WebPanel con formulario tabular de campos (NO grilla principal)
-- Botones de Aceptar/Cancelar (o Confirmar/Salir)
-- Captura parámetros del usuario o muestra información para confirmar
-- Puede tener una grilla **auxiliar** dentro del formulario (pero la grilla NO es el elemento principal)
+**Main signals:**
+- A WebPanel with a tabular form of fields (NOT a main grid)
+- Accept/Cancel (or Confirm/Exit) buttons
+- It captures parameters from the user, or shows information to be confirmed
+- It may have an **auxiliary** grid inside the form (but the grid is not the main element)
 
-**Cómo distinguir de PXWorkWith Prompt:**
+**How to tell it apart from a PXWorkWith Prompt:**
 
-| Criterio | PXParameterRequest | PXWorkWith Prompt |
-|----------|-------------------|-------------------|
-| Elemento principal | Formulario tabular (campos) | **Grilla con registros** |
-| Grilla | No tiene, o grilla auxiliar pequeña | **Grilla principal con MaxRows y paginación** |
-| Botón de búsqueda | No (o busca dentro de grilla auxiliar) | **Sí, busca registros en la grilla principal** |
-| Parm out | Puede tener (retorna datos capturados) | **Siempre tiene** (retorna registro seleccionado) |
-| Event Enter en grilla | No aplica | **Sí, carga out vars y retorna** |
-| Titulo | "Confirmar...", "Ingresar...", "Anular..." | **"Seleccionar..."** |
-| Propósito | Capturar datos / confirmar acción | **Buscar y elegir un registro** |
+| Criterion | PXParameterRequest | PXWorkWith Prompt |
+|-----------|--------------------|-------------------|
+| Main element | A tabular form (fields) | **A grid of records** |
+| Grid | None, or a small auxiliary one | **A main grid with MaxRows and paging** |
+| Search button | No (or it searches inside the auxiliary grid) | **Yes, it searches records in the main grid** |
+| Parm out | It may have one (returning captured data) | **It always has one** (returning the selected record) |
+| Enter event on the grid | Not applicable | **Yes, it loads the out vars and returns** |
+| Title | "Confirm…", "Enter…", "Cancel…" | **"Select…"** |
+| Purpose | Capture data / confirm an action | **Search for and pick a record** |
 
-**Señales en el código:**
+**Signals in the code:**
 ```
-// Señal de PXParameterRequest: Aceptar/Cancelar con lógica de negocio
-Event 'Aceptar'
-    // Validaciones
-    If &Campo.IsEmpty()
-        msg("Campo requerido")
+// PXParameterRequest signal: Accept/Cancel carrying business logic
+Event 'Accept'
+    // Validations
+    If &Field.IsEmpty()
+        msg("Field required")
         Return
     EndIf
-    // Invocación principal
-    MiProcedimiento.Call(&Param1, &Param2)
+    // The main invocation
+    MyProcedure.Call(&Param1, &Param2)
     Return
 EndEvent
 
-Event 'Cancelar'
+Event 'Cancel'
     Return
 EndEvent
 ```
 
-**Tipos de PXParameterRequest detectables:**
+**Detectable PXParameterRequest types:**
 
-| Comportamiento del WebPanel | behaviour type |
-|----------------------------|---------------|
-| Popup simple con mensaje + Ok | `PopupParameterRequest` |
-| Formulario de captura con Aceptar/Cancelar | `ParameterRequest` |
-| Panel flotante que no bloquea | `FloatingParameterRequest` |
-| Panel embebido sin comportamiento modal | `Panel` o `None` |
+| WebPanel behaviour | behaviour type |
+|--------------------|----------------|
+| A simple popup with a message + Ok | `PopupParameterRequest` |
+| A capture form with Accept/Cancel | `ParameterRequest` |
+| A floating, non-blocking panel | `FloatingParameterRequest` |
+| An embedded panel with no modal behaviour | `Panel` or `None` |
 
-**Migrable como PXParameterRequest si:**
-- [x] Es un formulario tabular (data entry), no una grilla de búsqueda
-- [x] Tiene Aceptar/Cancelar o Confirmar/Salir
-- [x] Captura datos del usuario o muestra información para confirmar una acción
-- [x] NO tiene grilla principal con búsqueda y paginación (eso es PXWorkWith)
+**Migratable as PXParameterRequest when:**
+- [x] It is a tabular form (data entry), not a search grid
+- [x] It has Accept/Cancel or Confirm/Exit
+- [x] It captures user data or shows information to confirm an action
+- [x] It does NOT have a main grid with search and paging (that would be PXWorkWith)
 
-**Caso especial — PXParameterRequest con grilla auxiliar (marcar con \*):**
-Si el WebPanel tiene un formulario de data entry como elemento principal PERO además incluye una grilla auxiliar (por ejemplo para mostrar items seleccionados, errores, o detalle), se clasifica como PXParameterRequest pero se marca con asterisco (\*) para revisión manual.
-
----
-
-### PXComposer — Composición de Pantallas
-
-**Señales principales:**
-- WebPanel que contiene múltiples WebComponents embebidos
-- Layout tipo dashboard con secciones
-- Combina varias funcionalidades en una sola pantalla
-- Los WebComponents pueden ser grillas, formularios, u otros paneles
-
-**Señales en el código:**
-```
-// Señal: Múltiples WebComponents en el layout
-// En el WebForm hay varios controles WebComponent
-<WebComponent name="wcGrilla1" object="WWFacturas" />
-<WebComponent name="wcDetalle" object="ViewCliente" />
-<WebComponent name="wcAcciones" object="WbAcciones" />
-```
-
-**Migrable como PXComposer si:**
-- [x] El WebPanel es principalmente un contenedor de otros paneles
-- [x] Usa WebComponents para composición
-- [x] Los componentes embebidos podrían ser PXWorkWith, PXParameterRequest u otro PXComposer
-- [x] No tiene lógica de negocio propia significativa
+**Special case — PXParameterRequest with an auxiliary grid (mark it with \*):**
+If the WebPanel has a data entry form as its main element BUT also includes an auxiliary grid (to show selected items, errors, or a detail, for instance), classify it as PXParameterRequest but mark it with an asterisk (\*) for manual review.
 
 ---
 
-### PXFlowController — Flujo de Trabajo
+### PXComposer — Screen Composition
 
-**Señales principales:**
-- WebPanel que guía al usuario a través de una secuencia de pasos
-- Tiene múltiples "pantallas" o estados dentro del mismo WebPanel
-- Usa variables de control de flujo (&Step, &Line, &State)
-- Acciones que llevan al siguiente/anterior paso
-- Confirmaciones intermedias
-- Puede abrir popups y continuar según el resultado
+**Main signals:**
+- A WebPanel containing several embedded WebComponents
+- A dashboard-style layout with sections
+- It combines several features into one screen
+- The WebComponents can be grids, forms, or other panels
 
-**Señales en el código:**
+**Signals in the code:**
 ```
-// Señal: Control de flujo con variable de paso
+// Signal: several WebComponents in the layout
+// The WebForm holds several WebComponent controls
+<WebComponent name="wcGrid1" object="WWInvoices" />
+<WebComponent name="wcDetail" object="ViewCustomer" />
+<WebComponent name="wcActions" object="WbActions" />
+```
+
+**Migratable as PXComposer when:**
+- [x] The WebPanel is mainly a container of other panels
+- [x] It uses WebComponents for composition
+- [x] The embedded components could be PXWorkWith, PXParameterRequest or another PXComposer
+- [x] It has no significant business logic of its own
+
+---
+
+### PXFlowController — Workflow
+
+**Main signals:**
+- A WebPanel guiding the user through a sequence of steps
+- It has several "screens" or states within the same WebPanel
+- It uses flow-control variables (&Step, &Line, &State)
+- Actions moving to the next/previous step
+- Intermediate confirmations
+- It may open popups and continue depending on the result
+
+**Signals in the code:**
+```
+// Signal: flow control with a step variable
 Do Case
     Case &Step = 1
-        // Mostrar paso 1
-        Call(WbConfirmacion, ...)
+        // Show step 1
+        Call(WbConfirmation, ...)
     Case &Step = 2
-        // Procesar
-        PrcProcesar(...)
+        // Process
+        PrcProcess(...)
     Case &Step = 3
-        // Resultado
+        // Result
 EndCase
 
-// Señal: Lógica if-then con popups y continuación
-If &Confirmar = "Si"
-    // Siguiente paso
+// Signal: if-then logic with popups and continuation
+If &Confirm = "Yes"
+    // Next step
     &Step = 2
 Else
-    // Volver
+    // Back
     &Step = 1
 EndIf
 ```
 
-**Migrable como PXFlowController si:**
-- [x] El WebPanel implementa un flujo de pasos secuenciales
-- [x] Tiene lógica de "siguiente paso" / "paso anterior"
-- [x] Usa confirmaciones entre pasos
-- [x] Puede tener iteraciones (repetir pasos)
-- [x] La lógica se puede expresar como "líneas" con acciones y destinos
+**Migratable as PXFlowController when:**
+- [x] The WebPanel implements a sequence of steps
+- [x] It has "next step" / "previous step" logic
+- [x] It uses confirmations between steps
+- [x] It may have iterations (repeating steps)
+- [x] The logic can be expressed as "lines" with actions and destinations
 
 ---
 
-## Matriz de decisión rápida (actualizada)
+## Quick decision matrix (updated)
 
 ```
-¿Es una pantalla de Login (IsMain=True, sin MasterPage, auth custom)?
-├── SÍ → Manual (no migrable)
+Is it a Login screen (IsMain=True, no MasterPage, custom auth)?
+├── YES → Manual (not migratable)
 │
-¿Es una utilidad de testing/ejemplo o redirect automático?
-├── SÍ → Manual (no migrable)
+Is it a testing/example utility or an automatic redirect?
+├── YES → Manual (not migratable)
 │
-¿Depende de un framework externo (Scheduler, controles de terceros)?
-├── SÍ → Manual (no migrable)
+Does it depend on an external framework (Scheduler, third-party controls)?
+├── YES → Manual (not migratable)
 │
-¿Tiene grilla CRUD maestro-detalle sobre transacción?
-├── SÍ → ¿Tiene tabs de detalle?
-│         ├── SÍ → PXWorkWith (Selection + View)
-│         └── NO → PXWorkWith (solo Selection)
+Does it have a master-detail CRUD grid over a transaction?
+├── YES → Does it have detail tabs?
+│         ├── YES → PXWorkWith (Selection + View)
+│         └── NO  → PXWorkWith (Selection only)
 │
-¿Tiene grilla de consulta/selección readonly sin CRUD?
-├── SÍ → ¿Es un popup/lookup que retorna valores?
-│         ├── SÍ → PXParameterRequest con grid (o PXWorkWith Prompt)
-│         └── NO → PXWorkWith (Selection solo consulta)
+Does it have a read-only query/selection grid with no CRUD?
+├── YES → Is it a popup/lookup returning values?
+│         ├── YES → PXParameterRequest with a grid (or PXWorkWith Prompt)
+│         └── NO  → PXWorkWith (query-only Selection)
 │
-¿Tiene Aceptar/Cancelar o Confirmar/Salir?
-├── SÍ → PXParameterRequest (PopupParameterRequest)
+Does it have Accept/Cancel or Confirm/Exit?
+├── YES → PXParameterRequest (PopupParameterRequest)
 │
-¿Es un formulario de captura de datos (con o sin grilla)?
-├── SÍ → PXParameterRequest
+Is it a data capture form (with or without a grid)?
+├── YES → PXParameterRequest
 │
-¿Es un visor readonly de datos (solo Salir)?
-├── SÍ → PXParameterRequest (behaviour None o Panel)
+Is it a read-only data viewer (Exit only)?
+├── YES → PXParameterRequest (behaviour None or Panel)
 │
-¿Contiene múltiples WebComponents embebidos?
-├── SÍ → PXComposer
+Does it contain several embedded WebComponents?
+├── YES → PXComposer
 │
-¿Implementa flujo de pasos secuenciales?
-├── SÍ → PXFlowController
+Does it implement a sequence of steps?
+├── YES → PXFlowController
 │
-└── TODOS los demás → PXParameterRequest (con la lógica en hooks)
+└── EVERYTHING else → PXParameterRequest (with the logic in hooks)
 ```
 
-**Regla fundamental:** Si el WebPanel tiene cualquier estructura con botones de acción y/o formulario, es migrable a PXParameterRequest. **Toda la lógica de negocio** (subrutinas, For Each, validaciones, WebSession, SDTs, llamadas a Procedures) se migra a hooks de código sin pérdida de funcionalidad.
+**Fundamental rule:** if the WebPanel has any structure with action buttons and/or a form, it is migratable to PXParameterRequest. **All the business logic** (subroutines, For Each, validations, WebSession, SDTs, Procedure calls) moves into code hooks with no loss of functionality.
 
-## Combinaciones frecuentes
+## Frequent combinations
 
-| Escenario | Patterns a usar |
-|-----------|----------------|
-| ABM completo con tabs de detalle | PXWorkWith |
-| ABM con popup de confirmación antes de eliminar | PXWorkWith + PXParameterRequest |
-| Dashboard con varias grillas | PXComposer + PXWorkWith (×N) |
-| Proceso guiado con confirmaciones | PXFlowController + PXParameterRequest |
-| Vista compuesta de seguridad | PXComposer + PXWorkWith + PXParameterRequest |
-| API REST completa de una entidad | PXWSLayer + PXWSQuery + PXWSTransaction |
-| Reporte con selección de parámetros | PXParameterRequest + PXReportTemplate |
-| Popup de selección con grilla y filtros | PXParameterRequest con grid |
-| Popup de anulación/reversa con causal | PXParameterRequest (PopupParameterRequest) |
-| Upload de archivos/imágenes | PXParameterRequest con controlType File |
-| Visor readonly de errores/datos | PXParameterRequest (behaviour None/Panel) |
-| Generación de archivos TXT/Excel | PXParameterRequest con callType Event |
-| Ejecución de proceso one-shot | PXParameterRequest (behaviour Panel) |
+| Scenario | Patterns to use |
+|----------|-----------------|
+| A full CRUD screen with detail tabs | PXWorkWith |
+| CRUD with a confirmation popup before deleting | PXWorkWith + PXParameterRequest |
+| A dashboard with several grids | PXComposer + PXWorkWith (×N) |
+| A guided process with confirmations | PXFlowController + PXParameterRequest |
+| A composed security view | PXComposer + PXWorkWith + PXParameterRequest |
+| A complete REST API for an entity | PXWSLayer + PXWSQuery + PXWSTransaction |
+| A report with parameter selection | PXParameterRequest + PXReportTemplate |
+| A selection popup with a grid and filters | PXParameterRequest with a grid |
+| A cancellation/reversal popup with a reason | PXParameterRequest (PopupParameterRequest) |
+| File/image upload | PXParameterRequest with controlType File |
+| A read-only viewer of errors/data | PXParameterRequest (behaviour None/Panel) |
+| Generating TXT/Excel files | PXParameterRequest with callType Event |
+| Running a one-shot process | PXParameterRequest (behaviour Panel) |
 
-## Señales de NO migración
+## Signals of non-migration
 
-Un WebPanel **no es migrable** a patterns SOLO si:
-- Es una **pantalla de Login** con flujo de autenticación custom (IsMain=True, sin MasterPage)
-- Es una **utilidad de testing/ejemplo** que no es funcionalidad de producción
-- Depende de un **framework externo** que gestiona su propio ciclo de vida (ej: Scheduler)
-- Es un **redirect automático** sin interacción de usuario (solo JavaScript/server redirect)
+A WebPanel is **not migratable** to patterns ONLY when:
+- It is a **Login screen** with a custom authentication flow (IsMain=True, no MasterPage)
+- It is a **testing/example utility**, not production functionality
+- It depends on an **external framework** managing its own life cycle (a Scheduler, for instance)
+- It is an **automatic redirect** with no user interaction (JavaScript/server redirect only)
 
-### Lo que NO es razón para marcar como "no migrable"
+### What is NOT a reason to mark it "not migratable"
 
-**Ninguno de estos factores impide la migración:**
-- Cantidad de lógica de negocio (toda va en hooks)
-- Uso de WebSession (mecanismo estándar)
-- Muchas subrutinas (van en `codes/Subroutine`)
-- Creación/modificación de registros (callType Call o Event)
-- Grilla con Load complejo (grid node + hook Load)
-- Ocultamiento dinámico de controles (lógica en hook Start)
-- Uso de SDTs para pasar datos (soportado en variables y hooks)
-- Validaciones complejas (actionPreviousCode)
-- Múltiples For Each anidados (todo es código GeneXus en hooks)
+**None of these factors prevents migration:**
+- The amount of business logic (all of it goes into hooks)
+- Use of WebSession (a standard mechanism)
+- Many subroutines (they go into `codes/Subroutine`)
+- Creating/modifying records (callType Call or Event)
+- A grid with a complex Load (a grid node + the Load hook)
+- Dynamically hiding controls (logic in the Start hook)
+- Using SDTs to pass data (supported in variables and hooks)
+- Complex validations (actionPreviousCode)
+- Several nested For Each (it is all GeneXus code inside hooks)
 
-**Resultado esperado:** En un análisis de KB real (225 WebPanels), solo el **3.1%** resultó verdaderamente no migrable (7 de 225: 3 logins, 2 testing, 1 scheduler, 1 redirect). El **96.9%** restante fue migrable a PXParameterRequest, PXWorkWith o PXComposer.
+**Expected outcome:** in an analysis of a real KB (225 WebPanels), only **3.1%** turned out to be genuinely non-migratable (7 out of 225: 3 logins, 2 testing, 1 scheduler, 1 redirect). The remaining **96.9%** were migratable to PXParameterRequest, PXWorkWith or PXComposer.
 
-Ver [32-limitaciones-y-gaps.md](32-limitaciones-y-gaps.md) para detalle de limitaciones del generador.
+See [32-limitations-and-gaps.md](32-limitations-and-gaps.md) for the detail of the generator's limitations.

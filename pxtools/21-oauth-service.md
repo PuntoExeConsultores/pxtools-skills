@@ -1,212 +1,212 @@
-# @OAuthService — Authorization Server OAuth 2.0 + OpenID Connect
+# @OAuthService — OAuth 2.0 + OpenID Connect Authorization Server
 
-## Qué es
+## What it is
 
-Módulo PXTools que implementa un **Authorization Server OAuth 2.0** (RFC 6749) con extensiones:
+A PXTools module implementing an **OAuth 2.0 Authorization Server** (RFC 6749) with extensions:
 - **PKCE** (RFC 7636) — code_challenge S256 + plain
 - **Token Introspection** (RFC 7662)
 - **Token Revocation** (RFC 7009)
-- **OpenID Connect Core 1.0** — id_token JWT HS256, /userinfo, /.well-known/openid-configuration
+- **OpenID Connect Core 1.0** — HS256 JWT id_token, /userinfo, /.well-known/openid-configuration
 
-Provee endpoints HTTP REST para que aplicaciones cliente (web, mobile, M2M) obtengan access tokens autorizados por usuarios del sistema host.
+It provides HTTP REST endpoints so client applications (web, mobile, M2M) can obtain access tokens authorized by users of the host system.
 
-## Ubicación en la KB
+## Location in the KB
 
 ```
 @PXTools/@OAuthService/
 ├── #Domains/                       ← AuthorizationGrantType, AuthorizationStatus, ClientStatus, OAuthServiceClientId
-├── APIs/Basic/                     ← API core del modulo (publica + transacciones + SDTs)
-│   ├── SDT/                        ← SDTs del API publica y respuestas HTTP
+├── APIs/Basic/                     ← the module's core API (public API + transactions + SDTs)
+│   ├── SDT/                        ← SDTs of the public API and the HTTP responses
 │   ├── Transactions               (OAuthServiceClient, OAuthServiceAuthorization, OAuthServiceToken, OAuthServiceTokenPolicy)
 │   ├── Procedures                 (CreateNewAuthorization, CreateTokens, RetDataFromToken, RevokeToken, ...)
-│   ├── Helpers JWT/PKCE           (GenerateIdToken, ToBase64Url, NormalizeRedirectUri, DateTimeToUnixTimestamp)
-│   └── TskOAuthServicePurgeExpiredTokens.Procedure  ← Task del TaskManager
-├── APIs/WS/                        ← Endpoints HTTP (WebService=True). Nombres GX en PascalCase; GeneXus baja el path a minuscula en Java/C# automaticamente.
+│   ├── JWT/PKCE helpers           (GenerateIdToken, ToBase64Url, NormalizeRedirectUri, DateTimeToUnixTimestamp)
+│   └── TskOAuthServicePurgeExpiredTokens.Procedure  ← a TaskManager task
+├── APIs/WS/                        ← HTTP endpoints (WebService=True). GX names are PascalCase; GeneXus lowercases the path in Java/C# automatically.
 │   ├── Token.Procedure             ← POST /pxtools.oauthservice/token
 │   ├── Introspect.Procedure        ← POST /pxtools.oauthservice/introspect
 │   ├── Revoke.Procedure            ← POST /pxtools.oauthservice/revoke
 │   ├── UserInfo.Procedure          ← GET/POST /pxtools.oauthservice/userinfo (Bearer)
-│   └── OpenIDConfiguration.Procedure ← GET /pxtools.oauthservice/openidconfiguration (mapear a /.well-known/openid-configuration en el web server)
-└── Personalized/                   ← Hooks que el host del modulo IMPLEMENTA
-    ├── Authorization.WebPanel      ← UI /authorize (login + consent)
-    ├── CheckUserLoginData.Procedure ← Validacion credenciales contra sistema del host
-    ├── ChkOAuthRateLimit.Procedure ← Rate limiting (stub: permite todo)
-    ├── RetOAuthServiceIssuer.Procedure ← URL publica del AS (issuer)
-    ├── RetUserInfo.Procedure       ← Datos del usuario para OIDC UserInfo
-    ├── SendTokenToThirdParty.Procedure ← Callback opcional post-token (silent flow)
-    └── RetDynamicCallReferencesOAuthService.DataProvider ← Registro de Tasks/Cleaners
+│   └── OpenIDConfiguration.Procedure ← GET /pxtools.oauthservice/openidconfiguration (map it to /.well-known/openid-configuration in the web server)
+└── Personalized/                   ← hooks the module's host IMPLEMENTS
+    ├── Authorization.WebPanel      ← the /authorize UI (login + consent)
+    ├── CheckUserLoginData.Procedure ← credential validation against the host's system
+    ├── ChkOAuthRateLimit.Procedure ← rate limiting (stub: allows everything)
+    ├── RetOAuthServiceIssuer.Procedure ← the AS's public URL (issuer)
+    ├── RetUserInfo.Procedure       ← user data for OIDC UserInfo
+    ├── SendTokenToThirdParty.Procedure ← optional post-token callback (silent flow)
+    └── RetDynamicCallReferencesOAuthService.DataProvider ← registration of Tasks/Cleaners
 ```
 
-## Tablas que crea el modulo
+## Tables the module creates
 
-| Tabla | Proposito |
+| Table | Purpose |
 |---|---|
-| `OAuthServiceClient` | Aplicaciones cliente registradas (client_id + client_secret + redirect_uri + status) |
-| `OAuthServiceAuthorization` | Authorizations emitidas (code + AccountReference + scope + PKCE challenge + expiracion) |
-| `OAuthServiceToken` | Access tokens y refresh tokens emitidos (token + status + expiracion + cliente + authorization) |
-| `OAuthServiceTokenPolicy` | Politicas de expiracion por cliente (access_token TTL, refresh_token TTL) |
+| `OAuthServiceClient` | Registered client applications (client_id + client_secret + redirect_uri + status) |
+| `OAuthServiceAuthorization` | Issued authorizations (code + AccountReference + scope + PKCE challenge + expiry) |
+| `OAuthServiceToken` | Issued access and refresh tokens (token + status + expiry + client + authorization) |
+| `OAuthServiceTokenPolicy` | Per-client expiry policies (access_token TTL, refresh_token TTL) |
 
-**El usuario del host se vincula al modulo via** `OAuthServiceAuthorizationAccountReference` (Character 255 genérico). NO hay FK directa a tablas del host.
+**The host's user is linked to the module through** `OAuthServiceAuthorizationAccountReference` (a generic Character 255). There is NO direct FK to the host's tables.
 
-## Endpoints HTTP
+## HTTP endpoints
 
-| Endpoint | Procedure GX | Spec | Notas |
+| Endpoint | GX Procedure | Spec | Notes |
 |---|---|---|---|
 | **token** | `APIs/WS/Token.Procedure` | RFC 6749 §3.2 | **main + `CallProtocol='HTTP'`**. grant_type: authorization_code / refresh_token / client_credentials |
-| **introspect** | `APIs/WS/Introspect.Procedure` | RFC 7662 | REST. Devuelve `{"active":true,...}` o `{"active":false}` |
-| **revoke** | `APIs/WS/Revoke.Procedure` | RFC 7009 | REST. Acepta `token` o `code` |
-| **userinfo** | `APIs/WS/UserInfo.Procedure` | OIDC Core §5.3 | REST. Bearer token; valida scope=openid |
-| **openidconfiguration** | `APIs/WS/OpenIDConfiguration.Procedure` | OIDC Discovery §3 | REST. El host mapea /.well-known/openid-configuration via URL rewrite en el web server |
-| `GET /authorize` (UI) | `Personalized/Authorization.WebPanel` | RFC 6749 §3.1 | WebPanel, no REST. API-first NO implementado. |
+| **introspect** | `APIs/WS/Introspect.Procedure` | RFC 7662 | REST. Returns `{"active":true,...}` or `{"active":false}` |
+| **revoke** | `APIs/WS/Revoke.Procedure` | RFC 7009 | REST. Accepts either `token` or `code` |
+| **userinfo** | `APIs/WS/UserInfo.Procedure` | OIDC Core §5.3 | REST. Bearer token; it validates scope=openid |
+| **openidconfiguration** | `APIs/WS/OpenIDConfiguration.Procedure` | OIDC Discovery §3 | REST. The host maps /.well-known/openid-configuration through a URL rewrite in the web server |
+| `GET /authorize` (UI) | `Personalized/Authorization.WebPanel` | RFC 6749 §3.1 | A WebPanel, not REST. API-first NOT implemented. |
 
-**URLs reales** (verificadas en runtime, generador Java):
+**Real URLs** (verified at runtime, Java generator):
 
-| Exposicion | URL |
+| Exposure | URL |
 |---|---|
-| main + `CallProtocol='HTTP'` | `<base>/<namespace>.pxtools.oauthservice.a<objeto en minuscula>` — el prefijo `a` lo agrega el generador Java a los main procs |
-| Expose as Web Service (REST) | `<base>/rest/PXTools/OAuthService/<Objeto>` — **respeta el casing del modulo y del objeto** |
+| main + `CallProtocol='HTTP'` | `<base>/<namespace>.pxtools.oauthservice.a<object in lowercase>` — the Java generator prepends the `a` to main procedures |
+| Expose as Web Service (REST) | `<base>/rest/PXTools/OAuthService/<Object>` — it **preserves the module's and the object's casing** |
 
-> Es incorrecto que GeneXus baje los paths REST a minuscula: los publica con el casing del modulo. Por eso la URL REST **no** queda OAuth-compliant en su forma, aunque el contrato del body si lo sea.
+> It is not true that GeneXus lowercases REST paths: it publishes them with the module's casing. That is why the REST URL is **not** OAuth-compliant in shape, even though the body's contract is.
 
-**Respuestas HTTP**: JSON con field names snake_case. En `Token` esto se logra con `JsonName` por miembro del SDT + `JsonNullSerialization = 'NoProperty'` (los campos vacios no se serializan); los demas WS todavia usan `XMLName`.
+**HTTP responses**: JSON with snake_case field names. In `Token` this is achieved with a per-member `JsonName` on the SDT plus `JsonNullSerialization = 'NoProperty'` (empty fields are not serialized); the other web services still use `XMLName`.
 
-**Status codes**: `HttpResponse` no expone setter de StatusCode en GX17, pero el status real **si se puede fijar** con `PXTools.APIs.SetHttpStatus` (JAVA inline sobre `httpContext.getResponse().setStatus(...)`), llamandolo **antes** de los `AddHeader`/`AddString`. `Token` ya devuelve 400/401 reales por esta via, ademas del header informativo `X-OAuth-Status`. Los otros cuatro WS siguen respondiendo 200 siempre: expuestos como REST, el `parm out` envuelve el body en `{"SDTResponse":{...}}` y no hay control del status.
+**Status codes**: `HttpResponse` exposes no StatusCode setter in GX17, but the real status **can** be set with `PXTools.APIs.SetHttpStatus` (inline JAVA over `httpContext.getResponse().setStatus(...)`), called **before** the `AddHeader`/`AddString` calls. `Token` already returns real 400/401 this way, in addition to the informational `X-OAuth-Status` header. The other four web services still always answer 200: exposed as REST, the `parm out` wraps the body in `{"SDTResponse":{...}}` and there is no control over the status.
 
-> **Criterio de exposicion**: cuando el contrato HTTP lo define un tercero (un RFC, un proveedor, un protocolo) → **main + `CallProtocol='HTTP'`**, que da control byte-exacto del body y del status. Cuando el contrato lo define uno mismo → **API object**, que aporta OpenAPI, verbos por metodo y la variable `&RestCode` (que **solo** existe en API objects, no en procedures REST).
+> **Exposure criterion**: when a third party defines the HTTP contract (an RFC, a provider, a protocol) → **main + `CallProtocol='HTTP'`**, which gives byte-exact control of the body and the status. When you define the contract yourself → an **API object**, which brings OpenAPI, per-method verbs and the `&RestCode` variable (which exists **only** in API objects, not in REST procedures).
 
-## API publica del modulo (procedures invocables desde el host)
+## The module's public API (procedures the host can invoke)
 
-| Procedure | Parm | Uso |
+| Procedure | Parm | Use |
 |---|---|---|
-| `OAuthService.CreateNewAuthorization.Udp` | in:SDTAuthorizationIn, out:SDTAuthorizationOut | Genera authorization code con PKCE opcional |
-| `OAuthService.CreateTokens.Udp` | in:SDTExchangeAuthorizationCodeForAccessTokenIn, out:SDTExchangeAuthorizationCodeForAccessTokenOut | Emite access + refresh token |
-| `OAuthService.RetDataFromToken.Udp` | in:token, out:SDTDataFromToken | Introspect token interno (sin auth) |
-| `OAuthService.RevokeToken.Udp` | in:token, out:SDTResult | Revoca un token |
-| `OAuthService.RevokeAuthorization.Udp` | in:client_id, AccountRef, code, out:SDTResult | Revoca authorization + cascade |
-| `OAuthService.SilentAuthorization.Udp` | in:SDTAuthorizationIn, out:SDTAuthorizationOut | Authorization + token sync (machine-to-machine pre-autorizado) |
-| `OAuthService.PurgeExpiredTokens.Udp` | out:SDTPurgeResult | Limpia tokens expirados/revocados (invocable directo o desde Task) |
-| `OAuthService.GenerateIdToken.Udp` | in:SDTIdTokenClaims, in:client_secret, out:JWT string | Construye JWT HS256 para id_token |
-| `OAuthService.NormalizeRedirectUri.Udp` | in:url, out:normalized | Normaliza URL para comparacion robusta |
-| `OAuthService.DateTimeToUnixTimestamp.Udp` | in:DateTime, out:seconds | Timestamp Unix para claims JWT (usa YMDHMStoT + Difference) |
-| `OAuthService.HasScope.Udp` | in:tokenScopes, in:requiredScope, out:hasScope | Verifica scope OAuth con match exacto por espacios (evita falsos positivos tipo `write` matchear `write:invoices`). Usar con `RetDataFromToken.Udp(token).Scopes` para autorizacion por scope. |
+| `OAuthService.CreateNewAuthorization.Udp` | in:SDTAuthorizationIn, out:SDTAuthorizationOut | Generates an authorization code with optional PKCE |
+| `OAuthService.CreateTokens.Udp` | in:SDTExchangeAuthorizationCodeForAccessTokenIn, out:SDTExchangeAuthorizationCodeForAccessTokenOut | Issues an access + refresh token |
+| `OAuthService.RetDataFromToken.Udp` | in:token, out:SDTDataFromToken | Internal token introspection (no auth) |
+| `OAuthService.RevokeToken.Udp` | in:token, out:SDTResult | Revokes a token |
+| `OAuthService.RevokeAuthorization.Udp` | in:client_id, AccountRef, code, out:SDTResult | Revokes an authorization + cascade |
+| `OAuthService.SilentAuthorization.Udp` | in:SDTAuthorizationIn, out:SDTAuthorizationOut | Authorization + token synchronously (pre-authorized machine-to-machine) |
+| `OAuthService.PurgeExpiredTokens.Udp` | out:SDTPurgeResult | Cleans expired/revoked tokens (callable directly or from the Task) |
+| `OAuthService.GenerateIdToken.Udp` | in:SDTIdTokenClaims, in:client_secret, out:JWT string | Builds the HS256 JWT for the id_token |
+| `OAuthService.NormalizeRedirectUri.Udp` | in:url, out:normalized | Normalises a URL for robust comparison |
+| `OAuthService.DateTimeToUnixTimestamp.Udp` | in:DateTime, out:seconds | Unix timestamp for JWT claims (uses YMDHMStoT + Difference) |
+| `OAuthService.HasScope.Udp` | in:tokenScopes, in:requiredScope, out:hasScope | Checks an OAuth scope with exact space-delimited matching (it prevents false positives such as `write` matching `write:invoices`). Use it with `RetDataFromToken.Udp(token).Scopes` for scope-based authorization. |
 
-## Hooks que el host DEBE implementar
+## Hooks the host MUST implement
 
-Estos procs viven en `Personalized/` como **stubs** y el host del modulo debe sobreescribirlos:
+These procedures live in `Personalized/` as **stubs** and the module's host must override them:
 
 ### `CheckUserLoginData.Procedure`
-**Firma**: `in:&UserCode, in:&UserPassword, out:&IsOk`
-**Implementar**: validacion de credenciales contra la tabla Users del host (o IdP federado).
-**Usado en**: `Authorization.WebPanel` cuando el usuario hace login.
+**Signature**: `in:&UserCode, in:&UserPassword, out:&IsOk`
+**Implement**: credential validation against the host's Users table (or a federated IdP).
+**Used in**: `Authorization.WebPanel` when the user logs in.
 
 ### `RetOAuthServiceIssuer.Procedure`
-**Firma**: `out:&Issuer` (Character 255)
-**Implementar**: devolver la URL publica del Authorization Server (ej. `https://accounts.miempresa.com`).
-**Usado en**: id_token claim `iss`, discovery doc, etc.
+**Signature**: `out:&Issuer` (Character 255)
+**Implement**: return the Authorization Server's public URL (e.g. `https://accounts.mycompany.com`).
+**Used in**: the id_token's `iss` claim, the discovery document, and so on.
 
 ### `RetUserInfo.Procedure`
-**Firma**: `in:&AccountReference, in:&Scopes, out:&SDTOAuthUserInfo`
-**Implementar**: obtener claims del usuario (sub, name, email, etc.) desde la tabla Users del host.
-**Usado en**: endpoint `/userinfo`.
-**Reglas OIDC**:
-- scope=openid → sub (siempre)
+**Signature**: `in:&AccountReference, in:&Scopes, out:&SDTOAuthUserInfo`
+**Implement**: obtain the user's claims (sub, name, email, etc.) from the host's Users table.
+**Used in**: the `/userinfo` endpoint.
+**OIDC rules**:
+- scope=openid → sub (always)
 - scope=profile → name, given_name, family_name, preferred_username, locale, zoneinfo, updated_at
 - scope=email → email, email_verified
 
-### `ChkOAuthRateLimit.Procedure` (OPCIONAL)
-**Firma**: `in:&ClientId, in:&IPAddress, in:&Endpoint, out:&Allowed, out:&RetryAfterSecs`
-**Implementar**: rate limiting (tabla local, Redis, WAF). Stub permite todo.
-**Usado en**: `/token` al inicio. Si `&Allowed=False`, retorna 429 con header Retry-After.
+### `ChkOAuthRateLimit.Procedure` (OPTIONAL)
+**Signature**: `in:&ClientId, in:&IPAddress, in:&Endpoint, out:&Allowed, out:&RetryAfterSecs`
+**Implement**: rate limiting (a local table, Redis, a WAF). The stub allows everything.
+**Used in**: `/token`, at the start. If `&Allowed=False`, it returns 429 with a Retry-After header.
 
-### Dominio `OAuthServiceScope` (personalizable via XPZ Personalized)
-**Ubicacion**: `Knowledge Base/@PXTools/@OAuthService/#Domains/OAuthServiceScope.gxDomain` — dominio del modulo (GeneXus soporta dominios dentro de modulos usando `#Domains` como subfolder del modulo). **Conceptualmente forma parte del XPZ Personalized del modulo**: se incluye en ese XPZ para que al importar el modulo el host reemplace/extienda los EnumValues con los scopes reales de su aplicacion.
+### The `OAuthServiceScope` domain (customizable through the Personalized XPZ)
+**Location**: `Knowledge Base/@PXTools/@OAuthService/#Domains/OAuthServiceScope.gxDomain` — a module domain (GeneXus supports domains inside modules, using `#Domains` as a module subfolder). **Conceptually it is part of the module's Personalized XPZ**: it is included in that XPZ so that, on importing the module, the host replaces/extends the EnumValues with its application's real scopes.
 
-**Estado inicial**: un solo valor de ejemplo `Example: "example:read"` como placeholder.
+**Initial state**: a single example value, `Example: "example:read"`, as a placeholder.
 
-**Host debe reemplazar**: al integrar el modulo en una KB real, el host modifica el `EnumValues` del dominio con la lista de scopes de su dominio de negocio (ej. `read:invoices`, `write:invoices`, `admin`, `read:users`, etc.). Se puede usar el enum donde sea conveniente para pasar el scope requerido a `HasScope.Udp()` o al pattern PXTools WS Layer.
+**The host must replace it**: when integrating the module into a real KB, the host edits the domain's `EnumValues` with its business scopes (e.g. `read:invoices`, `write:invoices`, `admin`, `read:users`, and so on). The enum can be used wherever convenient to pass the required scope to `HasScope.Udp()` or to the PXTools WS Layer pattern.
 
-### `SendTokenToThirdParty.Procedure` (OPCIONAL)
-**Firma**: `in:&AccessTokenSDT, out:&ErrorCode, out:&ErrorDescription`
-**Implementar**: push del access_token a un sistema externo (solo si se usa `SilentAuthorization`).
-**Usado en**: `SilentAuthorization.Procedure` (flujo machine-to-machine asincrono).
+### `SendTokenToThirdParty.Procedure` (OPTIONAL)
+**Signature**: `in:&AccessTokenSDT, out:&ErrorCode, out:&ErrorDescription`
+**Implement**: push the access_token to an external system (only if `SilentAuthorization` is used).
+**Used in**: `SilentAuthorization.Procedure` (the asynchronous machine-to-machine flow).
 
-## Configuracion (SystemParameters)
+## Configuration (SystemParameters)
 
-Definidos en `Personalized/RetSystemParametersOAuthService.DataProvider.gxSource`:
+Defined in `Personalized/RetSystemParametersOAuthService.DataProvider.gxSource`:
 
-| Parametro | Tipo | Default | Proposito |
+| Parameter | Type | Default | Purpose |
 |---|---|---|---|
-| `OAuthServiceGenerateLog` | Boolean | false | Activa Msg() de debug en procs internos |
+| `OAuthServiceGenerateLog` | Boolean | false | Enables debug `Msg()` calls in the internal procedures |
 
-Recuperar via `RetSystemParameterPreferenceBoolean.Udp(SystemParameterCode.OAuthServiceGenerateLog)`.
+Retrieve it with `RetSystemParameterPreferenceBoolean.Udp(SystemParameterCode.OAuthServiceGenerateLog)`.
 
 ## TaskManager integration
 
-El modulo registra una Task para purga automatica de tokens vencidos:
+The module registers a Task for automatically purging expired tokens:
 
-- **Task**: `TskOAuthServicePurgeExpiredTokens.Procedure` — invoca `PurgeExpiredTokens.Udp()`
-- **Registry**: `RetDynamicCallReferencesOAuthService.DataProvider` declara el Task en el `DynamicCallReferences` para que el TaskManager lo descubra
-- **Enum**: `DynamicCallReferenceCode.TskOAuthServicePurgeExpiredTokens` (agregar en el dominio del host si no esta)
+- **Task**: `TskOAuthServicePurgeExpiredTokens.Procedure` — it invokes `PurgeExpiredTokens.Udp()`
+- **Registry**: `RetDynamicCallReferencesOAuthService.DataProvider` declares the Task in `DynamicCallReferences` so the TaskManager can discover it
+- **Enum**: `DynamicCallReferenceCode.TskOAuthServicePurgeExpiredTokens` (add it to the host's domain if it is not there)
 
-El host configura la frecuencia desde el ABM de TaskManager (recomendado: diariamente fuera de hora pico).
+The host configures the frequency from the TaskManager CRUD screen (recommended: daily, outside peak hours).
 
-## Modulos PXTools dependientes (deben estar presentes en la KB host)
+## Dependent PXTools modules (they must be present in the host KB)
 
-| Modulo PXTools | Uso |
+| PXTools module | Use |
 |---|---|
-| `@WebServicesLog` | Log de invocaciones (AddWebServiceLog.Udp, UpdWebServiceLog.Call) |
-| `@SystemParameters` | Configuracion (RetSystemParameterPreferenceBoolean.Udp) |
-| `@TaskManager` | Para ejecutar TskOAuthServicePurgeExpiredTokens (atributo TaskManagerId, dominio TaskManagerExecutionResponse) |
-| `@DynamicCallReferences` | Registry de Tasks (SDTDynamicCallReferences, dominio DynamicCallReferenceCode) |
+| `@WebServicesLog` | Invocation logging (AddWebServiceLog.Udp, UpdWebServiceLog.Call) |
+| `@SystemParameters` | Configuration (RetSystemParameterPreferenceBoolean.Udp) |
+| `@TaskManager` | To run TskOAuthServicePurgeExpiredTokens (the TaskManagerId attribute, the TaskManagerExecutionResponse domain) |
+| `@DynamicCallReferences` | The Task registry (SDTDynamicCallReferences, the DynamicCallReferenceCode domain) |
 
-Modulos GeneXus externos: **GeneXusCryptography** (EOs Hashing, Hmac) y **SecurityAPICommons** (EOs Base64Encoder, HexaEncoder). Necesarios para PKCE S256 y JWT HS256.
+External GeneXus modules: **GeneXusCryptography** (the Hashing, Hmac EOs) and **SecurityAPICommons** (the Base64Encoder, HexaEncoder EOs). Both are needed for PKCE S256 and HS256 JWT.
 
-## Flujos OAuth soportados
+## Supported OAuth flows
 
-### Authorization Code Flow (con PKCE)
-1. Cliente abre browser en `/authorize?response_type=code&client_id=X&redirect_uri=Y&scope=openid+profile&code_challenge=Z&code_challenge_method=S256`
-2. `Authorization.WebPanel` muestra login, llama `CheckUserLoginData`, genera code via `CreateNewAuthorization`, redirige al redirect_uri con `?code=...`
-3. Cliente POST a `/token` con `grant_type=authorization_code&code=...&client_id=...&client_secret=...&code_verifier=...`
-4. `token.Procedure` valida PKCE (SHA256(code_verifier) == stored code_challenge), valida redirect_uri normalizado, emite tokens
-5. Si scope incluye `openid`, incluye `id_token` (JWT HS256) en la respuesta
+### Authorization Code Flow (with PKCE)
+1. The client opens a browser at `/authorize?response_type=code&client_id=X&redirect_uri=Y&scope=openid+profile&code_challenge=Z&code_challenge_method=S256`
+2. `Authorization.WebPanel` shows the login, calls `CheckUserLoginData`, generates the code through `CreateNewAuthorization`, and redirects to the redirect_uri with `?code=...`
+3. The client POSTs to `/token` with `grant_type=authorization_code&code=...&client_id=...&client_secret=...&code_verifier=...`
+4. `token.Procedure` validates PKCE (SHA256(code_verifier) == the stored code_challenge), validates the normalised redirect_uri, and issues the tokens
+5. If the scope includes `openid`, the response also carries an `id_token` (HS256 JWT)
 
 ### Client Credentials Flow
-1. Cliente POST a `/token` con `grant_type=client_credentials&client_id=X&client_secret=Y&scope=Z`
-2. `token.Procedure` valida cliente, crea authorization sintetica, emite access_token (sin refresh)
+1. The client POSTs to `/token` with `grant_type=client_credentials&client_id=X&client_secret=Y&scope=Z`
+2. `token.Procedure` validates the client, creates a synthetic authorization and issues an access_token (no refresh)
 
 ### Refresh Token Flow
-1. Cliente POST a `/token` con `grant_type=refresh_token&refresh_token=X&client_id=Y&client_secret=Z`
-2. `token.Procedure` valida refresh_token, emite nuevo access_token (refresh no rotado)
+1. The client POSTs to `/token` with `grant_type=refresh_token&refresh_token=X&client_id=Y&client_secret=Z`
+2. `token.Procedure` validates the refresh_token and issues a new access_token (the refresh is not rotated)
 
-### Silent (machine-to-machine asincrono)
-1. Sistema A llama `SilentAuthorization.Udp` con cliente pre-autorizado (flag SilentAuthorization=True en `OAuthServiceClient`)
-2. El modulo crea authorization+token y empuja el token al sistema B via hook `SendTokenToThirdParty`
+### Silent (asynchronous machine-to-machine)
+1. System A calls `SilentAuthorization.Udp` with a pre-authorized client (the SilentAuthorization=True flag in `OAuthServiceClient`)
+2. The module creates the authorization+token and pushes the token to system B through the `SendTokenToThirdParty` hook
 
-## Gaps conocidos / Limitaciones
+## Known gaps / limitations
 
-- **`/authorize` no es API REST** — es WebPanel. Para clientes SPA puros se necesita migrar a REST. No bloqueante para apps server-side.
-- **`HttpResponse.StatusCode` no settable** — GeneXus no expone el setter. Los errores OAuth se senalizan en el body (campo `error`); el status HTTP logico se expone en header `X-OAuth-Status` para que el host lo mapee si quiere.
-- **Solo HS256** — id_token firmado con client_secret. NO hay RS256 ni JWKS endpoint.
-- **`code_challenge_method=plain`** — soportado pero NO recomendado (usar S256).
-- **No hay refresh token rotation** — al refrescar, el refresh_token NO se rota (RFC permite pero no lo exigimos).
-- **No hay `prompt`, `max_age`, `acr_values`** del lado OIDC — solo el flujo basico.
+- **`/authorize` is not a REST API** — it is a WebPanel. Pure SPA clients would need it migrated to REST. Not blocking for server-side apps.
+- **`HttpResponse.StatusCode` is not settable** — GeneXus exposes no setter. OAuth errors are signalled in the body (the `error` field); the logical HTTP status is exposed in the `X-OAuth-Status` header so the host can map it if it wants.
+- **HS256 only** — the id_token is signed with the client_secret. There is NO RS256 and no JWKS endpoint.
+- **`code_challenge_method=plain`** — supported but NOT recommended (use S256).
+- **No refresh token rotation** — on refresh, the refresh_token is NOT rotated (the RFC allows it, but we do not require it).
+- **No `prompt`, `max_age` or `acr_values`** on the OIDC side — only the basic flow.
 
-## Como importar el modulo a una KB
+## How to import the module into a KB
 
-1. **Verificar dependencias en la KB host**:
-   - Modulos PXTools: `@WebServicesLog`, `@SystemParameters`, `@TaskManager`, `@DynamicCallReferences`
+1. **Check the dependencies in the host KB**:
+   - PXTools modules: `@WebServicesLog`, `@SystemParameters`, `@TaskManager`, `@DynamicCallReferences`
    - GeneXus modules: `GeneXusCryptography`, `SecurityAPICommons`
-2. **Importar el folder `@PXTools/@OAuthService/`** via Knowledge Manager.
-3. **Implementar los hooks** en `Personalized/`:
-   - `CheckUserLoginData` → tu sistema de auth
-   - `RetOAuthServiceIssuer` → tu URL publica (probablemente desde SystemParameter)
-   - `RetUserInfo` → tu tabla de Users
-   - (Opcional) `ChkOAuthRateLimit`, `SendTokenToThirdParty`
-4. **Agregar el enum `TskOAuthServicePurgeExpiredTokens`** al dominio `DynamicCallReferenceCode` de tu KB (si no esta).
-5. **Configurar URL rewriting** del web server para mapear `/.well-known/openid-configuration` al endpoint `openidconfiguration`.
-6. **Registrar clientes** OAuth via la transaccion `OAuthServiceClient` (client_id, client_secret, redirect_uri, status, token policy).
-7. **Build All** y verificar que las 4 tablas del modulo se creen.
+2. **Import the `@PXTools/@OAuthService/` folder** through the Knowledge Manager.
+3. **Implement the hooks** in `Personalized/`:
+   - `CheckUserLoginData` → your auth system
+   - `RetOAuthServiceIssuer` → your public URL (probably from a SystemParameter)
+   - `RetUserInfo` → your Users table
+   - (Optional) `ChkOAuthRateLimit`, `SendTokenToThirdParty`
+4. **Add the `TskOAuthServicePurgeExpiredTokens` enum** value to your KB's `DynamicCallReferenceCode` domain (if it is not there).
+5. **Configure URL rewriting** in the web server to map `/.well-known/openid-configuration` to the `openidconfiguration` endpoint.
+6. **Register the OAuth clients** through the `OAuthServiceClient` transaction (client_id, client_secret, redirect_uri, status, token policy).
+7. **Build All** and verify that the module's 4 tables are created.
 
-## Resumen
+## Summary
 
-Modulo OAuth 2.0 / OIDC funcional, autocontenido en datos (tablas propias) y desacoplado del host via hooks (`Personalized/`). Listo para empaquetar como dependencia de PXTools.
+A working OAuth 2.0 / OIDC module, self-contained in its data (its own tables) and decoupled from the host through hooks (`Personalized/`). Ready to be packaged as a PXTools dependency.

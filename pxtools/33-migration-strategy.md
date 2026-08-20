@@ -1,151 +1,151 @@
-# Estrategia de Migración — De KB sin Patterns a PXTools
+# Migration Strategy — From a KB Without Patterns to PXTools
 
-## Visión general
+## Overview
 
-Este documento describe el proceso para migrar una **Knowledge Base (KB) de GeneXus desarrollada sin patterns** a una KB que usa PXTools. La migración no es "todo o nada": se puede hacer progresivamente, WebPanel por WebPanel.
+This document describes the process of migrating a **GeneXus Knowledge Base (KB) built without patterns** to one that uses PXTools. The migration is not all-or-nothing: it can be done progressively, one WebPanel at a time.
 
-## Prerequisitos
+## Prerequisites
 
-1. **PXTools instalado** en la KB destino
-2. **Módulos @PXTools necesarios** importados (mínimo: @APIs, @System, @Security)
-3. **Patterns habilitados** en GeneXus (extensión de patterns cargada)
-4. **Transacciones definidas** (PXWorkWith requiere transacciones)
+1. **PXTools installed** in the target KB
+2. The **required @PXTools modules** imported (at minimum: @APIs, @System, @Security)
+3. **Patterns enabled** in GeneXus (the patterns extension loaded)
+4. **Transactions defined** (PXWorkWith requires transactions)
 
-## Proceso de migración en 6 fases
+## The migration process in 6 phases
 
-### Fase 1: Inventario y clasificación
+### Phase 1: inventory and classification
 
 ```
 ┌─────────────────────────────────────────────┐
-│         INVENTARIO DE WEBPANELS              │
+│           WEBPANEL INVENTORY                │
 │                                             │
-│  Para cada WebPanel de la KB:               │
+│  For each WebPanel in the KB:               │
 │                                             │
-│  1. Identificar tipo (ver guía de           │
-│     reconocimiento de patterns)             │
-│  2. Clasificar:                             │
-│     ● 100% migrable a pattern              │
-│     ● Parcialmente migrable (>70%)         │
-│     ● No migrable                          │
-│  3. Asignar pattern destino                │
-│  4. Identificar dependencias               │
+│  1. Identify its type (see the pattern      │
+│     recognition guide)                      │
+│  2. Classify it:                            │
+│     ● 100% migratable to a pattern          │
+│     ● Partially migratable (>70%)           │
+│     ● Not migratable                        │
+│  3. Assign the target pattern               │
+│  4. Identify its dependencies               │
 └─────────────────────────────────────────────┘
 ```
 
-**Resultado**: Lista clasificada de WebPanels con pattern destino y prioridad.
+**Result**: a classified list of WebPanels with their target pattern and priority.
 
-### Fase 2: Migración de infraestructura
+### Phase 2: migrating the infrastructure
 
-Antes de migrar WebPanels individuales, instalar los módulos @PXTools que proveen infraestructura:
+Before migrating individual WebPanels, install the @PXTools modules providing the infrastructure:
 
-| Funcionalidad actual | Módulo @PXTools | Acción |
-|---------------------|-----------------|--------|
-| Seguridad custom | @Security | Migrar usuarios/roles/permisos |
-| Menús manuales | @Menus | Migrar estructura de menú |
-| Parámetros del sistema | @SystemParameters | Migrar parámetros |
-| Envío de mails | @SendMails + @MailAccounts | Migrar configuración |
-| Gestión de archivos | @FileStorage | Migrar almacenamiento |
-| Logs | @WebServicesLog | Integrar logging |
+| Current functionality | @PXTools module | Action |
+|-----------------------|-----------------|--------|
+| Custom security | @Security | Migrate users/roles/permissions |
+| Hand-built menus | @Menus | Migrate the menu structure |
+| System parameters | @SystemParameters | Migrate the parameters |
+| Sending mail | @SendMails + @MailAccounts | Migrate the configuration |
+| File management | @FileStorage | Migrate the storage |
+| Logs | @WebServicesLog | Integrate logging |
 
-### Fase 3: Migración de ABMs simples (PXWorkWith)
+### Phase 3: migrating simple CRUD screens (PXWorkWith)
 
-Empezar por los WebPanels más simples: **ABMs (Alta-Baja-Modificación)** de tablas maestras.
+Start with the simplest WebPanels: **CRUD screens** over master tables.
 
-#### Proceso por cada WebPanel:
+#### The process for each WebPanel:
 
-**Paso 1 — Crear instancia PXWorkWith**
+**Step 1 — create the PXWorkWith instance**
 
-Asociar a la transacción correspondiente y configurar:
+Attach it to the matching transaction and configure:
 
 ```xml
 <instance>
-  <level name="MiEntidad">
+  <level name="MyEntity">
     <selection>
       <grid>
-        <!-- Mapear columnas de la grilla actual -->
+        <!-- Map the current grid's columns -->
         <attributes>
-          <attribute name="AtributoId" />
-          <attribute name="AtributoNombre" />
-          <attribute name="AtributoEstado" />
+          <attribute name="AttributeId" />
+          <attribute name="AttributeName" />
+          <attribute name="AttributeStatus" />
         </attributes>
       </grid>
       <filter>
-        <!-- Mapear filtros existentes -->
+        <!-- Map the existing filters -->
         <search>
-          <attribute name="AtributoNombre" />
+          <attribute name="AttributeName" />
         </search>
       </filter>
       <orders>
-        <!-- Mapear ordenamientos existentes -->
-        <order name="PorNombre">
-          <orderAttribute name="AtributoNombre" ascending="true" />
+        <!-- Map the existing orderings -->
+        <order name="ByName">
+          <orderAttribute name="AttributeName" ascending="true" />
         </order>
       </orders>
       <actions>
-        <!-- Mapear acciones/botones existentes -->
+        <!-- Map the existing actions/buttons -->
       </actions>
     </selection>
   </level>
 </instance>
 ```
 
-**Paso 2 — Migrar lógica custom a hooks**
+**Step 2 — migrate the custom logic into hooks**
 
-La lógica que no es declarativa se migra a los hooks de código:
+Whatever is not declarative moves into the code hooks:
 
 ```xml
 <codes>
   <code type="Start">
     <![CDATA[
-      // Código de inicialización del WebPanel original
+      // The original WebPanel's initialization code
     ]]>
   </code>
   <code type="Refresh">
     <![CDATA[
-      // Código del Refresh original
+      // The original Refresh code
     ]]>
   </code>
   <code type="Load">
     <![CDATA[
-      // Código del Load original (cálculos por fila)
+      // The original Load code (per-row computations)
     ]]>
   </code>
 </codes>
 ```
 
-**Paso 3 — Generar y comparar**
+**Step 3 — generate and compare**
 
-1. Generar los objetos desde la instancia
-2. Comparar visualmente el WebPanel generado vs. el original
-3. Ajustar la instancia hasta que coincidan
+1. Generate the objects from the instance
+2. Compare the generated WebPanel visually against the original
+3. Adjust the instance until they match
 
-**Paso 4 — Reemplazar**
+**Step 4 — replace**
 
-1. Actualizar las referencias al WebPanel original para apuntar al generado
-2. Desactivar/eliminar el WebPanel manual original
+1. Update the references to the original WebPanel so they point at the generated one
+2. Disable/delete the original hand-written WebPanel
 
-### Fase 4: Migración de formularios (PXParameterRequest)
+### Phase 4: migrating forms (PXParameterRequest)
 
-Migrar popups, diálogos de confirmación y formularios de captura de parámetros.
+Migrate popups, confirmation dialogs and parameter-capture forms.
 
-#### Criterios de mapeo:
+#### Mapping criteria:
 
-| WebPanel actual | behaviour PXParameterRequest |
-|----------------|------------------------------|
-| Popup con "¿Está seguro?" + Si/No | `PopupParameterRequest` |
-| Formulario modal que captura datos | `ParameterRequest` |
-| Panel de filtros flotante | `FloatingParameterRequest` |
-| Formulario embebido | `Panel` |
+| Current WebPanel | PXParameterRequest behaviour |
+|------------------|------------------------------|
+| Popup with "Are you sure?" + Yes/No | `PopupParameterRequest` |
+| Modal form capturing data | `ParameterRequest` |
+| Floating filter panel | `FloatingParameterRequest` |
+| Embedded form | `Panel` |
 
-### Fase 5: Migración de pantallas compuestas (PXComposer)
+### Phase 5: migrating composed screens (PXComposer)
 
-Migrar dashboards y pantallas que combinan múltiples componentes.
+Migrate dashboards and screens combining several components.
 
-#### Proceso:
+#### The process:
 
-1. Identificar los componentes individuales de la pantalla
-2. Verificar que cada componente ya esté migrado a un pattern (PXWorkWith, PXParameterRequest)
-3. Crear instancia PXComposer que los compose:
+1. Identify the screen's individual components
+2. Verify that each component has already been migrated to a pattern (PXWorkWith, PXParameterRequest)
+3. Create a PXComposer instance composing them:
 
 ```xml
 <instance>
@@ -155,12 +155,12 @@ Migrar dashboards y pantallas que combinan múltiples componentes.
         <components>
           <component type="WebComponent"
                      callType="PXInstance"
-                     instanceObject="PXWorkWithFacturas"
+                     instanceObject="PXWorkWithInvoices"
                      instanceLevel="Level1"
                      instanceLevelNode="Selection" />
           <component type="WebComponent"
                      callType="PXInstance"
-                     instanceObject="PXWorkWithClientes"
+                     instanceObject="PXWorkWithCustomers"
                      instanceLevel="Level1"
                      instanceLevelNode="Selection" />
         </components>
@@ -170,93 +170,93 @@ Migrar dashboards y pantallas que combinan múltiples componentes.
 </instance>
 ```
 
-### Fase 6: Migración de flujos (PXFlowController)
+### Phase 6: migrating flows (PXFlowController)
 
-Migrar WebPanels que implementan flujos de trabajo paso a paso.
+Migrate WebPanels implementing step-by-step workflows.
 
-#### Proceso:
+#### The process:
 
-1. Diagramar el flujo actual (pasos, decisiones, confirmaciones)
-2. Mapear cada paso a una "línea" del PXFlowController
-3. Mapear cada decisión a una acción con nextLine
-4. Mapear cada confirmación a un nodo confirm con responses
+1. Diagram the current flow (steps, decisions, confirmations)
+2. Map each step to a PXFlowController "line"
+3. Map each decision to an action with a nextLine
+4. Map each confirmation to a confirm node with its responses
 
 ---
 
-## Migración dual-platform simultánea
+## Simultaneous dual-platform migration
 
-Si se está migrando de Desktop a Responsive, aprovechar la migración a patterns para hacerlo en un solo paso:
+If you are also moving from Desktop to Responsive, use the pattern migration to do it in a single step:
 
 ```
-WebPanel manual (Desktop)
+Hand-written WebPanel (Desktop)
     │
-    ▼ Migrar a pattern
+    ▼ Migrate to a pattern
     │
-    ├── generateWeb = True          ← Mantener Desktop
-    └── generateWebResponsive = True ← Agregar Responsive
+    ├── generateWeb = True          ← Keep Desktop
+    └── generateWebResponsive = True ← Add Responsive
 ```
 
-Esto es más eficiente que:
-1. Migrar a pattern en Desktop
-2. Luego habilitar Responsive
+That is more efficient than:
+1. Migrating to a pattern on Desktop
+2. Then enabling Responsive
 
-## Orden recomendado de migración
+## Recommended migration order
 
 ```
-1. Módulos @PXTools (infraestructura)
+1. @PXTools modules (infrastructure)
    │
-2. ABMs simples (tablas maestras)
-   │    └── PXWorkWith solo con Selection
+2. Simple CRUD screens (master tables)
+   │    └── PXWorkWith with Selection only
    │
-3. ABMs con detalle
-   │    └── PXWorkWith con Selection + View + Tabs
+3. CRUD screens with a detail
+   │    └── PXWorkWith with Selection + View + Tabs
    │
-4. Formularios y popups
+4. Forms and popups
    │    └── PXParameterRequest
    │
-5. Pantallas compuestas
-   │    └── PXComposer (requiere que los componentes ya estén migrados)
+5. Composed screens
+   │    └── PXComposer (its components must already be migrated)
    │
-6. Flujos de trabajo
+6. Workflows
    │    └── PXFlowController
    │
-7. APIs/WebServices
+7. APIs/Web Services
         └── PXWSLayer + PXWSQuery + PXWSData + PXWSTransaction
 ```
 
-## Métricas de progreso
+## Progress metrics
 
-| Métrica | Cómo medir |
-|---------|-----------|
-| % WebPanels migrados | (WP migrados / WP totales) × 100 |
-| Cobertura de patterns | (WP con pattern / WP migrables) × 100 |
-| Deuda de UI | Cantidad de WP marcados como "no migrables" |
-| Dual-platform | % de instancias con generateWebResponsive = True |
+| Metric | How to measure it |
+|--------|-------------------|
+| % of WebPanels migrated | (migrated WPs / total WPs) × 100 |
+| Pattern coverage | (WPs with a pattern / migratable WPs) × 100 |
+| UI debt | Number of WPs marked "not migratable" |
+| Dual-platform | % of instances with generateWebResponsive = True |
 
-## Riesgos y mitigación
+## Risks and mitigation
 
-| Riesgo | Mitigación |
-|--------|-----------|
-| Pérdida de funcionalidad | Comparar visualmente antes de reemplazar |
-| Performance diferente | Probar con volumen de datos real |
-| Lógica no capturada en hooks | Revisar exhaustivamente el código Events del WP original |
-| Dependencias rotas | Mapear todas las references antes de eliminar el WP original |
-| Resistencia del equipo | Migrar progresivamente, empezando por lo más simple |
+| Risk | Mitigation |
+|------|------------|
+| Losing functionality | Compare visually before replacing |
+| Different performance | Test with realistic data volumes |
+| Logic not captured in the hooks | Review the original WP's Events code exhaustively |
+| Broken dependencies | Map every reference before deleting the original WP |
+| Team resistance | Migrate progressively, starting with the simplest |
 
-## Checklist de migración por WebPanel
+## Per-WebPanel migration checklist
 
-- [ ] WebPanel clasificado (100% / parcial / no migrable)
-- [ ] Pattern destino identificado
-- [ ] Transacción asociada existente
-- [ ] Instancia de pattern creada
-- [ ] Columnas/campos mapeados
-- [ ] Filtros mapeados
-- [ ] Ordenamientos mapeados
-- [ ] Acciones mapeadas
-- [ ] Código custom migrado a hooks
-- [ ] Objetos generados
-- [ ] Comparación visual OK
-- [ ] Tests funcionales OK
-- [ ] Referencias actualizadas
-- [ ] WebPanel original desactivado
-- [ ] generateWebResponsive habilitado (si aplica)
+- [ ] WebPanel classified (100% / partial / not migratable)
+- [ ] Target pattern identified
+- [ ] The associated transaction exists
+- [ ] Pattern instance created
+- [ ] Columns/fields mapped
+- [ ] Filters mapped
+- [ ] Orderings mapped
+- [ ] Actions mapped
+- [ ] Custom code migrated into the hooks
+- [ ] Objects generated
+- [ ] Visual comparison OK
+- [ ] Functional tests OK
+- [ ] References updated
+- [ ] Original WebPanel disabled
+- [ ] generateWebResponsive enabled (where applicable)
