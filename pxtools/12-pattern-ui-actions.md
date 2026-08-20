@@ -1,58 +1,58 @@
-# Acciones en Patterns de UI — Referencia Transversal
+# Actions in the UI Patterns — Cross-Cutting Reference
 
-## Aplica a
+## Applies to
 
-Este documento describe el **sistema de acciones** compartido por los tres patterns de UI de PXTools:
+This document describes the **action system** shared by the three PXTools UI patterns:
 
-- **PXWorkWith** — acciones en Selection, View, Prompt, Tabs
-- **PXParameterRequest** — acciones en el formulario (Aceptar, Cancelar, custom)
-- **PXComposer** — acciones en el panel compuesto
+- **PXWorkWith** — actions in Selection, View, Prompt, Tabs
+- **PXParameterRequest** — actions in the form (Accept, Cancel, custom)
+- **PXComposer** — actions in the composed panel
 
-La estructura del nodo `action` es **practicamente identica** en los tres patterns. Las diferencias especificas se documentan donde aplican.
+The `action` node's structure is **practically identical** in all three patterns. The specific differences are documented where they apply.
 
 ---
 
-## 1. Estructura XML del nodo Action
+## 1. XML structure of the Action node
 
 ```xml
-<action name="MiAccion"
-        caption="Texto visible"
-        tooltip="Tooltip opcional"
-        image="ImagenBoton"
+<action name="MyAction"
+        caption="Visible text"
+        tooltip="Optional tooltip"
+        image="ButtonImage"
         type="Standard|Custom"
         position="Top|Bottom|Both|Grid"
 
-        conditionPreviousCode="// Codigo previo para evaluar condicion"
-        condition="&EsValido = true"
+        conditionPreviousCode="// Code run before evaluating the condition"
+        condition="&IsValid = true"
         evaluateCondition="Event|Load"
 
-        actionPreviousCode="// Codigo ANTES de la invocacion principal"
+        actionPreviousCode="// Code run BEFORE the main invocation"
 
         callType="Link|Call|Prompt|External Link|Client Text Print|Subroutine|Event|Submit|None|Return"
         linkType="GXObject|PXInstance"
-        gxObject="NombreObjeto"
+        gxObject="ObjectName"
         target="Self|New"
         popupWidth="400"
         popupHeight="300"
 
-        actionPostCode="// Codigo DESPUES de la invocacion principal"
+        actionPostCode="// Code run AFTER the main invocation"
         refreshAction="..."
 
-        confirm="¿Esta seguro?"
+        confirm="Are you sure?"
         closeWindowControl="..."
         closeWindowControlCondition="..."
         hasPostCode="true|false">
 
-  <!-- Parametros del objeto invocado -->
+  <!-- Parameters of the invoked object -->
   <parameters>
     <parameter name="Param1" />
     <parameter name="Param2" />
   </parameters>
 
-  <!-- Seguridad -->
-  <security object="MiObjeto" operation="Execute" />
+  <!-- Security -->
+  <security object="MyObject" operation="Execute" />
 
-  <!-- Invocaciones condicionales (ver seccion ConditionalCalls) -->
+  <!-- Conditional invocations (see the ConditionalCalls section) -->
   <conditionalCalls>
     <conditionalCall condition="..." gxObject="..." />
   </conditionalCalls>
@@ -61,387 +61,381 @@ La estructura del nodo `action` es **practicamente identica** en los tres patter
 
 ---
 
-## 2. Propiedades del Action
+## 2. Action properties
 
-### Identificacion y presentacion
+### Identity and presentation
 
-| Propiedad | Tipo | Descripcion |
-|-----------|------|-------------|
-| `name` | string | Identificador unico de la accion |
-| `caption` | string | Texto visible en el boton/link |
-| `tooltip` | string | Tooltip al pasar el mouse |
-| `image` | reference | Imagen del boton |
-| `type` | enum | `Standard` (Aceptar/Cancelar) o `Custom` |
-| `position` | enum | `Top`, `Bottom`, `Both`, `Grid` (dentro de cada fila) |
+| Property | Type | Description |
+|----------|------|-------------|
+| `name` | string | The action's unique identifier |
+| `caption` | string | The text shown on the button/link |
+| `tooltip` | string | Tooltip on hover |
+| `image` | reference | The button's image |
+| `type` | enum | `Standard` (Accept/Cancel) or `Custom` |
+| `position` | enum | `Top`, `Bottom`, `Both`, `Grid` (inside each row) |
 
-### Condicion de visibilidad/ejecucion
+### Visibility/execution condition
 
-| Propiedad | Tipo | Descripcion |
-|-----------|------|-------------|
-| `conditionPreviousCode` | code | Codigo procedural que se ejecuta para preparar la evaluacion de la condicion. Permite calcular variables auxiliares necesarias para la condicion |
-| `condition` | expression | Expresion GeneXus que determina si la accion se muestra/ejecuta. Si evalua `false`, la accion no se dispara |
-| `evaluateCondition` | enum | `Event`: evalua la condicion al hacer clic. `Load`: evalua por cada fila de la grilla (permite visibilidad condicional por fila) |
+| Property | Type | Description |
+|----------|------|-------------|
+| `conditionPreviousCode` | code | Procedural code run to prepare the condition's evaluation. It lets you compute auxiliary variables the condition needs |
+| `condition` | expression | A GeneXus expression determining whether the action is shown/executed. If it evaluates to `false`, the action does not fire |
+| `evaluateCondition` | enum | `Event`: evaluates the condition on click. `Load`: evaluates it for every grid row (allowing per-row conditional visibility) |
 
-### Codigo pre-invocacion
+### Pre-invocation code
 
-| Propiedad | Tipo | Descripcion |
-|-----------|------|-------------|
-| `actionPreviousCode` | code | Codigo procedural que se ejecuta **antes** de la invocacion principal. Uso tipico: validaciones adicionales, preparacion de datos, calculos previos |
+| Property | Type | Description |
+|----------|------|-------------|
+| `actionPreviousCode` | code | Procedural code run **before** the main invocation. Typical use: extra validations, preparing data, prior computations |
 
-### Invocacion principal
+### The main invocation
 
-| Propiedad | Tipo | Descripcion |
-|-----------|------|-------------|
-| `callType` | enum | Tipo de invocacion (ver tabla detallada abajo) |
-| `linkType` | enum | Solo para `callType="Link"`: `GXObject` o `PXInstance` |
-| `gxObject` | reference | Objeto GeneXus destino (para GXObject) |
-| `target` | enum | `Self` = misma ventana, `New` = popup/ventana nueva |
-| `popupWidth` | int | Ancho del popup (solo si target=New) |
-| `popupHeight` | int | Alto del popup (solo si target=New) |
+| Property | Type | Description |
+|----------|------|-------------|
+| `callType` | enum | The kind of invocation (see the detailed table below) |
+| `linkType` | enum | Only for `callType="Link"`: `GXObject` or `PXInstance` |
+| `gxObject` | reference | The target GeneXus object (for GXObject) |
+| `target` | enum | `Self` = the same window, `New` = a popup/new window |
+| `popupWidth` | int | The popup's width (only when target=New) |
+| `popupHeight` | int | The popup's height (only when target=New) |
 
-### Propiedades PXInstance (para callType Link + linkType PXInstance)
+### PXInstance properties (for callType Link + linkType PXInstance)
 
-| Propiedad | Tipo | Descripcion |
-|-----------|------|-------------|
-| `instanceObject` | reference | Nombre de la instancia de pattern destino |
-| `instanceLevel` | string | Nombre del level dentro de la instancia |
-| `instanceLevelNode` | enum | Nodo a invocar: `Selection`, `View`, `Prompt`, `Transaction`, `Level` |
-| `instanceLevelViewSection` | string | (Solo View) Tab/seccion especifica. Si se omite, va al tab principal |
+| Property | Type | Description |
+|----------|------|-------------|
+| `instanceObject` | reference | The name of the target pattern instance |
+| `instanceLevel` | string | The level's name inside that instance |
+| `instanceLevelNode` | enum | The node to invoke: `Selection`, `View`, `Prompt`, `Transaction`, `Level` |
+| `instanceLevelViewSection` | string | (View only) A specific tab/section. Omitted, it goes to the main tab |
 
-### Codigo post-invocacion
+### Post-invocation code
 
-| Propiedad | Tipo | Descripcion |
-|-----------|------|-------------|
-| `actionPostCode` | code | Codigo procedural que se ejecuta **despues** de la invocacion principal. Uso tipico: actualizar estados, guardar en WebSession, mensajes de confirmacion |
-| `refreshAction` | enum | Como refrescar la pantalla/grilla despues de la accion |
+| Property | Type | Description |
+|----------|------|-------------|
+| `actionPostCode` | code | Procedural code run **after** the main invocation. Typical use: updating states, storing into WebSession, confirmation messages |
+| `refreshAction` | enum | How to refresh the screen/grid after the action |
 
-### Otras propiedades
+### Other properties
 
-| Propiedad | Tipo | Descripcion |
-|-----------|------|-------------|
-| `confirm` | string/bool | Dialogo de confirmacion antes de ejecutar |
-| `closeWindowControl` | string | Control para cierre del popup |
-| `closeWindowControlCondition` | expression | Condicion para aceptar el cierre |
-| `hasPostCode` | bool | Habilita codigo post-cierre del popup |
-| `security` | subnodo | Control de acceso: `object` + `operation` |
-
----
-
-## 3. Tipos de callType
-
-| callType | Descripcion | Uso tipico |
-|----------|-------------|------------|
-| `Link` | Navega a otro WebPanel/Transaction | Abrir pantalla de detalle, edicion, otro pattern |
-| `Call` | Invoca un Procedure (sin interfaz) | Procesar, calcular, actualizar registros |
-| `Prompt` | Abre dialogo modal (popup) | Abrir un PXParameterRequest o lookup |
-| `External Link` | Abre WebPanel/URL no generado por PXTools | Abrir WebPanel manual o URL externa |
-| `Client Text Print` | Impresion desde el cliente | Imprimir comprobante |
-| `Subroutine` | Ejecuta subrutina local | Logica interna reutilizable definida en `codes/Subroutine` |
-| `Event` | Ejecuta codigo inline (sin objeto principal) | Cuando toda la logica es codigo procedural sin invocacion externa |
-| `Submit` | Somete un proceso batch | Ejecutar tarea asincrona |
-| `None` | No ejecuta nada | Solo importa el codigo pre/post |
-| `Return` | Retorna/cierra popup | Boton Cancelar, Salir |
+| Property | Type | Description |
+|----------|------|-------------|
+| `confirm` | string/bool | A confirmation dialog before executing |
+| `closeWindowControl` | string | The control closing the popup |
+| `closeWindowControlCondition` | expression | The condition for accepting the close |
+| `hasPostCode` | bool | Enables code that runs after the popup closes |
+| `security` | subnode | Access control: `object` + `operation` |
 
 ---
 
-## 4. Regla critica: linkType y migracion Responsive
+## 3. callType kinds
 
-**Solo las acciones con `callType="Link"` necesitan `linkType="PXInstance"`** para ser independientes de la plataforma.
+| callType | Description | Typical use |
+|----------|-------------|-------------|
+| `Link` | Navigates to another WebPanel/Transaction | Opening a detail screen, an editor, another pattern |
+| `Call` | Invokes a Procedure (no UI) | Processing, computing, updating records |
+| `Prompt` | Opens a modal dialog (popup) | Opening a PXParameterRequest or a lookup |
+| `External Link` | Opens a WebPanel/URL not generated by PXTools | Opening a hand-written WebPanel or an external URL |
+| `Client Text Print` | Client-side printing | Printing a document |
+| `Subroutine` | Runs a local subroutine | Reusable internal logic defined in `codes/Subroutine` |
+| `Event` | Runs inline code (no main object) | When all the logic is procedural code with no external invocation |
+| `Submit` | Submits a batch process | Running an asynchronous task |
+| `None` | Does nothing | Only the pre/post code matters |
+| `Return` | Returns/closes the popup | A Cancel or Exit button |
 
-Cuando se genera para Responsive, los nombres de objetos generados por patterns cambian de prefijo:
+---
+
+## 4. Critical rule: linkType and Responsive migration
+
+**Only actions with `callType="Link"` need `linkType="PXInstance"`** in order to be platform-independent.
+
+When generating for Responsive, the names of pattern-generated objects change prefix:
 
 ```
-Desktop:    WWFactura,  ViewFactura,  PrFactura,  TrFactura
-Responsive: RWWFactura, RViewFactura, RPrFactura, RFactura
+Desktop:    WWInvoice,  ViewInvoice,  PrInvoice,  TrInvoice
+Responsive: RWWInvoice, RViewInvoice, RPrInvoice, RInvoice
 ```
 
-Si una accion usa `linkType="GXObject"` con `gxObject="TrFactura"`, al habilitar Responsive el nombre cambia y la referencia se rompe.
+If an action uses `linkType="GXObject"` with `gxObject="TrInvoice"`, enabling Responsive changes the name and the reference breaks.
 
-Con `linkType="PXInstance"`, el generador resuelve automaticamente el nombre correcto segun la plataforma:
+With `linkType="PXInstance"`, the generator automatically resolves the right name per platform:
 
 ```xml
-<!-- INCORRECTO (se rompe al cambiar de plataforma) -->
-<action callType="Link" linkType="GXObject" gxObject="TrFactura" />
+<!-- WRONG (it breaks when the platform changes) -->
+<action callType="Link" linkType="GXObject" gxObject="TrInvoice" />
 
-<!-- CORRECTO (independiente de plataforma) -->
+<!-- RIGHT (platform-independent) -->
 <action callType="Link" linkType="PXInstance"
-        instanceObject="PXWorkWithFactura"
-        instanceLevel="Factura"
+        instanceObject="PXWorkWithInvoice"
+        instanceLevel="Invoice"
         instanceLevelNode="Transaction" />
 ```
 
-**Los demas callTypes NO necesitan PXInstance** porque invocan Procedures, subrutinas o codigo inline cuyos nombres no cambian entre plataformas:
+**The other callTypes do NOT need PXInstance**, because they invoke Procedures, subroutines or inline code whose names do not change between platforms:
 
 ```xml
-<!-- OK: Call invoca un Procedure (nombre no cambia) -->
+<!-- OK: Call invokes a Procedure (the name does not change) -->
 <action callType="Call" gxObject="ProcessRecord" />
 
-<!-- OK: Event ejecuta codigo inline (no depende de nombres) -->
+<!-- OK: Event runs inline code (it depends on no names) -->
 <action callType="Event" />
 
-<!-- OK: Subroutine es local al objeto (no depende de nombres) -->
-<action callType="Subroutine" subroutine="ValidarDatos" />
+<!-- OK: Subroutine is local to the object (it depends on no names) -->
+<action callType="Subroutine" subroutine="ValidateData" />
 ```
 
 ---
 
-## 5. ConditionalCalls — Invocacion condicional
+## 5. ConditionalCalls — conditional invocation
 
-ConditionalCalls permite que una misma accion invoque **distintos objetos/interfaces segun una condicion**, funcionando como un `Do Case` declarativo para navegacion:
+ConditionalCalls lets a single action invoke **different objects/interfaces depending on a condition**, working as a declarative `Do Case` for navigation:
 
 ```xml
-<action name="VerDetalle"
-        caption="Ver Detalle"
+<action name="ViewDetail"
+        caption="View detail"
         callType="Link">
   <conditionalCalls>
-    <conditionalCall condition="FacturaTipo = 'Nacional'"
-                     gxObject="ViewFacturaNacional"
+    <conditionalCall condition="InvoiceType = 'Domestic'"
+                     gxObject="ViewDomesticInvoice"
                      linkType="PXInstance"
-                     instanceObject="PXWorkWithFacturaNacional"
-                     instanceLevel="Factura"
+                     instanceObject="PXWorkWithDomesticInvoice"
+                     instanceLevel="Invoice"
                      instanceLevelNode="View" />
-    <conditionalCall condition="FacturaTipo = 'Exportacion'"
-                     gxObject="ViewFacturaExportacion"
+    <conditionalCall condition="InvoiceType = 'Export'"
+                     gxObject="ViewExportInvoice"
                      linkType="PXInstance"
-                     instanceObject="PXWorkWithFacturaExportacion"
-                     instanceLevel="Factura"
+                     instanceObject="PXWorkWithExportInvoice"
+                     instanceLevel="Invoice"
                      instanceLevelNode="View" />
   </conditionalCalls>
 </action>
 ```
 
-### Comportamiento
+### Behaviour
 
-1. Al hacer clic en la accion, se evaluan las condiciones de cada `conditionalCall` en orden
-2. La primera condicion que sea `true` determina el objeto/instancia a invocar
-3. Si ninguna condicion es `true`, se usa el `gxObject` del action padre (si existe)
+1. On clicking the action, each `conditionalCall`'s condition is evaluated in order
+2. The first condition that is `true` determines the object/instance to invoke
+3. If no condition is `true`, the parent action's `gxObject` is used (when there is one)
 
-### Casos de uso
+### Use cases
 
-| Escenario | Ejemplo |
-|-----------|---------|
-| Diferente pantalla de detalle segun tipo de registro | Ver factura nacional vs exportacion |
-| Diferente formulario de edicion segun estado | Editar borrador vs editar aprobado |
-| Diferente flujo segun rol del usuario | Flujo administrador vs flujo operador |
-| Diferentes vistas segun configuracion | Vista detallada vs vista resumida |
+| Scenario | Example |
+|----------|---------|
+| A different detail screen depending on the record's type | Viewing a domestic vs an export invoice |
+| A different edit form depending on the status | Editing a draft vs an approved record |
+| A different flow depending on the user's role | Administrator flow vs operator flow |
+| Different views depending on configuration | Detailed view vs summary view |
 
-### ConditionalCalls y PXInstance
+### ConditionalCalls and PXInstance
 
-Cada `conditionalCall` soporta las mismas propiedades de `linkType`/`instanceObject` que el action padre. Para migracion Responsive, cada conditionalCall debe usar `linkType="PXInstance"` si apunta a un objeto generado por pattern.
+Each `conditionalCall` supports the same `linkType`/`instanceObject` properties as the parent action. For Responsive migration, every conditionalCall must use `linkType="PXInstance"` when it points at a pattern-generated object.
 
 ---
 
-## 5.bis Confirms — dialogo de confirmacion con texto dinamico
+## 5.bis Confirms — a confirmation dialog with dynamic text
 
-La propiedad `confirm` del action (§2) solo admite **texto fijo**. Cuando la pregunta tiene que
-nombrar el registro concreto ("Eliminar el cliente X?"), hay que usar el nodo **`confirms`**, hermano
-de `actions` dentro del mismo nivel.
+The action's `confirm` property (§2) accepts **fixed text only**. When the question has to name the concrete record ("Delete customer X?"), use the **`confirms`** node, a sibling of `actions` within the same level.
 
 ```xml
 <actions>
-  <!-- La accion no ejecuta: invoca al confirm -->
-  <action name="Delete" inGrid="True" callType="Subroutine" subroutine="ConfirmBorrado" />
+  <!-- The action does not execute: it invokes the confirm -->
+  <action name="Delete" inGrid="True" callType="Subroutine" subroutine="ConfirmDelete" />
 
-  <!-- La accion que hace el trabajo real, disparada por la respuesta afirmativa -->
-  <action name="Borrar" controlType="Event" callType="Call"
-          gxObject="DelCliente, Ventas" refreshAction="Grid Refresh">
-    <parameters><parameter name="ClienteId" /></parameters>
+  <!-- The action doing the real work, fired by the affirmative response -->
+  <action name="DoDelete" controlType="Event" callType="Call"
+          gxObject="DelCustomer, Sales" refreshAction="Grid Refresh">
+    <parameters><parameter name="CustomerId" /></parameters>
   </action>
 </actions>
 
 <confirms>
-  <confirm name="ConfirmBorrado" linkType="GXObject" gxObject="HPEXE_Confirm, PXTools.APIs"
-           question="&quot;Eliminar el cliente &quot; + ClienteNombre.Trim() + &quot;?&quot;"
+  <confirm name="ConfirmDelete" linkType="GXObject" gxObject="HPEXE_Confirm, PXTools.APIs"
+           question="&quot;Delete customer &quot; + CustomerName.Trim() + &quot;?&quot;"
            questionType="Variable">
     <responses>
-      <response responseValue="True" callType="Subroutine" subroutine="Borrar" />
+      <response responseValue="True" callType="Subroutine" subroutine="DoDelete" />
     </responses>
   </confirm>
 </confirms>
 ```
 
-| Propiedad | Descripcion |
+| Property | Description |
 |---|---|
-| `name` | Nombre del confirm. La accion lo invoca con `callType="Subroutine" subroutine="<name>"` |
-| `question` | Texto o **expresion** de la pregunta |
-| `questionType` | `Variable` = `question` se evalua como expresion. **Sin esto el texto sale literal** |
-| `linkType` / `gxObject` | Dialogo a usar; el estandar de PXTools es `HPEXE_Confirm, PXTools.APIs` |
-| `responses/response` | `responseValue` (`True`/`False`) + la invocacion a ejecutar, igual que un action |
+| `name` | The confirm's name. The action invokes it with `callType="Subroutine" subroutine="<name>"` |
+| `question` | The question's text or **expression** |
+| `questionType` | `Variable` = `question` is evaluated as an expression. **Without it the text comes out literally** |
+| `linkType` / `gxObject` | The dialog to use; the PXTools standard is `HPEXE_Confirm, PXTools.APIs` |
+| `responses/response` | `responseValue` (`True`/`False`) + the invocation to run, exactly like an action |
 
-> **El confirm se invoca como si fuera una subrutina.** La accion visible no ejecuta nada: solo llama
-> al confirm, y es la **respuesta** la que dispara la accion que trabaja. Por eso hacen falta *dos*
-> actions: la que ve el usuario y la que hace el trabajo.
+> **The confirm is invoked as if it were a subroutine.** The visible action executes nothing: it only calls the confirm, and it is the **response** that fires the action doing the work. That is why *two* actions are needed: the one the user sees and the one doing the job.
 
-### Caso tipico: reemplazar el borrado de la transaccion
+### The typical case: replacing the transaction's delete
 
-Cuando la entidad tiene dependientes, el borrado estandar falla por integridad referencial. El
-reemplazo tiene **tres partes, y omitir cualquiera lo deja sin efecto**:
+When the entity has dependents, the standard delete fails on referential integrity. The replacement has **three parts, and leaving any of them out makes it ineffective**:
 
-1. **`<modes Delete="false" />`** — sin esto el pattern **sigue generando su propia accion Delete**
-   contra la transaccion, y el arreglo no sirve de nada (ver [01-pxworkwith.md](01-pxworkwith.md) §4.1).
-2. Un `action` propio llamado `Delete` que invoque al confirm.
-3. Un procedimiento que borre en cascada, de la hoja a la raiz, invocado por la respuesta afirmativa.
+1. **`<modes Delete="false" />`** — without this the pattern **keeps generating its own Delete action** against the transaction, and the fix achieves nothing (see [01-pxworkwith.md](01-pxworkwith.md) §4.1).
+2. Your own `action` named `Delete` invoking the confirm.
+3. A procedure deleting in cascade, from the leaf up to the root, invoked by the affirmative response.
 
 ---
 
-## 6. Ciclo de ejecucion completo
+## 6. The complete execution cycle
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                   CICLO DE UNA ACCION                       │
+│                   AN ACTION'S CYCLE                         │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  1. conditionPreviousCode                                   │
-│     └─ Codigo para preparar variables de condicion          │
+│     └─ Code preparing the condition's variables             │
 │                                                             │
 │  2. condition                                               │
-│     └─ Si es false → la accion NO se ejecuta (fin)          │
+│     └─ If false → the action does NOT run (end)             │
 │                                                             │
-│  3. confirm (si esta definido)                              │
-│     └─ Muestra dialogo "¿Esta seguro?" → Si/No             │
-│        Si No → fin                                          │
+│  3. confirm (when defined)                                  │
+│     └─ Shows an "Are you sure?" dialog → Yes/No             │
+│        If No → end                                          │
 │                                                             │
 │  4. actionPreviousCode                                      │
-│     └─ Validaciones, preparacion de datos                   │
+│     └─ Validations, preparing data                          │
 │                                                             │
-│  5. INVOCACION PRINCIPAL (segun callType)                    │
-│     ├─ Link → Navega a objeto/instancia                     │
-│     │   └─ ConditionalCalls: evalua condiciones, elige dest │
-│     ├─ Call → Invoca Procedure                              │
-│     ├─ Event → Ejecuta codigo inline                        │
-│     ├─ Prompt → Abre popup modal                            │
-│     ├─ Subroutine → Ejecuta sub local                       │
-│     ├─ Submit → Somete batch                                │
-│     ├─ Return → Cierra/retorna                              │
-│     └─ None → No hace nada                                  │
+│  5. THE MAIN INVOCATION (per callType)                      │
+│     ├─ Link → navigates to an object/instance               │
+│     │   └─ ConditionalCalls: evaluates and picks a target   │
+│     ├─ Call → invokes a Procedure                           │
+│     ├─ Event → runs inline code                             │
+│     ├─ Prompt → opens a modal popup                         │
+│     ├─ Subroutine → runs a local sub                        │
+│     ├─ Submit → submits a batch                             │
+│     ├─ Return → closes/returns                              │
+│     └─ None → does nothing                                  │
 │                                                             │
 │  6. actionPostCode                                          │
-│     └─ Logica posterior (estados, WebSession, mensajes)      │
+│     └─ Follow-up logic (states, WebSession, messages)       │
 │                                                             │
 │  7. refreshAction                                           │
-│     └─ Refresco de pantalla/grilla si corresponde           │
+│     └─ Refreshes the screen/grid where applicable           │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 7. Diferencias por pattern
+## 7. Differences per pattern
 
 ### PXWorkWith
 
-- Las acciones pueden estar en `selection/actions`, `view/actions`, `prompt/actions` y en cada `section/actions` (tabs)
-- Cuando `position="Grid"`, la accion se muestra por cada fila y la condicion se evalua en el Load
-- Soporta acciones estandar predefinidas: `Insert`, `Update`, `Delete`, `Display`, `ExportExcel`
+- Actions can live in `selection/actions`, `view/actions`, `prompt/actions` and in each `section/actions` (tabs)
+- When `position="Grid"`, the action is shown on every row and the condition is evaluated in the Load
+- It supports predefined standard actions: `Insert`, `Update`, `Delete`, `Display`, `ExportExcel`
 
 ### PXParameterRequest
 
-- Las acciones estan en `level/actions`
-- Tiene la propiedad adicional **`execute`** que controla que validaciones se aplican antes de ejecutar la accion (ver seccion 8)
-- Los tipos estandar son `Confirm` (Aceptar) y `Cancel` (Cancelar)
-- Las acciones interactuan con el nodo `calls` para encadenar invocaciones al confirmar
+- Actions live in `level/actions`
+- It has the extra **`execute`** property controlling which validations are applied before running the action (see section 8)
+- The standard types are `Confirm` (Accept) and `Cancel`
+- The actions interact with the `calls` node to chain invocations on confirmation
 
 ### PXComposer
 
-- Las acciones estan en `level/actions`
-- Funcionan igual que en PXWorkWith pero sin contexto de grilla (no hay evaluacion por fila)
-- Tipicamente son acciones de navegacion global del panel compuesto
+- Actions live in `level/actions`
+- They work as in PXWorkWith but without a grid context (there is no per-row evaluation)
+- They are typically global navigation actions of the composed panel
 
 ---
 
-## 8. Propiedad Execute en PXParameterRequest
+## 8. The Execute property in PXParameterRequest
 
-PXParameterRequest tiene una propiedad exclusiva **`execute`** en las acciones que controla **que validaciones se aplican** antes de ejecutar la accion. Esto existe porque PXParameterRequest tiene una funcion principal de **data entry** con validaciones que deben ejecutarse antes de procesar los datos.
+PXParameterRequest has an exclusive **`execute`** property on its actions, controlling **which validations apply** before running the action. It exists because PXParameterRequest's main job is **data entry**, with validations that must run before the data is processed.
 
-### Contexto: nodo Conditions del PXParameterRequest
+### Context: the PXParameterRequest's Conditions node
 
-El nodo `conditions` del PXParameterRequest define **condiciones de validacion generales** que son comunes a multiples acciones:
+The PXParameterRequest's `conditions` node defines **general validation conditions** shared by several actions:
 
 ```xml
 <conditions>
-  <condition>not &FechaDesde.IsEmpty()</condition>
-  <condition>not &FechaHasta.IsEmpty()</condition>
-  <condition>&FechaDesde <= &FechaHasta</condition>
+  <condition>not &DateFrom.IsEmpty()</condition>
+  <condition>not &DateTo.IsEmpty()</condition>
+  <condition>&DateFrom <= &DateTo</condition>
 </conditions>
 ```
 
-Estas condiciones representan **reglas de validacion de datos obligatorios** que aplican independientemente de que accion se dispare (con excepcion del Cancel).
+These conditions represent **rules about mandatory data** that apply regardless of which action fires (Cancel aside).
 
-### Valores de execute
+### execute values
 
-| Valor | Comportamiento |
-|-------|---------------|
-| **General Conditions** | Ejecuta las `conditions` generales del PXParameterRequest **y** las condiciones locales de la accion (`condition`). Uso: para acciones que requieren que todos los datos obligatorios esten completos (ej: Aceptar, Confirmar, Generar) |
-| **Action Conditions Only** | Ejecuta **solo** las condiciones locales de la accion (`condition`, `conditionPreviousCode`), ignorando las `conditions` generales. Uso: para acciones que no requieren validacion de todos los campos (ej: Vista Previa parcial, Buscar, acciones auxiliares) |
+| Value | Behaviour |
+|-------|-----------|
+| **General Conditions** | Runs the PXParameterRequest's general `conditions` **and** the action's local conditions (`condition`). Use it for actions requiring every mandatory field to be complete (Accept, Confirm, Generate) |
+| **Action Conditions Only** | Runs **only** the action's local conditions (`condition`, `conditionPreviousCode`), ignoring the general `conditions`. Use it for actions that do not require every field validated (a partial Preview, Search, auxiliary actions) |
 
-### Ejemplo
+### Example
 
 ```xml
-<!-- Condiciones generales del formulario (datos obligatorios) -->
+<!-- The form's general conditions (mandatory data) -->
 <conditions>
-  <condition>not &FechaDesde.IsEmpty()</condition>
-  <condition>not &ClienteId.IsEmpty()</condition>
+  <condition>not &DateFrom.IsEmpty()</condition>
+  <condition>not &CustomerId.IsEmpty()</condition>
 </conditions>
 
 <actions>
-  <!-- Aceptar: valida condiciones generales + locales -->
-  <action name="Confirm" caption="Aceptar"
+  <!-- Accept: validates the general conditions + the local ones -->
+  <action name="Confirm" caption="Accept"
           execute="General Conditions"
-          callType="Call" gxObject="GenerarReporte" />
+          callType="Call" gxObject="GenerateReport" />
 
-  <!-- Vista previa: solo valida su propia condicion -->
-  <action name="Preview" caption="Vista previa"
+  <!-- Preview: validates its own condition only -->
+  <action name="Preview" caption="Preview"
           execute="Action Conditions Only"
-          condition="&TipoReporte = 'PDF'"
-          callType="Link" gxObject="PreviewReporte" />
+          condition="&ReportType = 'PDF'"
+          callType="Link" gxObject="PreviewReport" />
 
-  <!-- Cancelar: no necesita validar nada -->
-  <action name="Cancel" caption="Cancelar"
+  <!-- Cancel: validates nothing -->
+  <action name="Cancel" caption="Cancel"
           callType="Return" />
 </actions>
 ```
 
-En este ejemplo:
-- **Aceptar** exige que FechaDesde y ClienteId esten llenos (condiciones generales)
-- **Vista previa** solo verifica que el tipo de reporte sea PDF (condicion local), sin importar si los demas campos estan llenos
-- **Cancelar** no ejecuta ninguna validacion
+In this example:
+- **Accept** requires DateFrom and CustomerId to be filled in (the general conditions)
+- **Preview** only checks that the report type is PDF (its local condition), regardless of the other fields
+- **Cancel** runs no validation at all
 
 ---
 
-## 9. Mapeo de codigo manual a propiedades de Action
+## 9. Mapping hand-written code to Action properties
 
-Guia para migrar eventos de WebPanels manuales a acciones de patterns:
+A guide for migrating hand-written WebPanel events into pattern actions:
 
-| Codigo en WebPanel manual | Propiedad del Action |
-|---------------------------|---------------------|
-| Validaciones al inicio del Event (If campo.IsEmpty(), Msg, Return) | `conditionPreviousCode` + `condition`, o `execute="General Conditions"` con nodo `conditions` |
-| `Do 'MiSubrutina'` antes de la invocacion | `actionPreviousCode` |
-| `MiProcedimiento.Call(...)` | `callType="Call"`, `gxObject="MiProcedimiento"` |
-| `MiWebPanel.Link(...)` o `Link(MiWebPanel, ...)` | `callType="Link"`, `linkType="PXInstance"` (si es pattern) o `linkType="GXObject"` |
-| `Do Case` con diferentes Link segun condicion | `conditionalCalls` con multiples `conditionalCall` |
-| Logica despues de la invocacion (If resultado, WebSession.Set, etc.) | `actionPostCode` |
-| `Return` al final del evento | Implicito en el ciclo de la accion |
-| Solo codigo sin invocacion a objeto | `callType="Event"` (todo va como codigo inline) |
-| Solo retorno sin logica | `callType="Return"` |
+| Code in a hand-written WebPanel | Action property |
+|---------------------------------|-----------------|
+| Validations at the top of the Event (If field.IsEmpty(), Msg, Return) | `conditionPreviousCode` + `condition`, or `execute="General Conditions"` with the `conditions` node |
+| `Do 'MySubroutine'` before the invocation | `actionPreviousCode` |
+| `MyProcedure.Call(...)` | `callType="Call"`, `gxObject="MyProcedure"` |
+| `MyWebPanel.Link(...)` or `Link(MyWebPanel, ...)` | `callType="Link"`, `linkType="PXInstance"` (if it is a pattern) or `linkType="GXObject"` |
+| A `Do Case` with different Links per condition | `conditionalCalls` with several `conditionalCall` entries |
+| Logic after the invocation (If result, WebSession.Set, etc.) | `actionPostCode` |
+| A `Return` at the end of the event | Implicit in the action's cycle |
+| Code only, with no object invocation | `callType="Event"` (it all goes in as inline code) |
+| A bare return with no logic | `callType="Return"` |
 
 ---
 
-## 10. Seguridad automática: visibilidad de acciones que navegan (PIsAuthorized)
+## 10. Automatic security: visibility of navigating actions (PIsAuthorized)
 
-Cuando una acción **navega a otro objeto** (`callType="Link"` con `instanceObject`/`gxObject`, o un `<link>` de columna/variable), PXTools genera en el **Start** del objeto generado un chequeo de autorización sobre el **objeto destino**; si el usuario no está autorizado, **oculta el control** (no lo deshabilita: `Visible = False`):
+When an action **navigates to another object** (`callType="Link"` with an `instanceObject`/`gxObject`, or a column/variable `<link>`), PXTools generates in the generated object's **Start** an authorization check against the **target object**; if the user is not authorized, it **hides the control** (it does not disable it: `Visible = False`):
 
 ```
-&lEnabled = udp(PIsAuthorized ,!'MiApp.WbAprobar')
+&lEnabled = udp(PIsAuthorized ,!'MyApp.WbApprove')
 If &lEnabled = Boolean.False
-	btnAprobar.Visible = Boolean.False
+	btnApprove.Visible = Boolean.False
 EndIf
 ```
 
-**Consecuencias prácticas:**
+**Practical consequences:**
 
-- **Es comportamiento esperado, no un bug.** Si una acción "no aparece" al entrar a la pantalla —y su `evaluateCondition` es `Event`, que no debería ocultar nada— la causa típica es esta gating: el usuario **no tiene permiso sobre el objeto destino**.
-- El chequeo es sobre el **objeto generado destino**, cuyo nombre depende de la plataforma: para un PXParameterRequest, `Wb{Name}` (Desktop) y `RWb{Name}` (Responsive); para un PXWorkWith, `WW{Name}`/`RWW{Name}`, `View{Name}`/`RView{Name}`, etc. Hay que **autorizar ambos** (Desktop y Responsive) en PXSecurity.
-- **Al agregar una acción que abre un objeto nuevo**, ese destino queda **sin autorizar por defecto** hasta que un admin lo conceda al rol → hasta entonces el botón **no se ve**. Paso obligatorio tras crear la acción: **autorizar el/los objeto(s) destino**.
-- No confundir con `condition`/`evaluateCondition`/`execute` (validación de datos) ni con el subnodo `<security object=… operation=…>` (permiso de ejecución de la propia acción): esta gating de **visibilidad** la genera PXTools **automáticamente** a partir de la navegación, sin declararla en la instancia.
+- **This is expected behaviour, not a bug.** If an action "does not appear" when the screen opens — and its `evaluateCondition` is `Event`, which should hide nothing — the usual cause is this gating: the user **has no permission over the target object**.
+- The check is against the **generated target object**, whose name depends on the platform: for a PXParameterRequest, `Wb{Name}` (Desktop) and `RWb{Name}` (Responsive); for a PXWorkWith, `WW{Name}`/`RWW{Name}`, `View{Name}`/`RView{Name}`, and so on. **Both must be authorized** (Desktop and Responsive) in PXSecurity.
+- **When adding an action opening a new object**, that target is **unauthorized by default** until an admin grants it to the role → until then the button **is invisible**. A mandatory step after creating the action: **authorize the target object(s)**.
+- Do not confuse this with `condition`/`evaluateCondition`/`execute` (data validation) or with the `<security object=… operation=…>` subnode (permission to execute the action itself): this **visibility** gating is generated by PXTools **automatically** from the navigation, without being declared in the instance.
 
-> Propiedad descubierta inspeccionando el objeto generado (`Tr{Name}`/`RTr{Name}`) — ver la metodología en `00-overview.md` → *"Verificar la instancia contra el objeto generado"*.
+> A property discovered by inspecting the generated object (`Tr{Name}`/`RTr{Name}`) — see the method in `00-overview.md` → *"Check the instance against the generated object"*.
