@@ -1,31 +1,31 @@
-# PXWSQuery — Pattern de Consulta de Datos vía WebService
+# PXWSQuery — Web Service Data Query Pattern
 
-## Qué es
+## What it is
 
-PXWSQuery genera **DataProviders y Procedures** para consultas de datos con filtros, ordenamiento, paginación y búsqueda. Es el pattern para exponer listas/consultas como servicios web. Normalmente es invocado desde PXWSLayer como método de tipo "Query".
+PXWSQuery generates **DataProviders and Procedures** for data queries with filtering, ordering, paging and search. It is the pattern for exposing lists/queries as web services. It is normally invoked from PXWSLayer as a "Query" method.
 
 ## Parent Objects
 
-- `Transaction` — consulta basada en la tabla extendida de la transacción
-- `(None)` — consulta independiente
+- `Transaction` — query based on the transaction's extended table
+- `(None)` — standalone query
 
-## Objetos que genera
+## Objects it generates
 
-Por cada `version/method`:
+For each `version/method`:
 
-| Objeto | Tipo GeneXus | Naming | Descripción |
-|--------|-------------|--------|-------------|
-| WSQueryOrder | Domain | `WSQuery{Trn}V{ver}` | Dominio enumerado para opciones de ordenamiento |
-| SDTDPQueryIn | SDT | `DPQuery{Trn}V{ver}In` | SDT de entrada del DataProvider |
-| SDTDPQueryOut | SDT | `DPQuery{Trn}V{ver}Out` | SDT de salida del DataProvider |
-| DataProvider | DataProvider | `DPQuery{Trn}V{ver}` | DataProvider con la consulta |
-| SDTWSQueryIn | SDT | `WSQuery{Trn}V{ver}In` | SDT de entrada del Procedure WS |
-| SDTWSQueryOut | SDT | `WSQuery{Trn}V{ver}Out` | SDT de salida del Procedure WS |
-| Procedure | Procedure | `WSQuery{Trn}V{ver}` | Procedure wrapper del DataProvider |
+| Object | GeneXus type | Naming | Description |
+|--------|--------------|--------|-------------|
+| WSQueryOrder | Domain | `WSQuery{Trn}V{ver}` | Enumerated domain for the ordering options |
+| SDTDPQueryIn | SDT | `DPQuery{Trn}V{ver}In` | DataProvider input SDT |
+| SDTDPQueryOut | SDT | `DPQuery{Trn}V{ver}Out` | DataProvider output SDT |
+| DataProvider | DataProvider | `DPQuery{Trn}V{ver}` | The DataProvider holding the query |
+| SDTWSQueryIn | SDT | `WSQuery{Trn}V{ver}In` | WS Procedure input SDT |
+| SDTWSQueryOut | SDT | `WSQuery{Trn}V{ver}Out` | WS Procedure output SDT |
+| Procedure | Procedure | `WSQuery{Trn}V{ver}` | Procedure wrapping the DataProvider |
 
-Total: **7 objetos** por cada método de cada versión.
+Total: **7 objects** per method per version.
 
-## Estructura XML de la instancia
+## XML structure of the instance
 
 ```xml
 <instance parentTransaction="Customer"
@@ -37,35 +37,35 @@ Total: **7 objetos** por cada método de cada versión.
             maxRows="100"
             includeContext="false">
 
-      <!-- Atributos multi-tenant (filtros automáticos) -->
+      <!-- Multi-tenant attributes (automatic filters) -->
       <multiTenantAttributes>
         <multiTenantAttribute
             attribute="CompanyId"
             returnConnectionProcedure="PrcReturnCompanyId" />
       </multiTenantAttributes>
 
-      <!-- Campos de salida -->
+      <!-- Output fields -->
       <fields>
         <attribute name="CustomerId" publicName="id" description="Customer ID" />
         <attribute name="CustomerName" publicName="name" description="Name" />
         <attribute name="CustomerEmail" publicName="email" description="Email" />
-        <!-- Variable calculada -->
+        <!-- Computed variable -->
         <variable name="FullAddress" publicName="fullAddress"
                   description="Full address"
                   dataType="VarChar" length="500"
-                  loadPreviousCode="// código previo"
+                  loadPreviousCode="// code to run first"
                   loadCode="&amp;FullAddress = CustomerStreet + ', ' + CustomerCity" />
       </fields>
 
-      <!-- Filtros -->
+      <!-- Filters -->
       <filters>
-        <!-- Búsqueda simple (texto libre) -->
+        <!-- Simple search (free text) -->
         <search>
           <attribute name="CustomerName" description="Name" />
           <attribute name="CustomerEmail" description="Email" />
         </search>
 
-        <!-- Búsqueda avanzada (filtros específicos) -->
+        <!-- Advanced search (specific filters) -->
         <advancedSearch>
           <attribute name="CustomerName"
                      publicName="name"
@@ -79,7 +79,7 @@ Total: **7 objetos** por cada método de cada versión.
                      description="City"
                      type="Equal"
                      isRequired="false"
-                     collection="true" />    <!-- collection=true permite filtrar por múltiples valores -->
+                     collection="true" />    <!-- collection=true filters by several values -->
           <attribute name="CustomerCreatedDate"
                      publicName="createdDate"
                      description="Created Date"
@@ -88,13 +88,13 @@ Total: **7 objetos** por cada método de cada versión.
                      isRequired="false" />
         </advancedSearch>
 
-        <!-- Condiciones fijas -->
+        <!-- Fixed conditions -->
         <conditions>
           <condition value="CustomerActive = true" />
         </conditions>
       </filters>
 
-      <!-- Órdenes -->
+      <!-- Orders -->
       <orders generateFieldsOrder="True">
         <order name="ByName" condition="">
           <orderAttribute name="CustomerName" description="Name" ascending="true" />
@@ -104,18 +104,18 @@ Total: **7 objetos** por cada método de cada versión.
         </order>
       </orders>
 
-      <!-- Sort (ordenamiento de campos en output) -->
+      <!-- Sort (ordering of the output fields) -->
       <sort>
         <sortField name="CustomerName" ascending="true" />
       </sort>
 
-      <!-- Hooks de código -->
+      <!-- Code hooks -->
       <codes>
-        <code type="Start" data="// código de inicio" />
-        <code type="Subroutine" name="ValidateAccess" data="// validar acceso" />
+        <code type="Start" data="// startup code" />
+        <code type="Subroutine" name="ValidateAccess" data="// check access" />
       </codes>
 
-      <!-- Variables adicionales -->
+      <!-- Extra variables -->
       <variables>
         <variable name="TotalRecords"
                   destination="Procedure"
@@ -126,35 +126,35 @@ Total: **7 objetos** por cada método de cada versión.
 </instance>
 ```
 
-## Tipos de filtro
+## Filter types
 
-| Tipo | Descripción | Genera |
-|------|-------------|--------|
-| `Equal` | Igualdad exacta | `WHERE Attr = &Value` |
-| `Range` | Rango desde-hasta | `WHERE Attr >= &From AND Attr <= &To` |
-| `Like` | Búsqueda parcial | `WHERE Attr LIKE '%' + &Value + '%'` |
+| Type | Description | Generates |
+|------|-------------|-----------|
+| `Equal` | Exact equality | `WHERE Attr = &Value` |
+| `Range` | From-to range | `WHERE Attr >= &From AND Attr <= &To` |
+| `Like` | Partial search | `WHERE Attr LIKE '%' + &Value + '%'` |
 
-### Precisión de filtros
+### Filter precision
 
-| Precisión | En Range | En Like |
+| Precision | On Range | On Like |
 |-----------|----------|---------|
-| `Strict` | Rango exacto | Match exacto del patrón |
-| `Flexible` | Agrega "Z" al final del "To" | Agrega "%" antes y después |
-| `<default>` | Usa configuración del Settings | Usa configuración del Settings |
+| `Strict` | Exact range | Exact pattern match |
+| `Flexible` | Appends "Z" to the "To" value | Adds "%" before and after |
+| `<default>` | Uses the Settings configuration | Uses the Settings configuration |
 
-### Propiedades de filtro
+### Filter properties
 
-| Propiedad | Descripción |
-|-----------|-------------|
-| `isRequired` | Si es obligatorio para ejecutar la consulta |
-| `allowNullValue` | Para Numeric/Boolean, permite valor nulo como "sin filtro" |
-| `collection` | Permite filtrar por múltiples valores (IN clause) |
-| `whenExtraCondition` | Condición adicional al filtro |
-| `generateCondition` | Si genera la condición automáticamente en el DataProvider |
+| Property | Description |
+|----------|-------------|
+| `isRequired` | Whether it is mandatory to run the query |
+| `allowNullValue` | For Numeric/Boolean, allows a null value meaning "no filter" |
+| `collection` | Allows filtering by several values (IN clause) |
+| `whenExtraCondition` | Extra condition attached to the filter |
+| `generateCondition` | Whether the condition is generated automatically in the DataProvider |
 
-## Multi-tenant
+## Multi-tenancy
 
-PXWSQuery soporta **multi-tenancy** nativo. Los `multiTenantAttributes` son filtros automáticos que se agregan a todas las consultas sin que el consumidor los vea:
+PXWSQuery supports **multi-tenancy** natively. `multiTenantAttributes` are automatic filters added to every query without the consumer ever seeing them:
 
 ```xml
 <multiTenantAttributes>
@@ -164,80 +164,64 @@ PXWSQuery soporta **multi-tenancy** nativo. Los `multiTenantAttributes` son filt
 </multiTenantAttributes>
 ```
 
-El `returnConnectionProcedure` es un Procedure que obtiene el valor del atributo multi-tenant desde la conexión/sesión actual.
+`returnConnectionProcedure` is a Procedure that obtains the multi-tenant attribute's value from the current connection/session.
 
-## Variables calculadas en Fields
+## Computed variables in Fields
 
-Las variables en `fields` son campos calculados que no existen en la base de datos:
+Variables inside `fields` are computed fields that do not exist in the database:
 
 ```xml
 <variable name="TotalAmount"
           publicName="totalAmount"
           dataType="Numeric" length="12" decimals="2"
-          loadPreviousCode="// código que se ejecuta antes del load"
+          loadPreviousCode="// code run before the load"
           loadCode="&amp;TotalAmount = Sum(InvoiceAmount)" />
 ```
 
-- `loadPreviousCode`: código ejecutado antes de asignar el valor
-- `loadCode`: código que calcula y asigna el valor de la variable
+- `loadPreviousCode`: code executed before assigning the value
+- `loadCode`: code that computes and assigns the variable's value
 
-## Variables de destino
+## Variable destination
 
-Las variables definidas en el nodo `variables` (no en `fields`) tienen una propiedad `destination`:
+Variables declared in the `variables` node (not in `fields`) carry a `destination` property:
 
-| destination | Se crea en |
-|-------------|-----------|
-| `DataProvider` | Dentro del DataProvider generado |
-| `Procedure` | Dentro del Procedure wrapper generado |
+| destination | Created in |
+|-------------|------------|
+| `DataProvider` | Inside the generated DataProvider |
+| `Procedure` | Inside the generated wrapper Procedure |
 
-## Ordenamiento automático
+## Automatic ordering
 
-Cuando `generateFieldsOrder="True"`, PXWSQuery genera automáticamente una opción de ordenamiento por cada campo de salida, además de los órdenes manuales definidos. Genera un **Domain enumerado** con todos los órdenes posibles.
+When `generateFieldsOrder="True"`, PXWSQuery automatically generates one ordering option per output field, in addition to the manually declared orders. It produces an **enumerated Domain** holding every possible order.
 
-## Cómo declarar los `<orders>`
+## How to declare the `<orders>`
 
-Cada `<order>` se traduce literalmente a una cláusula `Order` del DataProvider generado, así
-que le aplican las mismas reglas de rendimiento que a cualquier `For Each`:
+Each `<order>` translates literally into an `Order` clause of the generated DataProvider, so the same performance rules as any `For Each` apply:
 
-**1. Empezar siempre por los atributos filtrados por igual.** El primero es el (o los)
-atributo multi-tenant del Settings del Layer, que el pattern filtra en todas las consultas
-(`Where EmisorId = &EmisorId`). Después van los filtros `type="Equal"` de la propia instancia
-—típicamente la clave del padre en una consulta sobre un nivel subordinado— y recién al final
-el atributo por el que se quiere ordenar.
+**1. Always start with the attributes filtered by equality.** First comes the multi-tenant attribute (or attributes) from the Layer Settings, which the pattern filters on every query (`Where CompanyId = &CompanyId`). Then the instance's own `type="Equal"` filters — typically the parent key in a query over a subordinate level — and only at the end the attribute you actually want to sort by.
 
 ```xml
-<order name="PorVigencia">
-  <orderAttribute name="EmisorId" description="Emisor" />
-  <orderAttribute name="EmisorCodigoProductosServiciosId" description="Código del producto" />
-  <orderAttribute name="ProductosServiciosPrecioVigencia" description="Vigencia" ascending="False" />
+<order name="ByEffectiveDate">
+  <orderAttribute name="CompanyId" description="Company" />
+  <orderAttribute name="ProductId" description="Product code" />
+  <orderAttribute name="ProductPriceEffectiveDate" description="Effective date" ascending="False" />
 </order>
 ```
 
-**2. Verificar que exista un índice que respalde ese orden.** La secuencia de atributos del
-`<order>` tiene que ser prefijo de algún índice de la tabla base. Se comprueba leyendo
-`Knowledge Base/#Tables/<Tabla>.Table.gxSource`, sección `#Indexes`. Si no existe, hay que
-sacar el orden o crear un índice de usuario — y crear un índice es una reorganización de la
-base, o sea una decisión del dueño de la KB, no algo que se agregue al pasar. Ordenar por un
-atributo de la **tabla extendida** (el nombre de una foránea) nunca queda respaldado: ordenar
-por la clave foránea.
+**2. Check that an index backs that order.** The `<order>`'s attribute sequence has to be a prefix of some index on the base table. Verify it by reading `Knowledge Base/#Tables/<Table>.Table.gxSource`, section `#Indexes`. If there is none, either drop the order or create a user index — and creating an index is a database reorganization, so it is the KB owner's decision, not something to add in passing. Ordering by an attribute of the **extended table** (the descriptor of a foreign key) is never backed: order by the foreign key instead.
 
-**3. Un mismo conjunto de atributos no puede usarse en dos órdenes.** El dominio enumerado que
-genera el pattern usa como `Description` de cada valor **la lista de nombres de atributos** del
-orden. Dos órdenes con los mismos atributos (por ejemplo el mismo atributo ascendente y
-descendente) producen dos valores con la misma descripción y el apply falla con
-`Failed processing Domain '<WSQuery…Order>' properties`. Si se necesita ida y vuelta sobre el
-mismo atributo, hay que declarar un solo orden con el sentido más útil.
+**3. The same set of attributes cannot be used in two orders.** The enumerated domain the pattern generates uses **the list of attribute names** as each value's `Description`. Two orders over the same attributes (for instance the same attribute ascending and descending) produce two values with identical descriptions and the apply fails with `Failed processing Domain '<WSQuery…Order>' properties`. If you need both directions over the same attribute, declare a single order with the more useful direction.
 
-## Códigos de hook
+## Hook codes
 
-| type | Destino | Cuándo |
-|------|---------|--------|
-| `Start` | DataProvider/Procedure | Al inicio |
-| `Subroutine` | DataProvider/Procedure | Invocable por nombre |
+| type | Target | When |
+|------|--------|------|
+| `Start` | DataProvider/Procedure | At the start |
+| `Subroutine` | DataProvider/Procedure | Callable by name |
 
-## Relación con PXWSLayer
+## Relationship with PXWSLayer
 
-PXWSQuery es normalmente invocado desde un método de PXWSLayer:
+PXWSQuery is normally invoked from a PXWSLayer method:
 
 ```
 PXWSLayer (method callType="PXInstance")

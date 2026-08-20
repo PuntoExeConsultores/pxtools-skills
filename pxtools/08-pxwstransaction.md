@@ -1,34 +1,34 @@
-# PXWSTransaction — Pattern CRUD de Transacciones vía WebService
+# PXWSTransaction — Web Service Transaction CRUD Pattern
 
-## Qué es
+## What it is
 
-PXWSTransaction genera **Procedures de Load, Save y Delete** sobre transacciones GeneXus usando **Business Components**. Es el pattern para exponer operaciones CRUD (Create, Read, Update, Delete) de entidades como servicios web.
+PXWSTransaction generates **Load, Save and Delete Procedures** over GeneXus transactions using **Business Components**. It is the pattern for exposing CRUD (Create, Read, Update, Delete) operations on entities as web services.
 
 ## Parent Objects
 
-- `Transaction` — la transacción sobre la cual se generan las operaciones CRUD
-- `(None)` — independiente
+- `Transaction` — the transaction the CRUD operations are generated for
+- `(None)` — standalone
 
-## Objetos que genera
+## Objects it generates
 
-Por cada `version`:
+For each `version`:
 
-| Objeto | Tipo GeneXus | Naming | Condición |
-|--------|-------------|--------|-----------|
-| SDTStructure | SDT | `WSTransaction{Trn}V{ver}Structure` | Siempre |
-| MethodLoad | Procedure | `WSTransaction{Trn}V{ver}Load` | Siempre |
-| SDTLoadIn | SDT | `WSTransaction{Trn}V{ver}LoadIn` | Siempre |
-| SDTLoadOut | SDT | `WSTransaction{Trn}V{ver}LoadOut` | Siempre |
-| MethodSave | Procedure | `WSTransaction{Trn}V{ver}Save` | Solo si `modeInsert=True` o `modeUpdate=True` |
-| SDTSaveIn | SDT | `WSTransaction{Trn}V{ver}SaveIn` | Siempre (estructura) |
-| SDTSaveOut | SDT | `WSTransaction{Trn}V{ver}SaveOut` | Siempre (estructura) |
-| MethodDelete | Procedure | `WSTransaction{Trn}V{ver}Delete` | Solo si `modeDelete=True` |
-| SDTDeleteIn | SDT | `WSTransaction{Trn}V{ver}DeleteIn` | Siempre (estructura) |
-| SDTDeleteOut | SDT | `WSTransaction{Trn}V{ver}DeleteOut` | Siempre (estructura) |
+| Object | GeneXus type | Naming | Condition |
+|--------|--------------|--------|-----------|
+| SDTStructure | SDT | `WSTransaction{Trn}V{ver}Structure` | Always |
+| MethodLoad | Procedure | `WSTransaction{Trn}V{ver}Load` | Always |
+| SDTLoadIn | SDT | `WSTransaction{Trn}V{ver}LoadIn` | Always |
+| SDTLoadOut | SDT | `WSTransaction{Trn}V{ver}LoadOut` | Always |
+| MethodSave | Procedure | `WSTransaction{Trn}V{ver}Save` | Only if `modeInsert=True` or `modeUpdate=True` |
+| SDTSaveIn | SDT | `WSTransaction{Trn}V{ver}SaveIn` | Always (structure) |
+| SDTSaveOut | SDT | `WSTransaction{Trn}V{ver}SaveOut` | Always (structure) |
+| MethodDelete | Procedure | `WSTransaction{Trn}V{ver}Delete` | Only if `modeDelete=True` |
+| SDTDeleteIn | SDT | `WSTransaction{Trn}V{ver}DeleteIn` | Always (structure) |
+| SDTDeleteOut | SDT | `WSTransaction{Trn}V{ver}DeleteOut` | Always (structure) |
 
-Total: hasta **10 objetos** por versión (3 Procedures + 7 SDTs).
+Total: up to **10 objects** per version (3 Procedures + 7 SDTs).
 
-## Estructura XML de la instancia
+## XML structure of the instance
 
 ```xml
 <instance parentTransaction="Customer"
@@ -50,7 +50,7 @@ Total: hasta **10 objetos** por versión (3 Procedures + 7 SDTs).
            description=""
            type="Multitenant" />
 
-      <!-- Atributos del nivel principal -->
+      <!-- Attributes of the main level -->
       <attribute name="CustomerName"
                  publicName="name"
                  description="Customer Name"
@@ -64,7 +64,7 @@ Total: hasta **10 objetos** por versión (3 Procedures + 7 SDTs).
                  description="Status"
                  updateAttribute="On Insert" />
 
-      <!-- Sub-nivel (detalle de la transacción) -->
+      <!-- Sub-level (transaction detail) -->
       <level name="CustomerAddresses">
         <key name="CustomerAddressId"
              publicName="addressId"
@@ -84,130 +84,121 @@ Total: hasta **10 objetos** por versión (3 Procedures + 7 SDTs).
 </instance>
 ```
 
-## Propiedades de la versión
+## Version properties
 
-| Propiedad | Tipo | Descripción |
-|-----------|------|-------------|
-| `version` | string | Número de versión |
-| `modeInsert` | bool | Habilitar inserción (afecta generación de Save) |
-| `modeUpdate` | bool | Habilitar actualización (afecta generación de Save) |
-| `modeDelete` | bool | Habilitar eliminación (genera Delete Procedure) |
+| Property | Type | Description |
+|----------|------|-------------|
+| `version` | string | Version number |
+| `modeInsert` | bool | Enable insert (affects Save generation) |
+| `modeUpdate` | bool | Enable update (affects Save generation) |
+| `modeDelete` | bool | Enable delete (generates the Delete Procedure) |
 
-## Estructura multinivel
+## Multi-level structure
 
-PXWSTransaction soporta transacciones con **niveles anidados** (master-detail). Cada `level` dentro de `structure` representa un nivel de la transacción:
+PXWSTransaction supports transactions with **nested levels** (master-detail). Each `level` inside `structure` represents one level of the transaction:
 
 ```
-Customer (nivel principal)
+Customer (main level)
 ├── key: CustomerId
 ├── attribute: CustomerName
 ├── attribute: CustomerEmail
 │
-└── CustomerAddresses (sub-nivel)
+└── CustomerAddresses (sub-level)
     ├── key: CustomerAddressId
     ├── attribute: Street
     └── attribute: City
 ```
 
-Los sub-niveles solo pueden agregarse dentro del nodo `structure` (raíz), controlado por `CanAddIf="self::structure"`.
+Sub-levels can only be added inside the `structure` node (root), enforced by `CanAddIf="self::structure"`.
 
-## Keys — Tipos
+## Keys — types
 
-| type | Descripción | En Load | En Save | En Delete |
+| type | Description | In Load | In Save | In Delete |
 |------|-------------|---------|---------|-----------|
-| `Public` | Visible al consumidor | SDT In | SDT In | SDT In |
-| `Multitenant` | Automático desde conexión | Interno | Interno | Interno |
-| `Private` | Interno, no expuesto | Interno | Interno | Interno |
+| `Public` | Visible to the consumer | SDT In | SDT In | SDT In |
+| `Multitenant` | Automatic from the connection | Internal | Internal | Internal |
+| `Private` | Internal, not exposed | Internal | Internal | Internal |
 
-## Atributos — updateAttribute
+## Attributes — updateAttribute
 
-| Valor | Descripción |
+| Value | Description |
 |-------|-------------|
-| `Always` | Se actualiza en Insert y Update |
-| `On Insert` | Solo se asigna en Insert, ignorado en Update |
-| `On Update` | Solo se asigna en Update, ignorado en Insert |
+| `Always` | Updated on both Insert and Update |
+| `On Insert` | Assigned only on Insert, ignored on Update |
+| `On Update` | Assigned only on Update, ignored on Insert |
 
-Esto permite controlar qué campos son editables en cada modo sin código custom.
+This controls which fields are editable in each mode without any custom code.
 
-## Operaciones generadas
+## Generated operations
 
 ### Load
-- Lee un registro por sus keys públicos
-- Input: SDTLoadIn (keys públicos)
-- Output: SDTLoadOut (estructura completa + mensajes)
+- Reads one record by its public keys
+- Input: SDTLoadIn (public keys)
+- Output: SDTLoadOut (full structure + messages)
 
 ### Save
-- Inserta o actualiza según exista o no el registro
-- Input: SDTSaveIn (estructura completa)
-- Output: SDTSaveOut (resultado + mensajes de error)
-- Usa **Business Component** de GeneXus internamente
+- Inserts or updates depending on whether the record exists
+- Input: SDTSaveIn (full structure)
+- Output: SDTSaveOut (result + error messages)
+- Uses a GeneXus **Business Component** internally
 
-#### El Save es un REEMPLAZO COMPLETO, no un patch
+#### The Save is a FULL REPLACE, not a patch
 
-Es la característica del pattern que más fácil se malinterpreta, y hacerlo destruye datos sin dejar
-rastro. El código generado hace `BC.Load(...)` y **después asigna todos los atributos** desde el SDT
-de entrada:
+This is the pattern's most easily misread characteristic, and getting it wrong destroys data without leaving a trace. The generated code does `BC.Load(...)` and **then assigns every attribute** from the input SDT:
 
-- Un atributo que no venga en el SDT **se graba vacío**. No se conserva el valor que tenía.
-- En cada nivel subordinado, después del insert-or-update de los ítems recibidos, hay un bloque
-  `// Delete <Nivel>` que **elimina las filas que no vengan en la colección**.
+- An attribute that does not travel in the SDT **is written empty**. Its previous value is not kept.
+- In each subordinate level, after the insert-or-update of the items received, a `// Delete <Level>` block **removes the rows that did not come in the collection**.
 
-Dicho de otra forma: **el SDT de entrada es el estado deseado completo, no un delta.**
+Put differently: **the input SDT is the complete desired state, not a delta.**
 
-Consecuencia para cualquier consumidor —una API REST, una pantalla, una tarea batch, una tool de
-asistente—: la única forma segura de modificar es
+The consequence for any consumer — a REST API, a screen, a batch task, an assistant tool alike — is that the only safe way to modify is
 
 ```
-Load  →  aplicar los cambios sobre lo que se cargó  →  Save
+Load  →  apply the changes over what was loaded  →  Save
 ```
 
-Un `Save` armado desde cero con los dos o tres campos que se querían cambiar **vacía el resto del
-registro y borra todos sus niveles subordinados**. Y lo hace en silencio: no hay error, no hay
-warning, y la operación devuelve `Succeed = True`.
+A `Save` assembled from scratch with the two or three fields somebody wanted to change **empties the rest of the record and wipes out its subordinate levels**. And it does so silently: no error, no warning, and the operation returns `Succeed = True`.
 
-Un caso concreto de cómo se pierde un dato sin que nadie lo pida: si el consumidor decide qué
-atributos tocar preguntando si el valor recibido está vacío, confunde *"no me lo mandaron"* con *"lo
-quieren vacío"*. Hay que distinguir la **ausencia** del campo de su valor vacío — mandar un campo
-vacío es una forma legítima de borrarlo, no mandarlo no lo es.
+One concrete way data gets lost without anyone asking: if the consumer decides which attributes to touch by checking whether the incoming value is empty, it confuses *"they did not send it to me"* with *"they want it empty"*. The **absence** of a field must be told apart from an empty value — sending an empty field is a legitimate way to clear it, not sending it is not.
 
 ### Delete
-- Elimina un registro por sus keys
+- Deletes a record by its keys
 - Input: SDTDeleteIn (keys)
-- Output: SDTDeleteOut (resultado + mensajes)
-- Usa **Business Component** de GeneXus internamente
+- Output: SDTDeleteOut (result + messages)
+- Uses a GeneXus **Business Component** internally
 
-## SDT Structure compartido
+## Shared Structure SDT
 
-El SDT `WSTransaction{Trn}V{ver}Structure` es compartido entre Load, Save y Delete. También es compartido con PXWSData si ambos patterns se aplican a la misma transacción y versión.
+The `WSTransaction{Trn}V{ver}Structure` SDT is shared between Load, Save and Delete. It is also shared with PXWSData if both patterns are applied to the same transaction and version.
 
-## Relación con PXWSLayer
+## Relationship with PXWSLayer
 
-PXWSTransaction es normalmente invocado desde métodos de PXWSLayer:
+PXWSTransaction is normally invoked from PXWSLayer methods:
 
 ```
 PXWSLayer
-├── method "Load"  ──► PXWSTransaction (Load)
-├── method "Save"  ──► PXWSTransaction (Save)
+├── method "Load"   ──► PXWSTransaction (Load)
+├── method "Save"   ──► PXWSTransaction (Save)
 └── method "Delete" ──► PXWSTransaction (Delete)
 ```
 
-## Relación entre los 4 patterns WS
+## How the four WS patterns relate
 
 ```
 ┌────────────────────────────────────────────────────┐
 │                  PXWSLayer                          │
-│              (Orquestador API)                      │
+│              (API orchestrator)                     │
 │                                                    │
-│  Método "Query"  ──► PXWSQuery (listas paginadas)  │
-│  Método "Get"    ──► PXWSData (lectura individual) │
-│  Método "Load"   ──► PXWSTransaction.Load          │
-│  Método "Save"   ──► PXWSTransaction.Save          │
-│  Método "Delete" ──► PXWSTransaction.Delete        │
-│  Método custom   ──► Procedure/DataProvider GX     │
-│  Método inline   ──► Event (código directo)        │
+│  "Query"  method ──► PXWSQuery (paged lists)       │
+│  "Get"    method ──► PXWSData (single read)        │
+│  "Load"   method ──► PXWSTransaction.Load          │
+│  "Save"   method ──► PXWSTransaction.Save          │
+│  "Delete" method ──► PXWSTransaction.Delete        │
+│  custom   method ──► GX Procedure/DataProvider     │
+│  inline   method ──► Event (code written inline)   │
 └────────────────────────────────────────────────────┘
 ```
 
-## Categoría de seguridad
+## Security category
 
-La propiedad `category` define un valor del dominio `WSCategory` que se usa para controlar el acceso a los servicios. Esto se integra con el módulo **@Security** de PXTools para verificar permisos antes de ejecutar operaciones.
+The `category` property holds a value of the `WSCategory` domain, used to control access to the services. It integrates with the PXTools **@Security** module to check permissions before running the operations.

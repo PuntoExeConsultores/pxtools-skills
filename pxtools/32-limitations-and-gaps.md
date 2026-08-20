@@ -1,137 +1,137 @@
-# Limitaciones y Gaps — Lo que los Patterns NO Soportan
+# Limitations and Gaps — What the Patterns Do NOT Support
 
-## Propósito
+## Purpose
 
-Este documento lista las **características de UI y lógica que los patterns de PXTools no soportan actualmente**. Es fundamental para:
-1. Identificar WebPanels que no pueden migrarse 100% a patterns
-2. Determinar qué requeriría implementación a nivel del generador
-3. Planificar qué funcionalidad implementar manualmente post-migración
+This document lists the **UI and logic features the PXTools patterns do not currently support**. It matters for:
+1. Identifying WebPanels that cannot be migrated 100% to patterns
+2. Deciding what would require work at the generator level
+3. Planning which functionality has to be implemented by hand after migration
 
 ---
 
-## Limitaciones por pattern
+## Limitations per pattern
 
 ### PXWorkWith
 
-#### Layout y UI
-| Limitación | Descripción | Impacto |
-|-----------|-------------|---------|
-| Layout custom de grilla | No se puede personalizar libremente el HTML/layout de cada fila de la grilla | WebPanels con grillas tipo "card" o layouts no tabulares no son migrables |
-| Grillas anidadas en Selection | Selection solo soporta una grilla principal, no grillas dentro de grillas | Pantallas con master-detail inline en la misma grilla |
-| Controles de terceros custom | Solo soporta controles predefinidos por PXTools (Chosen, DatePicker, etc.) | Controles custom como editores WYSIWYG, mapas, gráficos interactivos |
-| Drag-and-drop | No soportado | Pantallas de reordenamiento, kanban boards |
-| Múltiples grillas en Selection | Solo una grilla principal por Selection | Pantallas con varias grillas lado a lado |
+#### Layout and UI
+| Limitation | Description | Impact |
+|------------|-------------|--------|
+| Custom grid layout | The HTML/layout of each grid row cannot be freely customized | WebPanels with "card"-style grids or non-tabular layouts are not migratable |
+| Nested grids in Selection | Selection supports one main grid only, not grids inside grids | Screens with inline master-detail in the same grid |
+| Custom third-party controls | Only the controls PXTools predefines are supported (Chosen, DatePicker, etc.) | Custom controls such as WYSIWYG editors, maps, interactive charts |
+| Drag-and-drop | Not supported | Reordering screens, kanban boards |
+| Several grids in Selection | Only one main grid per Selection | Screens with several grids side by side |
 
-#### Lógica
-| Limitación | Descripción | Impacto |
-|-----------|-------------|---------|
-| Comunicación entre tabs | Los tabs (sections) en View son independientes: solo el tab activo está renderizado, por lo que no se comunican en tiempo real vía `GlobalEvents`. Sin embargo, pueden compartir información mediante **WebSession**: un tab escribe en WebSession y al activarse otro tab, este lee la información en su Start/Refresh | No es una limitación bloqueante, pero requiere código en hooks para implementar la sincronización vía WebSession |
-| Workflows en grilla | No soporta workflows visuales dentro de la grilla | Tableros con estados y transiciones |
+#### Logic
+| Limitation | Description | Impact |
+|------------|-------------|--------|
+| Communication between tabs | The tabs (sections) in View are independent: only the active tab is rendered, so they cannot talk in real time through `GlobalEvents`. They can still share information through **WebSession**: one tab writes to WebSession and, when another tab becomes active, it reads that information in its Start/Refresh | Not a blocking limitation, but synchronising through WebSession requires code in the hooks |
+| Workflows in the grid | No visual workflows inside the grid | Boards with states and transitions |
 
 #### Exports
-| Limitación | Descripción | Impacto |
-|-----------|-------------|---------|
-| Export a PDF | No genera export a PDF nativo | Se requiere implementación manual |
+| Limitation | Description | Impact |
+|------------|-------------|--------|
+| PDF export | No native PDF export is generated | Requires a manual implementation |
 
 ### PXParameterRequest
 
-| Limitación | Descripción | Impacto |
-|-----------|-------------|---------|
-| Wizard visual con stepper | Se pueden implementar formularios multi-paso usando un PXWorkWith View con Tabs (cada tab = un paso, con visibilidad condicional y navegación libre entre pasos completados). Lo que **no existe aún** es: (1) un componente visual tipo "stepper" con números de paso y estado de avance, y (2) validaciones declarativas que impidan avanzar si faltan datos en pasos previos. Ambas funcionalidades se planean implementar | Para wizards con indicador visual de progreso se requiere implementación manual del stepper |
-| Upload de archivos integrado | El upload de archivos requiere implementación con @FileStorage | Formularios con carga de archivos |
-| Validación asíncrona | No soporta validación de campos en tiempo real (on-blur) | Formularios que validan mientras el usuario escribe |
-| Layout completamente custom | El layout del formulario sigue una estructura predefinida | Formularios con diseño muy específico |
+| Limitation | Description | Impact |
+|------------|-------------|--------|
+| Visual wizard with a stepper | Multi-step forms can be built with a PXWorkWith View plus Tabs (each tab = one step, with conditional visibility and free navigation between completed steps). What **does not exist yet** is: (1) a visual "stepper" component with step numbers and progress state, and (2) declarative validations preventing you from moving on while earlier steps are incomplete. Both are planned | Wizards with a visual progress indicator need the stepper built by hand |
+| Built-in file upload | File upload has to be implemented with @FileStorage | Forms with file uploads |
+| Asynchronous validation | No real-time (on-blur) field validation | Forms validating as the user types |
+| Fully custom layout | The form layout follows a predefined structure | Forms with a very specific design |
 
 ### PXComposer
 
-| Limitación | Descripción | Impacto |
-|-----------|-------------|---------|
-| Layout dinámico | La disposición de componentes es fija en design-time | Dashboards configurables por el usuario |
-| Responsive automático de componentes | Cada componente tiene su propio responsive, pero la composición puede no adaptarse bien | Dashboards complejos en móvil |
+| Limitation | Description | Impact |
+|------------|-------------|--------|
+| Dynamic layout | The arrangement of components is fixed at design time | Dashboards the user can configure |
+| Automatic responsiveness of components | Each component has its own responsive behaviour, but the composition may not adapt well | Complex dashboards on mobile |
 
 ### PXFlowController
 
-| Limitación | Descripción | Impacto |
-|-----------|-------------|---------|
-| UI de progreso visual | No genera una barra de progreso o indicador de paso actual | Flujos largos donde el usuario necesita ver en qué paso está |
-| Persistencia de estado | El estado del flujo se pierde si se cierra el browser | Flujos que deben poder resumirse |
-| Flujos paralelos | Solo soporta flujo secuencial (una línea activa) | Flujos con ramas paralelas |
-| Undo/rollback | No hay mecanismo de undo de pasos completados | Flujos que necesitan retroceder con rollback de datos |
+| Limitation | Description | Impact |
+|------------|-------------|--------|
+| Visual progress UI | No progress bar or current-step indicator is generated | Long flows where the user needs to see which step they are on |
+| State persistence | The flow's state is lost if the browser is closed | Flows that must be resumable |
+| Parallel flows | Only sequential flow is supported (one active line) | Flows with parallel branches |
+| Undo/rollback | No mechanism to undo completed steps | Flows that need to go back with a data rollback |
 
-### Patterns WS (PXWSLayer, PXWSQuery, PXWSData, PXWSTransaction)
+### WS patterns (PXWSLayer, PXWSQuery, PXWSData, PXWSTransaction)
 
-| Limitación | Descripción | Impacto |
-|-----------|-------------|---------|
-| GraphQL | Solo genera REST y SOAP, no GraphQL | APIs modernas que requieren GraphQL |
-| WebSockets | No soporta comunicación bidireccional | APIs que necesitan push/streaming |
-| Batch operations | No genera endpoints de operaciones batch (salvo PXWSTransaction) | APIs que necesitan crear/actualizar múltiples registros en una llamada |
-| Custom response codes | Los códigos de respuesta HTTP son fijos | APIs que necesitan respuestas HTTP específicas |
-| Rate limiting | No genera rate limiting a nivel de API | APIs públicas que necesitan control de tasa |
+| Limitation | Description | Impact |
+|------------|-------------|--------|
+| GraphQL | Only REST and SOAP are generated, not GraphQL | Modern APIs requiring GraphQL |
+| WebSockets | No bidirectional communication | APIs needing push/streaming |
+| Batch operations | No batch-operation endpoints are generated (except PXWSTransaction) | APIs needing to create/update several records in one call |
+| Custom response codes | HTTP response codes are fixed | APIs needing specific HTTP responses |
+| Rate limiting | No API-level rate limiting is generated | Public APIs needing throttling |
 
 ### PXOAV
 
-| Limitación | Descripción | Impacto |
-|-----------|-------------|---------|
-| Atributos calculados complejos | Las fórmulas son limitadas; no soportan joins complejos | Atributos dinámicos que dependen de múltiples tablas |
-| Performance con muchos atributos | El modelo EAV tiene overhead de performance vs. columnas nativas | Entidades con >100 atributos dinámicos |
-| Indexación | Los valores EAV no se indexan eficientemente | Consultas frecuentes sobre atributos dinámicos |
+| Limitation | Description | Impact |
+|------------|-------------|--------|
+| Complex computed attributes | Formulas are limited; they do not support complex joins | Dynamic attributes depending on several tables |
+| Performance with many attributes | The EAV model carries a performance overhead compared with native columns | Entities with >100 dynamic attributes |
+| Indexing | EAV values are not indexed efficiently | Frequent queries over dynamic attributes |
 
 ---
 
-## Limitaciones transversales
+## Cross-cutting limitations
 
-### Generación de código
-| Limitación | Descripción |
-|-----------|-------------|
-| Generador compilado | El código del generador (DLL) no es modificable por el usuario. Esto es por diseño: protege la propiedad intelectual y el licenciamiento del producto |
-| Extensión del generador | No se pueden agregar nuevos tipos de nodos o propiedades sin modificar la DLL del generador |
-| Post-procesamiento | No hay hooks post-generación para modificar el código generado |
+### Code generation
+| Limitation | Description |
+|------------|-------------|
+| Compiled generator | The generator code (DLL) cannot be modified by the user. This is by design: it protects the product's intellectual property and licensing |
+| Extending the generator | New node types or properties cannot be added without changing the generator DLL |
+| Post-processing | There are no post-generation hooks to modify the generated code |
 
-**Nota importante**: El diseño visual SÍ es completamente personalizable mediante **Templates de UI** (objetos GeneXus que el desarrollador crea con total libertad). Los Templates definen el layout completo de cada pantalla y solo dejan "Template Elements" como placeholders donde el generador inyecta el contenido específico. Ver [00-overview.md](00-overview.md#templates-de-ui--personalización-total-del-diseño-visual).
+**Important note**: the visual design IS fully customizable through **UI Templates** (GeneXus objects the developer creates freely). Templates define the complete layout of each screen and leave only "Template Elements" as placeholders where the generator injects the specific content. See [00-overview.md](00-overview.md#ui-templates--full-control-over-the-visual-design).
 
-### Integración
-| Limitación | Descripción |
-|-----------|-------------|
-| CI/CD | No hay integración nativa con pipelines de CI/CD |
-| Testing | No genera tests unitarios automáticos |
-| Versionado de instancias | Las instancias se versionan con la KB, no tienen versionado independiente |
-
----
-
-## Qué se necesitaría implementar en el generador
-
-### Alta prioridad (funcionalidad frecuentemente solicitada)
-1. **Grillas tipo card/responsive** — Template de grilla con layout flexible
-2. **Wizard multi-paso** — Extensión de PXParameterRequest o nuevo pattern
-3. **Export a PDF** — Agregar modo de export PDF en PXWorkWith
-
-### Media prioridad
-5. **Indicador de progreso en flujos** — UI de stepper/progress bar en PXFlowController
-6. **Validación asíncrona** — Validación on-blur en formularios
-7. **Batch API operations** — Endpoint de operaciones múltiples en PXWSTransaction
-8. **Dashboard configurable** — Layout dinámico en PXComposer
-
-### Baja prioridad
-9. **GraphQL** — Nuevo pattern o extensión de PXWSLayer
-10. **Drag-and-drop** — Extensión de PXWorkWith
-11. **Tests automáticos** — Generación de tests unitarios
+### Integration
+| Limitation | Description |
+|------------|-------------|
+| CI/CD | No native integration with CI/CD pipelines |
+| Testing | No automatic unit tests are generated |
+| Instance versioning | Instances are versioned along with the KB; they have no independent versioning |
 
 ---
 
-## Criterios para determinar si un WebPanel es 100% migrable
+## What would have to be built into the generator
 
-Un WebPanel es **100% migrable** si cumple TODOS:
+### High priority (frequently requested)
+1. **Card/responsive grids** — a grid template with a flexible layout
+2. **Multi-step wizard** — an extension of PXParameterRequest, or a new pattern
+3. **PDF export** — add a PDF export mode to PXWorkWith
 
-- [ ] Su estructura corresponde a un pattern conocido (ver [30-guia-reconocimiento-patterns.md](30-guia-reconocimiento-patterns.md))
-- [ ] No usa controles de terceros no soportados por PXTools
-- [ ] No tiene JavaScript custom integrado con la lógica del server
-- [ ] La comunicación entre componentes (si la hay) se resuelve con `GlobalEvents`
-- [ ] El layout no es altamente personalizado
-- [ ] No implementa funcionalidad listada como "limitación" arriba
+### Medium priority
+5. **Progress indicator in flows** — stepper/progress bar UI in PXFlowController
+6. **Asynchronous validation** — on-blur validation in forms
+7. **Batch API operations** — a multi-operation endpoint in PXWSTransaction
+8. **Configurable dashboard** — dynamic layout in PXComposer
 
-Un WebPanel **parcialmente migrable** (>70%) se puede migrar y complementar con:
-- Código en hooks de eventos (Events, Codes)
-- Variables y subrutinas custom
-- WebComponents externos embebidos en tabs
+### Low priority
+9. **GraphQL** — a new pattern or an extension of PXWSLayer
+10. **Drag-and-drop** — an extension of PXWorkWith
+11. **Automatic tests** — unit test generation
 
-Un WebPanel **no migrable** (<30%) requiere mantenerse como WebPanel manual.
+---
+
+## Criteria for deciding whether a WebPanel is 100% migratable
+
+A WebPanel is **100% migratable** if ALL of these hold:
+
+- [ ] Its structure matches a known pattern (see [30-pattern-recognition-guide.md](30-pattern-recognition-guide.md))
+- [ ] It uses no third-party controls unsupported by PXTools
+- [ ] It has no custom JavaScript wired into the server-side logic
+- [ ] Communication between components (if any) can be solved with `GlobalEvents`
+- [ ] The layout is not heavily customized
+- [ ] It implements nothing listed as a "limitation" above
+
+A **partially migratable** WebPanel (>70%) can be migrated and completed with:
+- Code in the event hooks (Events, Codes)
+- Custom variables and subroutines
+- External WebComponents embedded in tabs
+
+A **non-migratable** WebPanel (<30%) has to stay a hand-written WebPanel.
