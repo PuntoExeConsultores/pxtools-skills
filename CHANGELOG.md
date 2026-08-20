@@ -13,8 +13,8 @@ Nothing pending.
 ## 2026-08-20
 
 ### Added
-- **`pxtools/modulos/menus.md`** — new subsection *Apuntar a la pantalla: `InstanceReference`, no el
-  nombre del objeto*, plus two warnings at the head of *Declarar y sembrar*. Between them they cover
+- **`pxtools/modules/menus.md`** — new subsection *Pointing at the screen: `InstanceReference`, not
+  the object name*, plus two warnings at the head of *Declaring and seeding*. Between them they cover
   the three ways a menu entry gets added wrong. The first is treating the menu as data: `TMnuWeb` has
   a WorkWith and can be edited by hand, which makes it look like a table to load, but the tree is
   **declared in code** and seeded from there — an option typed into the screen is missing from its
@@ -32,6 +32,27 @@ Nothing pending.
   also records that PXWorkWith names the listing screen `Tr<Entity>` (`Ct<Entity>` is the query
   screen) and not `WW<Entity>` — searching for "WW" finds nothing and makes an existing menu
   declaration look absent
+
+### Changed
+- **The whole corpus is now written in English** — the 45 `.md` files (`README.md`,
+  `pxtools-start-here.md`, the 21 pattern references under `pxtools/` and the 22 module documents
+  under `pxtools/modules/`) were translated from Spanish, and so were the file and directory names
+  that carried Spanish: `pxtools/modulos/` → `pxtools/modules/`,
+  `12-acciones-patterns-ui.md` → `12-pattern-ui-actions.md`,
+  `13-semantica-grids-webpanels.md` → `13-grid-webpanel-semantics.md`,
+  `20-modulos-pxtools.md` → `20-pxtools-modules.md`,
+  `30-guia-reconocimiento-patterns.md` → `30-pattern-recognition-guide.md`,
+  `31-capacidades-dual-platform.md` → `31-dual-platform-capabilities.md`,
+  `32-limitaciones-y-gaps.md` → `32-limitations-and-gaps.md`,
+  `33-estrategia-migracion.md` → `33-migration-strategy.md`, and the module files
+  (`seguridad.md` → `security.md`, `tareas-nube.md` → `cloudtasks.md`, and the rest). The
+  cross-references between documents were rewritten to the new names in the same pass. What did
+  **not** change is the content that is quoted rather than prose: GeneXus object, attribute, domain
+  and pattern-node names stay as they are in the KB, and the Spanish literals inside code examples
+  stay Spanish — translating either would turn a copyable example into one that does not compile.
+  Rationale: the skills are read by AIs whose instruction-following and technical vocabulary are
+  strongest in English, and the corpus is published under CC BY for an audience that is not only
+  Spanish-speaking
 
 ## 2026-08-19
 

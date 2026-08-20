@@ -1,136 +1,136 @@
-# PXWorkWith - Pattern CRUD Maestro-Detalle
+# PXWorkWith — the master-detail CRUD pattern
 
 ## Metadata
 
-| Campo | Valor |
+| Field | Value |
 |-------|-------|
 | Pattern | PXWorkWith |
-| Tipo de asociacion | Transaction o (None) |
-| Archivo de definicion | PXWorkWith.pattern |
-| Archivo de instancia | PXWorkWithInstance.xml (~439 KB) |
-| Archivo de settings | PXWorkWithSettings.xml (~166 KB) |
-| Plataformas | Web Desktop, Web Responsive, Smart Devices |
+| Association type | Transaction or (None) |
+| Definition file | PXWorkWith.pattern |
+| Instance file | PXWorkWithInstance.xml (~439 KB) |
+| Settings file | PXWorkWithSettings.xml (~166 KB) |
+| Platforms | Web Desktop, Web Responsive, Smart Devices |
 
 ---
 
-## 1. Que es y para que sirve
+## 1. What it is and what it is for
 
-PXWorkWith es el pattern principal de PXTools para generacion automatica de interfaces CRUD (Create, Read, Update, Delete) con arquitectura maestro-detalle. A partir de una unica instancia de configuracion XML, genera multiples objetos GeneXus que cubren:
+PXWorkWith is PXTools' main pattern for automatically generating CRUD (Create, Read, Update, Delete) interfaces with a master-detail architecture. From a single XML configuration instance it generates several GeneXus objects covering:
 
-- **Selection**: grilla de seleccion con filtros, ordenes, acciones y exportacion.
-- **View**: vista de detalle con pestanas (tabs) tabulares y/o grillas.
-- **Prompt**: dialogo de busqueda/lookup reutilizable.
-- **Transaction**: transaccion con formulario HTML o Abstract.
-- **Controller**: controlador de navegacion entre Selection, View y Transaction.
-- **Exportacion**: procedimientos de exportacion a Excel y generacion de graficos.
+- **Selection**: a selection grid with filters, orders, actions and export.
+- **View**: a detail view with tabular tabs and/or grids.
+- **Prompt**: a reusable search/lookup dialog.
+- **Transaction**: a transaction with an HTML or Abstract form.
+- **Controller**: a navigation controller between Selection, View and Transaction.
+- **Export**: procedures for exporting to Excel and generating charts.
 
-Cada objeto se genera en version Desktop (HTML WebForm) y Responsive (Abstract Form), controlado por propiedades independientes.
+Every object is generated in a Desktop (HTML WebForm) and a Responsive (Abstract Form) version, controlled by independent properties.
 
-### Estadisticas de uso real
+### Real-world usage statistics
 
-PXWorkWith es el pattern más usado del framework: aparece extensivamente en los propios módulos @PXTools (Security, Alerts, CloudTasks, FileStorage, entre otros) y en las aplicaciones que los integran.
+PXWorkWith is the framework's most used pattern: it appears extensively in the @PXTools modules themselves (Security, Alerts, CloudTasks, FileStorage, among others) and in the applications integrating them.
 
 ---
 
-## 2. Objetos que genera
+## 2. Objects it generates
 
-Una unica instancia de PXWorkWith genera los siguientes objetos GeneXus:
+A single PXWorkWith instance generates the following GeneXus objects:
 
-| Object ID | Tipo GX | Patron de nombre | XPath del elemento | Descripcion |
+| Object ID | GX type | Name pattern | Element XPath | Description |
 |---|---|---|---|---|
-| TransactionDesktop | Transaction | `D{Instance.Name}` | `//transaction` | Transaction con HTML WebForm |
-| TransactionResponsive | Transaction | `R{Instance.Name}` | `//transaction` | Transaction con Abstract Form |
-| SelectionSDT | SDT | `PXWW{Instance.Name}Rows` | `instance/level/selection` | SDT de filas seleccionadas |
-| PromptSDT | SDT | `PXWW{Instance.Name}Rows` | `instance/level/prompt` | SDT de filas del prompt |
-| TabGridSDT | SDT | `PXWW{Instance.Name}Rows` | `instance/level/view/sections//section[@type='Grid']` | SDT de filas de tab grid |
-| Selection | WebPanel | `WW{Instance.Name}` | `instance/level/selection` | Grilla de seleccion (Desktop) |
-| SelectionResponsive | WebPanel | `RWW{Instance.Name}` | `instance/level/selection` | Grilla de seleccion (Responsive) |
-| View | WebPanel | `View{Instance.Name}` | `instance/level/view` | Vista de detalle (Desktop) |
-| ViewResponsive | WebPanel | `RView{Instance.Name}` | `instance/level/view` | Vista de detalle (Responsive) |
-| TabTabular | WebComponent | `{Element.wcname}` | `instance/level/view/sections//section[@type='Tabular']` | Tab tabular (Desktop) |
-| TabTabularResponsive | WebComponent | `{Element.wcname}` | idem | Tab tabular (Responsive) |
-| TabGrid | WebComponent | `{Element.wcname}` | `instance/level/view/sections//section[@type='Grid']` | Tab grilla (Desktop) |
-| TabGridResponsive | WebComponent | `{Element.wcname}` | idem | Tab grilla (Responsive) |
-| Prompt | WebPanel | `Pr{Instance.Name}` | `instance/level/prompt` | Prompt/lookup (Desktop) |
-| PromptResponsive | WebPanel | `RPr{Instance.Name}` | `instance/level/prompt` | Prompt/lookup (Responsive) |
-| LevelController | WebPanel | `Ct{Instance.Name}` | `instance/level[../transaction[@afterTrn='Call Levels Controllers']]` | Controlador de nivel (Desktop) |
-| LevelControllerResponsive | WebPanel | `RCt{Instance.Name}` | idem | Controlador de nivel (Responsive) |
-| InstanceController | WebPanel | `Ct{Instance.Name}` | `instance/controller` | Controlador de instancia (Desktop) |
-| InstanceControllerResponsive | WebPanel | `RCt{Instance.Name}` | idem | Controlador de instancia (Responsive) |
-| SelectionExportExcel | Procedure | `Ex{Instance.Name}` | `instance/level/selection/modes` | Exportacion a Excel |
-| SelectionExportExcelSDT | SDT | `Ex{Instance.Name}ExcelSDT` | idem | SDT para exportacion Excel |
-| SelectionChart | Procedure | `Ex{Instance.Name}` | `instance/level/selection/modes` | Generacion de graficos |
-| SelectionUpdateGridRowsProcedure | Procedure | `Upd{Instance.Name}GridRows` | `instance/level/selection/modes` | Actualizacion masiva de filas |
-| ChkChosenValueSelected | Procedure | `Chk{Instance.Name}ChosenValueSelected` | `instance//variable/controlInfo[@controlType='Chosen']` | Validacion de control Chosen |
-| RetChosenValues | DataProvider | `Ret{Instance.Name}ChosenValues` | idem | Retorna valores Chosen |
-| RetChosenResults | Procedure | `Ret{Instance.Name}ChosenResults` | idem | Retorna resultados Chosen |
-| SelectionGridHandlerDataProvider | DataProvider | `PXWW{Instance.Name}Rows` | `instance/level/selection` | Grid handler para Selection |
-| PromptGridHandlerDataProvider | DataProvider | `PXWW{Instance.Name}Rows` | `instance/level/prompt` | Grid handler para Prompt |
-| TabGridGridHandlerDataProvider | DataProvider | `PXWW{Instance.Name}Rows` | `instance/level/view/sections//section[@type='Grid']` | Grid handler para Tab Grid |
+| TransactionDesktop | Transaction | `D{Instance.Name}` | `//transaction` | A transaction with an HTML WebForm |
+| TransactionResponsive | Transaction | `R{Instance.Name}` | `//transaction` | A transaction with an Abstract Form |
+| SelectionSDT | SDT | `PXWW{Instance.Name}Rows` | `instance/level/selection` | The SDT of the selected rows |
+| PromptSDT | SDT | `PXWW{Instance.Name}Rows` | `instance/level/prompt` | The SDT of the prompt's rows |
+| TabGridSDT | SDT | `PXWW{Instance.Name}Rows` | `instance/level/view/sections//section[@type='Grid']` | The SDT of the tab grid's rows |
+| Selection | WebPanel | `WW{Instance.Name}` | `instance/level/selection` | The selection grid (Desktop) |
+| SelectionResponsive | WebPanel | `RWW{Instance.Name}` | `instance/level/selection` | The selection grid (Responsive) |
+| View | WebPanel | `View{Instance.Name}` | `instance/level/view` | The detail view (Desktop) |
+| ViewResponsive | WebPanel | `RView{Instance.Name}` | `instance/level/view` | The detail view (Responsive) |
+| TabTabular | WebComponent | `{Element.wcname}` | `instance/level/view/sections//section[@type='Tabular']` | A tabular tab (Desktop) |
+| TabTabularResponsive | WebComponent | `{Element.wcname}` | idem | A tabular tab (Responsive) |
+| TabGrid | WebComponent | `{Element.wcname}` | `instance/level/view/sections//section[@type='Grid']` | A grid tab (Desktop) |
+| TabGridResponsive | WebComponent | `{Element.wcname}` | idem | A grid tab (Responsive) |
+| Prompt | WebPanel | `Pr{Instance.Name}` | `instance/level/prompt` | The prompt/lookup (Desktop) |
+| PromptResponsive | WebPanel | `RPr{Instance.Name}` | `instance/level/prompt` | The prompt/lookup (Responsive) |
+| LevelController | WebPanel | `Ct{Instance.Name}` | `instance/level[../transaction[@afterTrn='Call Levels Controllers']]` | The level controller (Desktop) |
+| LevelControllerResponsive | WebPanel | `RCt{Instance.Name}` | idem | The level controller (Responsive) |
+| InstanceController | WebPanel | `Ct{Instance.Name}` | `instance/controller` | The instance controller (Desktop) |
+| InstanceControllerResponsive | WebPanel | `RCt{Instance.Name}` | idem | The instance controller (Responsive) |
+| SelectionExportExcel | Procedure | `Ex{Instance.Name}` | `instance/level/selection/modes` | Export to Excel |
+| SelectionExportExcelSDT | SDT | `Ex{Instance.Name}ExcelSDT` | idem | The SDT for the Excel export |
+| SelectionChart | Procedure | `Ex{Instance.Name}` | `instance/level/selection/modes` | Chart generation |
+| SelectionUpdateGridRowsProcedure | Procedure | `Upd{Instance.Name}GridRows` | `instance/level/selection/modes` | Bulk row update |
+| ChkChosenValueSelected | Procedure | `Chk{Instance.Name}ChosenValueSelected` | `instance//variable/controlInfo[@controlType='Chosen']` | Chosen control validation |
+| RetChosenValues | DataProvider | `Ret{Instance.Name}ChosenValues` | idem | Returns the Chosen values |
+| RetChosenResults | Procedure | `Ret{Instance.Name}ChosenResults` | idem | Returns the Chosen results |
+| SelectionGridHandlerDataProvider | DataProvider | `PXWW{Instance.Name}Rows` | `instance/level/selection` | The Selection's grid handler |
+| PromptGridHandlerDataProvider | DataProvider | `PXWW{Instance.Name}Rows` | `instance/level/prompt` | The Prompt's grid handler |
+| TabGridGridHandlerDataProvider | DataProvider | `PXWW{Instance.Name}Rows` | `instance/level/view/sections//section[@type='Grid']` | The Tab Grid's grid handler |
 
-> **Nota**: los objetos con el mismo patron de nombre (por ejemplo `PXWW{Instance.Name}Rows`) se distinguen por el contexto XPath del elemento que los origina dentro de la instancia.
+> **Note**: objects sharing the same name pattern (for example `PXWW{Instance.Name}Rows`) are told apart by the XPath context of the element originating them inside the instance.
 
 ---
 
-## 3. Estructura XML de la instancia
+## 3. XML structure of the instance
 
-### 3.1 Jerarquia principal
+### 3.1 The main hierarchy
 
 ```
 instance
  |
- +-- transaction ................. Configuracion de la transaccion
- |    +-- afterTrn .............. Comportamiento post-transaccion
- |    +-- generateTransaction ... Genera o no la transaccion
+ +-- transaction ................. The transaction's configuration
+ |    +-- afterTrn .............. Post-transaction behaviour
+ |    +-- generateTransaction ... Whether or not to generate the transaction
  |
- +-- level ....................... Nivel (puede haber multiples)
+ +-- level ....................... A level (there can be several)
  |    +-- name, description
  |    +-- masterPage, theme
- |    +-- generateWeb ........... Genera Desktop
- |    +-- generateWebResponsive . Genera Responsive
- |    +-- generateSD ............ Genera Smart Devices
+ |    +-- generateWeb ........... Generate Desktop
+ |    +-- generateWebResponsive . Generate Responsive
+ |    +-- generateSD ............ Generate Smart Devices
  |    |
- |    +-- controller ............ Configuracion del controlador
+ |    +-- controller ............ The controller's configuration
  |    |
- |    +-- selection ............. Grilla de seleccion
- |    |    +-- grid ............. Configuracion de grilla
- |    |    |    +-- attributes .. Columnas
- |    |    +-- filter ........... Filtros
- |    |    |    +-- search ...... Busqueda rapida
- |    |    |    +-- advancedSearch Filtros avanzados
- |    |    |    +-- conditions .. Condiciones fijas
- |    |    +-- orders ........... Ordenes de clasificacion
- |    |    +-- actions .......... Acciones/botones
+ |    +-- selection ............. The selection grid
+ |    |    +-- grid ............. The grid's configuration
+ |    |    |    +-- attributes .. Columns
+ |    |    +-- filter ........... Filters
+ |    |    |    +-- search ...... Quick search
+ |    |    |    +-- advancedSearch Advanced filters
+ |    |    |    +-- conditions .. Fixed conditions
+ |    |    +-- orders ........... Sort orders
+ |    |    +-- actions .......... Actions/buttons
  |    |    +-- modes ............ Export Excel, Charts, Update
- |    |    +-- events ........... Codigo de eventos custom
+ |    |    +-- events ........... Custom event code
  |    |    +-- codes ............ Hooks: Start, Refresh, Load, Sub
- |    |    +-- variables ........ Variables custom
- |    |    +-- parameters ....... Parametros del WebPanel
- |    |    +-- fixedData ........ Filas de datos fijos
+ |    |    +-- variables ........ Custom variables
+ |    |    +-- parameters ....... The WebPanel's parameters
+ |    |    +-- fixedData ........ Rows of fixed data
  |    |
- |    +-- view .................. Vista de detalle con tabs
- |    |    +-- form ............. Layout de atributos
- |    |    +-- sections ......... Pestanas
+ |    +-- view .................. The detail view with tabs
+ |    |    +-- form ............. The attribute layout
+ |    |    +-- sections ......... Tabs
  |    |    |    +-- section ..... type: Tabular | Grid
  |    |    +-- actions, events, codes, variables, parameters
  |    |
- |    +-- prompt ................ Dialogo de busqueda/lookup
- |    |    +-- (estructura similar a selection)
+ |    +-- prompt ................ The search/lookup dialog
+ |    |    +-- (a structure similar to selection)
  |    |
- |    +-- navigation ............ Navegacion Selection/View/Edit
+ |    +-- navigation ............ Selection/View/Edit navigation
  |
  +-- ...
 ```
 
-### 3.2 Ejemplo XML simplificado
+### 3.2 A simplified XML example
 
 ```xml
-<instance parentObject="Factura">
+<instance parentObject="Invoice">
   <transaction afterTrn="Call Controller" generateTransaction="True">
-    <!-- Configuracion de transaccion -->
+    <!-- The transaction's configuration -->
   </transaction>
 
-  <level name="Factura" description="Facturas"
+  <level name="Invoice" description="Invoices"
          masterPage="PXMasterPage" theme="PXTheme"
          generateWeb="True" generateWebResponsive="True" generateSD="False">
 
@@ -139,38 +139,38 @@ instance
     <selection>
       <grid>
         <attributes>
-          <attribute name="FacturaId" description="Nro. Factura" visible="True" />
-          <attribute name="FacturaFecha" description="Fecha" visible="True" />
-          <attribute name="ClienteNombre" description="Cliente" visible="True" />
-          <attribute name="FacturaTotal" description="Total" visible="True" />
+          <attribute name="InvoiceId" description="Invoice no." visible="True" />
+          <attribute name="InvoiceDate" description="Date" visible="True" />
+          <attribute name="CustomerName" description="Customer" visible="True" />
+          <attribute name="InvoiceTotal" description="Total" visible="True" />
         </attributes>
       </grid>
 
       <filter>
         <search>
-          <attribute name="FacturaId" />
-          <attribute name="ClienteNombre" />
+          <attribute name="InvoiceId" />
+          <attribute name="CustomerName" />
         </search>
         <advancedSearch>
-          <attribute name="FacturaFecha" type="Range" />
-          <attribute name="ClienteId" />
+          <attribute name="InvoiceDate" type="Range" />
+          <attribute name="CustomerId" />
         </advancedSearch>
         <conditions>
-          <condition expression="FacturaAnulada = false" />
+          <condition expression="InvoiceCancelled = false" />
         </conditions>
       </filter>
 
       <orders>
-        <order name="Fecha Desc" expression="FacturaFecha DESC" default="True" />
-        <order name="Cliente" expression="ClienteNombre" />
+        <order name="Date Desc" expression="InvoiceDate DESC" default="True" />
+        <order name="Customer" expression="CustomerName" />
       </orders>
 
       <actions>
-        <action name="Insert" caption="Insertar" callType="Link" />
-        <action name="Update" caption="Modificar" callType="Link" />
-        <action name="Delete" caption="Eliminar" callType="Link" />
-        <action name="ExportExcel" caption="Exportar" callType="Link" />
-        <action name="Imprimir" caption="Imprimir"
+        <action name="Insert" caption="Insert" callType="Link" />
+        <action name="Update" caption="Update" callType="Link" />
+        <action name="Delete" caption="Delete" callType="Link" />
+        <action name="ExportExcel" caption="Export" callType="Link" />
+        <action name="Print" caption="Print"
                 callType="Client Text Print" />
       </actions>
 
@@ -181,43 +181,43 @@ instance
       </modes>
 
       <events>
-        <!-- Codigo GeneXus personalizado para eventos -->
+        <!-- Custom GeneXus event code -->
       </events>
 
       <codes>
-        <start>/* Codigo ejecutado al inicio */</start>
-        <refresh>/* Codigo ejecutado en refresh */</refresh>
-        <load>/* Codigo ejecutado en load de cada fila */</load>
-        <subroutine>/* Subrutinas reutilizables */</subroutine>
+        <start>/* Code run at startup */</start>
+        <refresh>/* Code run in refresh */</refresh>
+        <load>/* Code run in the load of each row */</load>
+        <subroutine>/* Reusable subroutines */</subroutine>
       </codes>
 
       <variables>
-        <variable name="&amp;MiVariable" type="Numeric" length="4" />
+        <variable name="&amp;MyVariable" type="Numeric" length="4" />
       </variables>
 
       <parameters>
-        <parameter name="ClienteId" />
+        <parameter name="CustomerId" />
       </parameters>
 
       <fixedData>
-        <!-- Filas de datos fijos opcionales -->
+        <!-- Optional rows of fixed data -->
       </fixedData>
     </selection>
 
     <view>
       <form>
-        <attribute name="FacturaId" />
-        <attribute name="FacturaFecha" />
-        <attribute name="ClienteNombre" />
+        <attribute name="InvoiceId" />
+        <attribute name="InvoiceDate" />
+        <attribute name="CustomerName" />
       </form>
 
       <sections>
-        <section name="Detalle" type="Grid" wcname="WWFacturaDetalle">
+        <section name="Lines" type="Grid" wcname="WWInvoiceLines">
           <grid>
             <attributes>
-              <attribute name="ProductoNombre" />
-              <attribute name="FacturaDetCantidad" />
-              <attribute name="FacturaDetPrecio" />
+              <attribute name="ProductName" />
+              <attribute name="InvoiceLineQuantity" />
+              <attribute name="InvoiceLinePrice" />
             </attributes>
           </grid>
           <filter>
@@ -227,38 +227,38 @@ instance
           <actions />
         </section>
 
-        <section name="Observaciones" type="Tabular" wcname="WWFacturaObs">
+        <section name="Notes" type="Tabular" wcname="WWInvoiceNotes">
           <form>
-            <attribute name="FacturaObservaciones" />
+            <attribute name="InvoiceNotes" />
           </form>
         </section>
 
-        <section name="Adjuntos" type="Grid"
-                 externalComponent="true" wcname="WWFacturaAdj">
-          <!-- Componente externo embebido -->
+        <section name="Attachments" type="Grid"
+                 externalComponent="true" wcname="WWInvoiceAtt">
+          <!-- An embedded external component -->
         </section>
       </sections>
 
       <actions>
-        <action name="Editar" caption="Editar" callType="Link" />
+        <action name="Edit" caption="Edit" callType="Link" />
       </actions>
     </view>
 
     <prompt>
       <grid>
         <attributes>
-          <attribute name="FacturaId" />
-          <attribute name="ClienteNombre" />
-          <attribute name="FacturaFecha" />
+          <attribute name="InvoiceId" />
+          <attribute name="CustomerName" />
+          <attribute name="InvoiceDate" />
         </attributes>
       </grid>
       <filter>
         <search>
-          <attribute name="FacturaId" />
+          <attribute name="InvoiceId" />
         </search>
       </filter>
       <orders>
-        <order name="Default" expression="FacturaId DESC" default="True" />
+        <order name="Default" expression="InvoiceId DESC" default="True" />
       </orders>
     </prompt>
 
@@ -269,83 +269,82 @@ instance
 
 ---
 
-## 4. Nodos principales
+## 4. The main nodes
 
 ### 4.1 Selection
 
-El nodo `selection` genera la grilla principal de seleccion (listado maestro). Produce los objetos `WW{Instance.Name}` (Desktop) y `RWW{Instance.Name}` (Responsive).
+The `selection` node generates the main selection grid (the master listing). It produces the objects `WW{Instance.Name}` (Desktop) and `RWW{Instance.Name}` (Responsive).
 
-**Subnodos:**
+**Subnodes:**
 
-| Subnodo | Proposito |
-|---------|-----------|
-| `grid` | Define columnas visibles (attributes y variables) |
-| `filter` | Filtros de busqueda rapida, avanzada y condiciones fijas |
-| `orders` | Ordenes de clasificacion disponibles |
-| `actions` | Botones y acciones del usuario |
-| `modes` | Que operaciones genera el pattern (ver abajo) |
-| `confirms` | Dialogos de confirmacion con texto dinamico (ver [12-acciones-patterns-ui.md](12-acciones-patterns-ui.md) §5.bis) |
-| `events` | Codigo GeneXus de eventos personalizados |
-| `codes` | Hooks de codigo: Start, Refresh, Load, Subroutine |
-| `variables` | Variables personalizadas adicionales |
-| `parameters` | Parametros de entrada del WebPanel |
-| `fixedData` | Filas de datos fijos (no provienen de la BD) |
+| Subnode | Purpose |
+|---------|---------|
+| `grid` | Defines the visible columns (attributes and variables) |
+| `filter` | Quick-search, advanced-search and fixed-condition filters |
+| `orders` | The available sort orders |
+| `actions` | The user's buttons and actions |
+| `modes` | Which operations the pattern generates (see below) |
+| `confirms` | Confirmation dialogs with dynamic text (see [12-pattern-ui-actions.md](12-pattern-ui-actions.md) §5.bis) |
+| `events` | Custom GeneXus event code |
+| `codes` | Code hooks: Start, Refresh, Load, Subroutine |
+| `variables` | Additional custom variables |
+| `parameters` | The WebPanel's input parameters |
+| `fixedData` | Rows of fixed data (not coming from the database) |
 
-**Orden de los subnodos** (el pattern los valida por secuencia; fuera de orden, la instancia no
-aplica): `modes`, `orders`, `filter`, `layouts`, `codes`, `actions`, `confirms`, `variables`.
+**Subnode order** (the pattern validates them by sequence; out of order, the instance does not
+apply): `modes`, `orders`, `filter`, `layouts`, `codes`, `actions`, `confirms`, `variables`.
 
-#### El nodo `modes`
+#### The `modes` node
 
-Se configura con **atributos, no con hijos**, y controla que operaciones genera el pattern:
+It is configured with **attributes, not children**, and controls which operations the pattern generates:
 
 ```xml
-<modes />                                          <!-- todas las del default -->
-<modes Delete="false" />                           <!-- sin borrado -->
+<modes />                                          <!-- all the defaults -->
+<modes Delete="false" />                           <!-- no deletion -->
 <modes Insert="false" Update="false" Delete="false" Display="false" Export="true" />
 ```
 
-| Atributo | Que habilita |
+| Attribute | What it enables |
 |---|---|
-| `Insert` / `Update` / `Delete` / `Display` | Las cuatro operaciones sobre la transaccion |
-| `Export` | Exportacion a Excel |
-| `Chart` (+ `chartWidth`, `chartHeight`) | Graficos |
-| `AddSelected` / `AddAll` / `RemoveSelected` / `RemoveAll` | Seleccion multiple |
-| `InsertEventCondition` | Condiciona el alta por evento |
+| `Insert` / `Update` / `Delete` / `Display` | The four operations on the transaction |
+| `Export` | Export to Excel |
+| `Chart` (+ `chartWidth`, `chartHeight`) | Charts |
+| `AddSelected` / `AddAll` / `RemoveSelected` / `RemoveAll` | Multiple selection |
+| `InsertEventCondition` | Makes the insert conditional on an event |
 
-Valores: `true` | `false` | `default`.
+Values: `true` | `false` | `default`.
 
-> **Deshabilitar un modo es lo que libera el nombre de la accion.** Para reemplazar el
-> comportamiento de `Delete` por uno propio hay que poner `Delete="false"` **y ademas** declarar un
-> `action name="Delete"`; con el modo habilitado el pattern genera igual su accion contra la
-> transaccion.
+> **Disabling a mode is what frees the action's name.** To replace `Delete`'s behaviour with your
+> own you have to set `Delete="false"` **and also** declare an `action name="Delete"`; with the mode
+> enabled the pattern generates its own action against the transaction anyway.
 
 ### 4.2 View
 
-El nodo `view` genera la pantalla de detalle de un registro. Produce los objetos `View{Instance.Name}` (Desktop) y `RView{Instance.Name}` (Responsive).
+The `view` node generates a record's detail screen. It produces the objects `View{Instance.Name}` (Desktop) and `RView{Instance.Name}` (Responsive).
 
-**Componentes:**
+**Components:**
 
-- **form**: layout tabular de atributos del registro principal.
-- **layouts/layout/fixedData**: la **cabecera** del View (ver abajo).
-- **sections**: pestanas (tabs) que pueden ser de tipo `Tabular` o `Grid`. Cada seccion genera un WebComponent independiente. Solo el tab activo está renderizado, por lo que `GlobalEvents` no aplica entre tabs. Para compartir información entre tabs se puede usar **WebSession** (un tab escribe, otro lee en su Start/Refresh), implementándolo en los hooks de código.
-- **actions, events, codes, variables, parameters**: misma estructura que Selection.
+- **form**: the tabular layout of the main record's attributes.
+- **layouts/layout/fixedData**: the View's **header** (see below).
+- **sections**: tabs, which can be of type `Tabular` or `Grid`. Each section generates an independent WebComponent. Only the active tab is rendered, so `GlobalEvents` does not apply across tabs. To share information between tabs you can use **WebSession** (one tab writes, another reads it in its Start/Refresh), implementing it in the code hooks.
+- **actions, events, codes, variables, parameters**: the same structure as Selection.
 
-**Cabecera del View (`fixedData`):** el View debe declarar un `layouts/layout/fixedData/fixedDataAttributes` (normalmente con un `<row>`) que muestra, fijo arriba de las pestañas, los **datos representativos del registro posicionado** — típicamente los valores de los **parámetros recibidos** por el View (o sus descripciones/atributos representativos). Ej.: si el View recibe `ClienteId, PedidoId`, la row muestra `ClienteNombre`, `PedidoFecha` y `PedidoId`:
+**The View's header (`fixedData`):** the View should declare a `layouts/layout/fixedData/fixedDataAttributes` (usually with one `<row>`) showing, fixed above the tabs, the **representative data of the positioned record** — typically the values of the **parameters the View received** (or their descriptions/representative attributes). E.g. if the View receives `CustomerId, OrderId`, the row shows `CustomerName`, `OrderDate` and `OrderId`:
 
 ```xml
-<view caption="&quot;Pedido &quot; + PedidoId.ToString().Trim()" ...>
+<view caption="&quot;Order &quot; + OrderId.ToString().Trim()" ...>
   <parameters>
-    <parameter name="ClienteId" null="True" />
-    <parameter name="PedidoId" null="True" />
+    <parameter name="CustomerId" null="True" />
+    <parameter name="OrderId" null="True" />
   </parameters>
   <layouts>
     <layout platform="Any">
       <fixedData>
         <fixedDataAttributes>
           <row>
-            <attribute name="ClienteNombre" description="Cliente" descriptionPosition="Left" />
-            <attribute name="PedidoFecha" description="Fecha" descriptionPosition="Left" />
-            <attribute name="PedidoId" description="Pedido" descriptionPosition="Left" />
+            <attribute name="CustomerName" description="Customer" descriptionPosition="Left" />
+            <attribute name="OrderDate" description="Date" descriptionPosition="Left" />
+            <attribute name="OrderId" description="Order" descriptionPosition="Left" />
           </row>
         </fixedDataAttributes>
       </fixedData>
@@ -357,41 +356,41 @@ El nodo `view` genera la pantalla de detalle de un registro. Produce los objetos
 
 ### 4.3 Prompt
 
-El nodo `prompt` genera un dialogo de busqueda/lookup. Produce los objetos `Pr{Instance.Name}` (Desktop) y `RPr{Instance.Name}` (Responsive). Su estructura interna es similar a `selection` (grid, filter, orders, etc.) pero orientada a la seleccion de un registro para retorno de clave.
+The `prompt` node generates a search/lookup dialog. It produces the objects `Pr{Instance.Name}` (Desktop) and `RPr{Instance.Name}` (Responsive). Its internal structure is similar to `selection`'s (grid, filter, orders, and so on) but aimed at selecting one record and returning its key.
 
 ### 4.4 Controller
 
-Existen dos tipos de controlador:
+There are two kinds of controller:
 
-| Tipo | XPath | Condicion de generacion |
-|------|-------|------------------------|
-| **InstanceController** | `instance/controller` | Siempre disponible |
-| **LevelController** | `instance/level` | Solo cuando `transaction[@afterTrn='Call Levels Controllers']` |
+| Kind | XPath | Generation condition |
+|------|-------|----------------------|
+| **InstanceController** | `instance/controller` | Always available |
+| **LevelController** | `instance/level` | Only when `transaction[@afterTrn='Call Levels Controllers']` |
 
-El controlador gestiona la navegacion entre Selection, View y Transaction (edicion). Ambos generan objetos `Ct{Instance.Name}` (Desktop) y `RCt{Instance.Name}` (Responsive).
+The controller manages navigation between Selection, View and Transaction (editing). Both generate `Ct{Instance.Name}` (Desktop) and `RCt{Instance.Name}` (Responsive) objects.
 
-La propiedad `afterTrn` de la transaccion determina el flujo post-guardado:
+The transaction's `afterTrn` property determines the post-save flow:
 
-| Valor | Comportamiento |
-|-------|---------------|
-| `Call Controller` | Retorna al controlador de instancia |
-| `Call Levels Controllers` | Retorna al controlador del nivel correspondiente |
-| `Do Nothing` | No ejecuta navegacion post-transaccion |
+| Value | Behaviour |
+|-------|-----------|
+| `Call Controller` | Returns to the instance controller |
+| `Call Levels Controllers` | Returns to the corresponding level's controller |
+| `Do Nothing` | Runs no post-transaction navigation |
 
-### 4.5 Transaction (form de edicion)
+### 4.5 Transaction (the edit form)
 
-El nodo `transaction/layouts/layout` define el **form de la transaccion**. Vacio (`<layout platform="Any" />`) el pattern genera el form por defecto; con un nodo `<attributes>` se define **el form completo**: los atributos listados, en ese orden, con su descripcion y su control.
+The `transaction/layouts/layout` node defines the **transaction's form**. Left empty (`<layout platform="Any" />`) the pattern generates the default form; with an `<attributes>` node you define **the complete form**: the attributes listed, in that order, with their description and their control.
 
 ```xml
-<transaction name="Cliente, Ventas">
+<transaction name="Customer, Sales">
   <parameters>...</parameters>
   <layouts>
     <layout platform="Any">
       <attributes>
-        <attribute name="ClienteId" description="Id" />
-        <attribute name="ClienteNombre" description="Nombre" />
-        <attribute name="ClientePaisId" description="Pais">
-          <controlInfo controlType="Dynamic Combo Box" itemValue="PaisId" itemDescription="PaisNombre" emptyItem="True" emptyItemText="Seleccione" />
+        <attribute name="CustomerId" description="Id" />
+        <attribute name="CustomerName" description="Name" />
+        <attribute name="CustomerCountryId" description="Country">
+          <controlInfo controlType="Dynamic Combo Box" itemValue="CountryId" itemDescription="CountryName" emptyItem="True" emptyItemText="Select" />
         </attribute>
       </attributes>
     </layout>
@@ -399,31 +398,32 @@ El nodo `transaction/layouts/layout` define el **form de la transaccion**. Vacio
 </transaction>
 ```
 
-`itemValue` / `itemDescription` son los atributos **de la tabla foranea** (no los subtipos), y deben pertenecer ambos a la misma tabla. Para un combo alimentado por DataProvider en vez de por tabla, ver §6.1.
+`itemValue` / `itemDescription` are attributes **of the foreign table** (not the subtypes), and both must belong to the same table. For a combo fed by a DataProvider instead of by a table, see §6.1.
 
-> **Listar todos los atributos.** El nodo `<attributes>` reemplaza el form completo: un atributo omitido **desaparece de la pantalla**. Al agregar un solo combo hay que enumerar igualmente el resto.
+> **List every attribute.** The `<attributes>` node replaces the whole form: an omitted attribute
+> **disappears from the screen**. When adding a single combo you still have to enumerate all the rest.
 
-### 4.6 Donde se define un ControlType
+### 4.6 Where a ControlType is defined
 
-| Lugar | Alcance | Cuando |
+| Place | Reach | When |
 |---|---|---|
-| Instancia del pattern (`layout/attributes/attribute/controlInfo`) | Solo esa pantalla | **Preferido** |
-| WebForm de la transaccion / WebPanel | Solo ese form | Cuando el form es `dynamic="false"` y se edita a mano, o cuando el objeto no tiene instancia |
-| `.gxAttribute` (propiedad del atributo) | **Toda la KB** | Evitar |
-| `.gxDomain` (propiedad del dominio) | **Todos los atributos del dominio** | Evitar |
+| The pattern's instance (`layout/attributes/attribute/controlInfo`) | That screen only | **Preferred** |
+| The transaction's / WebPanel's WebForm | That form only | When the form is `dynamic="false"` and is edited by hand, or when the object has no instance |
+| `.gxAttribute` (an attribute's property) | **The whole KB** | Avoid |
+| `.gxDomain` (a domain's property) | **Every attribute of the domain** | Avoid |
 
-> **Convención de este proyecto**: los controles de edición **no** se definen en atributos ni en
-> dominios. Es una modalidad que varía según el proyecto —GeneXus permite las cuatro— pero acá el
-> control vive siempre en la instancia, o en el form cuando el objeto no tiene instancia.
+> **This project's convention**: edit controls are **not** defined on attributes or on domains. It is
+> a modality that varies per project — GeneXus allows all four — but here the control always lives in
+> the instance, or in the form when the object has no instance.
 
-#### El ítem vacío pertenece al control, nunca al dato
+#### The empty item belongs to the control, never to the data
 
-⚠️ **Nunca declarar el valor vacío en el dominio ni en el atributo.** Un `(All)`, un `(Ninguno)` o un
-`(Seleccione...)` es una necesidad **de una pantalla concreta** —un filtro que quiere decir "sin
-filtrar"—, no una propiedad del dato. Puesto en el dominio, aparece en todas las pantallas que usen
-ese tipo, incluidos los formularios de edición donde ese valor no es válido.
+⚠️ **Never declare the empty value on the domain or on the attribute.** An `(All)`, a `(None)` or a
+`(Select...)` is the need of **one particular screen** — a filter meaning "do not filter" — not a
+property of the data. Put on the domain, it shows up on every screen using that type, including the
+edit forms where that value is not valid.
 
-Va en el `controlInfo` del atributo dentro de la instancia, en **minúscula**:
+It goes in the attribute's `controlInfo` inside the instance, in **lower case**:
 
 ```xml
 <attribute name="MessagingMessageStatus" description="Status" descriptionPosition="Left">
@@ -431,213 +431,213 @@ Va en el `controlInfo` del atributo dentro de la instancia, en **minúscula**:
 </attribute>
 ```
 
-Funciona igual sobre un `Dynamic Combo Box`, junto a su `dataProvider`.
+It works the same on a `Dynamic Combo Box`, alongside its `dataProvider`.
 
-> **Ojo con el falso amigo**: el dominio *también* acepta `EmptyItem` / `EmptyItemText` (mayúscula
-> inicial, otro nodo) y el import lo acepta sin chistar. Pero el combo se genera igual con
-> `AddEmptyItem="False"`, así que el ítem vacío **no aparece** y el síntoma es "puse la propiedad y no
-> pasó nada". La pista para distinguirlo está en el form generado: el control que sí lo tiene sale con
-> `AddEmptyItem="True"`.
+> **Beware the false friend**: the domain *also* accepts `EmptyItem` / `EmptyItemText` (initial
+> capital, a different node) and the import takes it without complaint. But the combo is generated
+> with `AddEmptyItem="False"` regardless, so the empty item **does not appear** and the symptom is "I
+> set the property and nothing happened". The clue that tells them apart is in the generated form: the
+> control that really has it comes out with `AddEmptyItem="True"`.
 
-Definirlo en el **atributo** lo propaga a toda aparicion del atributo, **grillas incluidas**. Un Dynamic Combo Box en una columna de grilla carga todos los registros de la tabla foranea **por cada fila**: una ineficiencia inaceptable en un listado. Solo seria admisible controlando forzar `Edit` en cada grilla donde el atributo aparezca, lo que es fragil.
+Defining it on the **attribute** propagates it to every appearance of the attribute, **grids included**. A Dynamic Combo Box in a grid column loads every record of the foreign table **for each row**: an unacceptable inefficiency in a listing. It would only be admissible by forcing `Edit` in every grid where the attribute appears, which is fragile.
 
-**Regla para grillas: siempre `Edit`.** Si hay que mostrar un dato de la entidad foranea (tipicamente el nombre), no se pone un combo: se define un **subtipo del atributo descripcion** en el grupo de subtipos y en la transaccion, y se muestra ese subtipo como `Edit`. El `Id` se deja `visible="False"` —sigue disponible para las acciones que necesiten la clave— y se muestra el nombre:
+**The rule for grids: always `Edit`.** If you have to show a piece of data from the foreign entity (typically the name), you do not use a combo: you define a **subtype of the description attribute** in the subtype group and in the transaction, and you show that subtype as `Edit`. The `Id` is left `visible="False"` — it stays available for the actions needing the key — and the name is shown:
 
 ```xml
-<attribute name="ClientePaisId" description="Pais Id" visible="False" autolink="False">
+<attribute name="CustomerCountryId" description="Country Id" visible="False" autolink="False">
   <controlInfo controlType="Edit" />
 </attribute>
-<attribute name="ClientePaisNombre" description="Pais" visible="True" autolink="False">
+<attribute name="CustomerCountryName" description="Country" visible="True" autolink="False">
   <controlInfo controlType="Edit" />
 </attribute>
 ```
 
-Es decir: **combo en el form de edicion, subtipo de nombre en la grilla**. Ver la convencion de nombre de los grupos en [20-modulos-pxtools.md](20-modulos-pxtools.md).
+That is: **a combo in the edit form, a name subtype in the grid**. See the group naming convention in [20-pxtools-modules.md](20-pxtools-modules.md).
 
 ---
 
-## 5. Sistema de acciones
+## 5. The action system
 
-El sistema de acciones es compartido por los tres patterns de UI (PXWorkWith, PXParameterRequest, PXComposer). La referencia completa esta en [12-acciones-patterns-ui.md](12-acciones-patterns-ui.md). Aqui se documenta el uso especifico en PXWorkWith.
+The action system is shared by the three UI patterns (PXWorkWith, PXParameterRequest, PXComposer). The complete reference is in [12-pattern-ui-actions.md](12-pattern-ui-actions.md). This section documents the specifics of using it in PXWorkWith.
 
-Cada accion dentro de `actions` tiene la siguiente estructura:
+Each action inside `actions` has the following structure:
 
 ```xml
-<action name="MiAccion"
-        caption="Texto visible"
+<action name="MyAction"
+        caption="Visible text"
         callType="Link"
         linkType="GXObject"
         target="Self"
-        condition="FacturaEstado = 'A'"
+        condition="InvoiceStatus = 'A'"
         confirm="false">
-  <security object="MiObjeto" operation="Execute" />
+  <security object="MyObject" operation="Execute" />
 </action>
 ```
 
-### Propiedades de una accion
+### An action's properties
 
-| Propiedad | Valores posibles | Descripcion |
-|-----------|-----------------|-------------|
-| `name` | texto libre | Identificador unico de la accion |
-| `caption` | texto libre | Texto visible en el boton/link |
-| `conditionPreviousCode` | code | Codigo procedural previo a la evaluacion de la condicion de visibilidad |
-| `condition` | expresion GeneXus | Condicion de visibilidad de la accion (evaluada por fila si la accion esta en la grilla) |
-| `evaluateCondition` | `Event`, `Load` | Cuando evaluar la condicion: en Load (por cada fila) o en Event (al hacer clic) |
-| `actionPreviousCode` | code | Codigo procedural que se ejecuta **antes** de la invocacion principal del objeto |
-| `callType` | `Link`, `Call`, `Prompt`, `External Link`, `Client Text Print`, `Subroutine`, `Event`, `Submit`, `None`, `Return` | Tipo de invocacion (ver tabla detallada abajo) |
-| `linkType` | `GXObject`, `PXInstance` | Solo para callType `Link`: destino objeto GeneXus directo o instancia PXTools |
-| `actionPostCode` | code | Codigo procedural que se ejecuta **despues** de la invocacion principal |
-| `refreshAction` | enum | Como refrescar la pantalla/grilla despues de la accion (util cuando la accion modifica datos mostrados en la grilla) |
-| `target` | `Self`, `New` | `Self` = misma ventana, `New` = popup/ventana nueva |
-| `confirm` | texto o booleano | Dialogo de confirmacion antes de ejecutar |
-| `security` | object + operation | Control de acceso (objeto y operacion GAM/PXSecurity) |
+| Property | Possible values | Description |
+|----------|-----------------|-------------|
+| `name` | free text | The action's unique identifier |
+| `caption` | free text | The text visible on the button/link |
+| `conditionPreviousCode` | code | Procedural code run before evaluating the visibility condition |
+| `condition` | a GeneXus expression | The action's visibility condition (evaluated per row when the action is in the grid) |
+| `evaluateCondition` | `Event`, `Load` | When to evaluate the condition: in Load (for each row) or in Event (on click) |
+| `actionPreviousCode` | code | Procedural code run **before** the object's main invocation |
+| `callType` | `Link`, `Call`, `Prompt`, `External Link`, `Client Text Print`, `Subroutine`, `Event`, `Submit`, `None`, `Return` | The invocation type (see the detailed table below) |
+| `linkType` | `GXObject`, `PXInstance` | For callType `Link` only: the target is a direct GeneXus object or a PXTools instance |
+| `actionPostCode` | code | Procedural code run **after** the main invocation |
+| `refreshAction` | enum | How to refresh the screen/grid after the action (useful when the action modifies data shown in the grid) |
+| `target` | `Self`, `New` | `Self` = the same window, `New` = a popup/new window |
+| `confirm` | text or boolean | A confirmation dialog before executing |
+| `security` | object + operation | Access control (a GAM/PXSecurity object and operation) |
 
-### Acciones condicionadas por fila
+### Per-row conditional actions
 
-Las acciones soportan **visibilidad condicional por fila** mediante la propiedad `condition` evaluada en el Load de la grilla. Además, el concepto de **Conditional Calls** permite que una misma acción tenga **comportamientos distintos según el contexto** de información de cada fila:
+Actions support **conditional visibility per row** through the `condition` property evaluated in the grid's Load. Beyond that, the **Conditional Calls** concept lets a single action have **different behaviours depending on the context** of each row's information:
 
 ```xml
-<!-- Acción visible solo para facturas pendientes -->
-<action name="Aprobar"
-        caption="Aprobar"
+<!-- An action visible only for pending invoices -->
+<action name="Approve"
+        caption="Approve"
         callType="Link"
-        condition="FacturaEstado = 'Pendiente'"
+        condition="InvoiceStatus = 'Pending'"
         evaluateCondition="Load">
 </action>
 
-<!-- Conditional Calls: misma acción, diferente destino según contexto -->
-<action name="Ver"
-        caption="Ver Detalle"
+<!-- Conditional Calls: the same action, a different target depending on the context -->
+<action name="View"
+        caption="View detail"
         callType="Link">
   <conditionalCalls>
-    <conditionalCall condition="FacturaTipo = 'Nacional'"
-                     gxObject="ViewFacturaNacional" />
-    <conditionalCall condition="FacturaTipo = 'Exportacion'"
-                     gxObject="ViewFacturaExportacion" />
+    <conditionalCall condition="InvoiceType = 'Domestic'"
+                     gxObject="ViewDomesticInvoice" />
+    <conditionalCall condition="InvoiceType = 'Export'"
+                     gxObject="ViewExportInvoice" />
   </conditionalCalls>
 </action>
 ```
 
-Esto permite:
-- Mostrar/ocultar botones según el estado, tipo o cualquier dato de cada registro
-- Invocar objetos diferentes desde el mismo botón según el contexto de la fila
-- Controlar la evaluación de la condición en Load (por fila) o en Event (al clic)
+This lets you:
+- Show/hide buttons according to the status, the type or any piece of data of each record
+- Invoke different objects from the same button according to the row's context
+- Control whether the condition is evaluated in Load (per row) or in Event (on click)
 
-### Tipos de invocacion (callType)
+### Invocation types (callType)
 
 ```
 +---------------------+------------------------------------------+
-| callType            | Comportamiento                           |
+| callType            | Behaviour                                |
 +---------------------+------------------------------------------+
-| Link                | Navega a otro WebPanel/Transaction       |
-| Call                | Invoca un Procedure (sin interfaz)       |
-| Prompt              | Abre dialogo modal (popup)               |
-| External Link       | Abre URL externa o WebPanel no-PXTools   |
-| Client Text Print   | Impresion desde el cliente               |
-| Subroutine          | Ejecuta subrutina dentro del mismo objeto|
-| Event               | Ejecuta codigo inline (sin objeto ppal)  |
-| Submit              | Somete un proceso batch                  |
-| None                | No ejecuta nada                          |
-| Return              | Solo retorna (cierra popup/vuelve)       |
+| Link                | Navigates to another WebPanel/Transaction|
+| Call                | Invokes a Procedure (no UI)              |
+| Prompt              | Opens a modal dialog (popup)             |
+| External Link       | Opens an external URL or a non-PXTools WP|
+| Client Text Print   | Printing from the client                 |
+| Subroutine          | Runs a subroutine inside the same object |
+| Event               | Runs inline code (no main object)        |
+| Submit              | Submits a batch process                  |
+| None                | Does nothing                             |
+| Return              | Only returns (closes the popup/goes back)|
 +---------------------+------------------------------------------+
 ```
 
-### Tipos de destino (linkType)
+### Target types (linkType)
 
-- **GXObject**: invoca directamente un objeto GeneXus (WebPanel, Procedure, Transaction).
-- **PXInstance**: invoca otra instancia de PXTools, resolviendo automaticamente el objeto generado correspondiente.
+- **GXObject**: directly invokes a GeneXus object (WebPanel, Procedure, Transaction).
+- **PXInstance**: invokes another PXTools instance, automatically resolving the corresponding generated object.
 
-**Regla critica para migracion Responsive:** Solo las acciones con `callType="Link"` necesitan usar `linkType="PXInstance"` en lugar de `linkType="GXObject"`, porque son las que invocan **interfaces graficas generadas por patterns** cuyos nombres cambian segun la plataforma (ej: `WWFactura` → `RWWFactura`). Los demas callTypes (`Call`, `Submit`, `Event`, `Subroutine`, etc.) invocan Procedures u objetos cuyo nombre **no cambia** entre plataformas, por lo que `GXObject` es correcto para ellos.
+**A critical rule for the Responsive migration:** only actions with `callType="Link"` need to use `linkType="PXInstance"` instead of `linkType="GXObject"`, because they are the ones invoking **graphical interfaces generated by patterns**, whose names change with the platform (e.g. `WWInvoice` → `RWWInvoice`). The other callTypes (`Call`, `Submit`, `Event`, `Subroutine`, and so on) invoke Procedures or objects whose names **do not change** between platforms, so `GXObject` is right for them.
 
-### Propiedades de PXInstance (para callType Link)
+### PXInstance properties (for callType Link)
 
-Cuando `linkType="PXInstance"`, se usan estas propiedades para identificar el objeto generado:
+When `linkType="PXInstance"`, these properties identify the generated object:
 
-| Propiedad | Descripcion |
-|-----------|-------------|
-| `instanceObject` | Nombre de la instancia de pattern destino (ej: `PXWorkWithFactura`) |
-| `instanceLevel` | Nombre del level dentro de la instancia |
-| `instanceLevelNode` | Nodo del level a invocar: `Selection`, `View`, `Prompt`, `Transaction`, `Level` |
-| `instanceLevelViewSection` | (Solo para View) Seccion/tab especifica del View a la que navegar. Si se omite, va al tab principal |
+| Property | Description |
+|----------|-------------|
+| `instanceObject` | The target pattern instance's name (e.g. `PXWorkWithInvoice`) |
+| `instanceLevel` | The level's name inside the instance |
+| `instanceLevelNode` | The level node to invoke: `Selection`, `View`, `Prompt`, `Transaction`, `Level` |
+| `instanceLevelViewSection` | (View only) The specific section/tab of the View to navigate to. Omitted, it goes to the main tab |
 
-El generador resuelve automaticamente el nombre del objeto segun la plataforma:
+The generator resolves the object's name per platform automatically:
 ```
-PXInstance → PXWorkWithFactura / Level=Factura / Node=Selection
-  Desktop genera:    Link a WWFactura
-  Responsive genera: Link a RWWFactura
+PXInstance → PXWorkWithInvoice / Level=Invoice / Node=Selection
+  Desktop generates:    a Link to WWInvoice
+  Responsive generates: a Link to RWWInvoice
 ```
 
-### Ciclo de ejecucion de una accion
+### An action's execution cycle
 
 ```
-1. conditionPreviousCode  → Codigo previo para evaluar condicion
-2. condition              → Si es false, la accion no se muestra/ejecuta
-3. actionPreviousCode     → Codigo previo a la invocacion principal
-4. [Invocacion principal] → Segun callType (Link/Call/Event/etc.)
-5. actionPostCode         → Codigo posterior a la invocacion
-6. refreshAction          → Refresco de pantalla/grilla si corresponde
+1. conditionPreviousCode  → Code preparing the condition's evaluation
+2. condition              → If false, the action is not shown/run
+3. actionPreviousCode     → Code before the main invocation
+4. [The main invocation]  → Per callType (Link/Call/Event/etc.)
+5. actionPostCode         → Code after the invocation
+6. refreshAction          → Refreshing the screen/grid when applicable
 ```
 
 ---
 
-## 6. Filtros y ordenes
+## 6. Filters and orders
 
-### 6.1 Filtros
+### 6.1 Filters
 
-El nodo `filter` contiene tres mecanismos de filtrado:
+The `filter` node holds three filtering mechanisms:
 
 ```
 filter
- +-- search .............. Busqueda rapida (barra superior)
- |    +-- attribute ...... Atributos incluidos en busqueda libre
+ +-- search .............. Quick search (the top bar)
+ |    +-- attribute ...... The attributes included in the free search
  |
- +-- advancedSearch ...... Filtros avanzados (panel desplegable)
- |    +-- attribute ...... Campos con tipo de filtro (Range, Exact, etc.)
+ +-- advancedSearch ...... Advanced filters (the drop-down panel)
+ |    +-- attribute ...... Fields with a filter type (Range, Exact, etc.)
  |
- +-- conditions .......... Condiciones fijas (no visibles al usuario)
-      +-- condition ...... Expresion GeneXus aplicada siempre
+ +-- conditions .......... Fixed conditions (not visible to the user)
+      +-- condition ...... A GeneXus expression always applied
 ```
 
-**search (busqueda rapida)**: lista de atributos contra los que se busca con texto libre. El usuario escribe un termino y se filtra contra todos los atributos listados con operador LIKE.
+**search (quick search)**: the list of attributes searched with free text. The user types a term and it is filtered against every listed attribute with a LIKE operator.
 
-**advancedSearch (busqueda avanzada)**: campos individuales con controles especificos. Cada atributo puede tener un tipo de filtro (rango de fechas, valor exacto, lista, etc.).
+**advancedSearch (advanced search)**: individual fields with specific controls. Each attribute can have a filter type (a date range, an exact value, a list, and so on).
 
-**conditions (condiciones fijas)**: expresiones GeneXus que se aplican siempre como filtro WHERE sin que el usuario pueda modificarlas. Se usan para restringir datos por contexto (por ejemplo, filtrar solo registros activos).
+**conditions (fixed conditions)**: GeneXus expressions always applied as a WHERE filter, which the user cannot change. They are used to restrict data by context (for example, filtering only active records).
 
-**Combos de filtro alimentados por DataProvider**: un filtro puede ser un `variable` con `<controlInfo controlType="Dynamic Combo Box" dataSourceFrom="DataProvider" dataProvider="Ret<Entidad>, <módulo>" dataProviderParameters="&amp;X" dataProviderItemValue="Id" dataProviderItemDescription="Nombre" emptyItem="True" emptyItemText="(Todos)" />`, alimentado por un `Ret<Entidad>` que devuelve un SDT colección `{Id, Nombre}`. Para el **formato del DataProvider + SDT** (Output/Collection, el grupo Output, la regla "un DataProvider **no** admite `For Each`" y la receta del combo) ver la referencia **kbbridge → `genexus-dataprovider.md`**.
+**Filter combos fed by a DataProvider**: a filter can be a `variable` with `<controlInfo controlType="Dynamic Combo Box" dataSourceFrom="DataProvider" dataProvider="Ret<Entity>, <module>" dataProviderParameters="&amp;X" dataProviderItemValue="Id" dataProviderItemDescription="Name" emptyItem="True" emptyItemText="(All)" />`, fed by a `Ret<Entity>` returning a collection SDT `{Id, Name}`. For the **DataProvider + SDT format** (Output/Collection, the Output group, the rule that a DataProvider does **not** accept `For Each`, and the combo recipe) see the reference **kbbridge → `genexus-dataprovider.md`**.
 
-### 6.2 Ordenes
+### 6.2 Orders
 
-El nodo `orders` define las opciones de ordenamiento disponibles:
+The `orders` node defines the available sorting options:
 
 ```xml
 <orders>
-  <order name="Mas recientes" expression="FacturaFecha DESC" default="True" />
-  <order name="Por cliente" expression="ClienteNombre ASC, FacturaFecha DESC" />
-  <order name="Por monto" expression="FacturaTotal DESC" />
+  <order name="Most recent" expression="InvoiceDate DESC" default="True" />
+  <order name="By customer" expression="CustomerName ASC, InvoiceDate DESC" />
+  <order name="By amount" expression="InvoiceTotal DESC" />
 </orders>
 ```
 
-| Propiedad | Descripcion |
-|-----------|-------------|
-| `name` | Texto visible en el selector de orden |
-| `expression` | Expresion de ordenamiento (atributos + ASC/DESC) |
-| `default` | `True` si es el orden aplicado por defecto |
+| Property | Description |
+|----------|-------------|
+| `name` | The text visible in the order selector |
+| `expression` | The sorting expression (attributes + ASC/DESC) |
+| `default` | `True` if it is the order applied by default |
 
-Se genera un combo/selector que permite al usuario elegir el criterio de ordenamiento en tiempo de ejecucion.
+A combo/selector is generated letting the user choose the sort criterion at run time.
 
 ---
 
-## 7. Tabs (Grid y Tabular)
+## 7. Tabs (Grid and Tabular)
 
-Las pestanas de la vista de detalle (`view/sections/section`) pueden ser de dos tipos:
+The detail view's tabs (`view/sections/section`) can be of two types:
 
-### 7.1 Section tipo Grid
+### 7.1 A Grid section
 
-Muestra una grilla de detalle (relacion 1:N). Genera un WebComponent con estructura similar a Selection:
+Shows a detail grid (a 1:N relationship). It generates a WebComponent with a structure similar to Selection's:
 
 ```xml
-<section name="Detalle" type="Grid" wcname="WWFacturaDetalle">
+<section name="Lines" type="Grid" wcname="WWInvoiceLines">
   <grid>
     <attributes>...</attributes>
   </grid>
@@ -648,47 +648,47 @@ Muestra una grilla de detalle (relacion 1:N). Genera un WebComponent con estruct
 </section>
 ```
 
-Objetos generados:
+Objects generated:
 - `TabGrid` / `TabGridResponsive` (WebComponent)
-- `TabGridSDT` (SDT de filas)
+- `TabGridSDT` (the rows SDT)
 - `TabGridGridHandlerDataProvider` (DataProvider)
 
-### 7.2 Section tipo Tabular
+### 7.2 A Tabular section
 
-Muestra atributos en formato formulario (datos 1:1 o informacion complementaria):
+Shows attributes in form format (1:1 data or complementary information):
 
 ```xml
-<section name="Observaciones" type="Tabular" wcname="WWFacturaObs">
+<section name="Notes" type="Tabular" wcname="WWInvoiceNotes">
   <form>
-    <attribute name="FacturaObservaciones" />
-    <attribute name="FacturaNotas" />
+    <attribute name="InvoiceNotes" />
+    <attribute name="InvoiceRemarks" />
   </form>
 </section>
 ```
 
-Objetos generados:
+Objects generated:
 - `TabTabular` / `TabTabularResponsive` (WebComponent)
 
-### 7.3 Componentes externos
+### 7.3 External components
 
-Cuando `externalComponent="true"`, la seccion embebe un WebComponent existente en lugar de generar uno nuevo. Esto permite integrar componentes desarrollados manualmente.
+When `externalComponent="true"`, the section embeds an existing WebComponent instead of generating a new one. That allows integrating manually developed components.
 
 ```
 +------------------------------------------+
-| View: ViewFactura                        |
+| View: ViewInvoice                        |
 |                                          |
-|  [Factura #1234]  [Fecha: 2026-01-15]   |
-|  [Cliente: Acme Corp]                    |
+|  [Invoice #1234]  [Date: 2026-01-15]     |
+|  [Customer: Acme Corp]                   |
 |                                          |
 |  +------+-------------+-----------+      |
-|  |Detalle| Observaciones| Adjuntos |     |
+|  |Lines | Notes       | Attachm.  |      |
 |  +------+-------------+-----------+      |
 |  | Tab Grid           | Tab Tabul | Tab  |
 |  | (type="Grid")      | (type=    | ext. |
 |  |                    | "Tabular")| comp |
-|  | ProductoNombre  Q P| FacturaObs| (ext)|
-|  | FactDetCant     5 U| FactNotas |      |
-|  | FactDetPrecio 100 U|           |      |
+|  | ProductName     Q P| InvNotes  | (ext)|
+|  | InvLineQty      5 U| InvRemarks|      |
+|  | InvLinePrice  100 U|           |      |
 |  +--------------------+-----------+------+
 ```
 
@@ -696,7 +696,7 @@ Cuando `externalComponent="true"`, la seccion embebe un WebComponent existente e
 
 ## 8. Modes (Export, Charts, Update Grid Rows)
 
-El nodo `modes` dentro de `selection` habilita funcionalidades especiales:
+The `modes` node inside `selection` enables special features:
 
 ### 8.1 Export Excel
 
@@ -706,13 +706,13 @@ El nodo `modes` dentro de `selection` habilita funcionalidades especiales:
 </modes>
 ```
 
-Genera:
-- `Ex{Instance.Name}` (Procedure): logica de exportacion.
-- `Ex{Instance.Name}ExcelSDT` (SDT): estructura de datos para el archivo Excel.
+It generates:
+- `Ex{Instance.Name}` (Procedure): the export logic.
+- `Ex{Instance.Name}ExcelSDT` (SDT): the data structure for the Excel file.
 
-**Templates Excel**: PXTools soporta el uso de archivos Excel como **plantillas** para la exportacion. Esto permite que el usuario final defina diseños personalizados: formatos complejos, multiples hojas, logos, formulas, graficos, etc. El Procedure de exportacion toma la plantilla Excel como base y la rellena con los datos de la grilla.
+**Excel templates**: PXTools supports using Excel files as **templates** for the export. That lets the end user define custom designs: complex formats, several sheets, logos, formulas, charts, and so on. The export Procedure takes the Excel template as a base and fills it with the grid's data.
 
-### 8.2 Charts (Graficos)
+### 8.2 Charts
 
 ```xml
 <modes>
@@ -720,10 +720,10 @@ Genera:
 </modes>
 ```
 
-Genera:
-- `Ex{Instance.Name}` (Procedure): logica de generacion de graficos.
+It generates:
+- `Ex{Instance.Name}` (Procedure): the chart-generation logic.
 
-### 8.3 Update Grid Rows (Actualizacion masiva)
+### 8.3 Update Grid Rows (bulk update)
 
 ```xml
 <modes>
@@ -731,198 +731,198 @@ Genera:
 </modes>
 ```
 
-Genera:
-- `Upd{Instance.Name}GridRows` (Procedure): logica de actualizacion masiva de filas seleccionadas en la grilla.
+It generates:
+- `Upd{Instance.Name}GridRows` (Procedure): the logic for bulk-updating the rows selected in the grid.
 
-### 8.4 Modos CRUD (atributos) y Selection sin transacción
+### 8.4 CRUD modes (attributes) and a Selection with no transaction
 
-En las instancias reales el nodo `modes` lleva los modos como **atributos** (no subnodos): `Insert`, `Update`, `Delete`, `Display` — que interactúan con la **Transacción** del WorkWith — más `Export`:
+In real instances the `modes` node carries the modes as **attributes** (not subnodes): `Insert`, `Update`, `Delete`, `Display` — which interact with the WorkWith's **Transaction** — plus `Export`:
 
 ```xml
 <modes Insert="false" Update="false" Delete="false" Display="false" Export="true" />
 ```
 
-**Selection standalone (sin transacción):** cuando el PXWorkWith no está asociado a una Transacción (tabla base por inferencia), los **4** modos que interactúan con la transacción — `Insert`, `Update`, `Delete`, `Display` — deben ponerse en **`false`** (no hay transacción a la cual navegar). `Export="true"` es independiente y habilita la exportación a Excel; es un uso válido del nodo `modes` incluso en un listado de solo lectura. El link al View se mantiene por `descriptionAttribute` / `<link>` (no depende del modo `Display`).
+**A standalone Selection (with no transaction):** when the PXWorkWith is not associated with a Transaction (its base table comes from inference), the **4** modes interacting with the transaction — `Insert`, `Update`, `Delete`, `Display` — must be set to **`false`** (there is no transaction to navigate to). `Export="true"` is independent and enables the Excel export; it is a valid use of the `modes` node even in a read-only listing. The link to the View is kept through `descriptionAttribute` / `<link>` (it does not depend on the `Display` mode).
 
 ---
 
-## 9. Hooks de codigo (Events y Codes)
+## 9. Code hooks (Events and Codes)
 
-PXWorkWith provee puntos de extension para inyectar codigo GeneXus personalizado en los objetos generados.
+PXWorkWith provides extension points for injecting custom GeneXus code into the generated objects.
 
-### 9.1 Nodo `events`
+### 9.1 The `events` node
 
-Permite definir eventos GeneXus completos (Event handlers) que se inyectan en el objeto generado. Se usa para logica reactiva a acciones del usuario.
+It lets you define complete GeneXus events (Event handlers) injected into the generated object. It is used for logic reacting to the user's actions.
 
-### 9.2 Nodo `codes`
+### 9.2 The `codes` node
 
-Define bloques de codigo que se ejecutan en momentos especificos del ciclo de vida del objeto:
+It defines code blocks run at specific moments of the object's life cycle:
 
-| Hook | Momento de ejecucion | Uso tipico |
-|------|---------------------|------------|
-| `start` | Al iniciar el WebPanel (evento Start) | Inicializar variables, validar permisos |
-| `refresh` | Al refrescar la grilla (evento Refresh) | Recalcular filtros, actualizar estado |
-| `refreshForm` | Refresh **solo del WebForm** (no se incluye en el export `Ex{Name}`) | Comandos de UI del form: `.Enabled`, `.Visible`, propiedades de controles (ver §9.7) |
-| `load` | Al cargar cada fila de la grilla (evento Load) | Calcular campos derivados, aplicar formato condicional |
-| `subroutine` | Subrutinas invocables desde eventos | Logica reutilizable dentro del objeto |
+| Hook | When it runs | Typical use |
+|------|--------------|-------------|
+| `start` | When the WebPanel starts (the Start event) | Initialising variables, checking permissions |
+| `refresh` | When the grid refreshes (the Refresh event) | Recomputing filters, updating state |
+| `refreshForm` | A refresh of the **WebForm only** (it is not included in the `Ex{Name}` export) | The form's UI commands: `.Enabled`, `.Visible`, control properties (see §9.7) |
+| `load` | When each grid row loads (the Load event) | Computing derived fields, applying conditional formatting |
+| `subroutine` | Subroutines invocable from the events | Reusable logic inside the object |
 
 ```xml
 <codes>
   <start>
-    &amp;MiVariable = Today()
-    If &amp;ClienteId.IsEmpty()
+    &amp;MyVariable = Today()
+    If &amp;CustomerId.IsEmpty()
       Return
     EndIf
   </start>
   <refresh>
-    &amp;TotalRegistros = CountFacturas(&amp;FiltroFecha)
+    &amp;TotalRecords = CountInvoices(&amp;DateFilter)
   </refresh>
   <load>
-    If FacturaTotal > 10000
+    If InvoiceTotal > 10000
       &amp;RowClass = "HighValue"
     EndIf
   </load>
   <subroutine>
-    Sub 'ActualizarTotales'
-      &amp;GrandTotal = SumFacturas()
+    Sub 'UpdateTotals'
+      &amp;GrandTotal = SumInvoices()
     EndSub
   </subroutine>
 </codes>
 ```
 
-> **Formato e indentación del CDATA**: la primera línea del código va en **columna 0** y solo el anidamiento de bloques indenta (+1 tab). Es común a todos los patterns con code nodes — regla completa en [`00-overview.md`](00-overview.md) → *Hooks de código: formato e indentación del CDATA*.
+> **CDATA formatting and indentation**: the code's first line goes at **column 0** and only block nesting indents (+1 tab). It is common to every pattern with code nodes — the full rule is in [`00-overview.md`](00-overview.md) → *Code hooks: CDATA formatting and indentation*.
 
-### 9.3 Grilla sin tabla base (Load sin Tabla Base)
+### 9.3 A grid with no base table (Load with no base table)
 
-PXWorkWith soporta grillas **completamente basadas en variables**, sin necesidad de una tabla de base de datos. En este modo:
+PXWorkWith supports grids **entirely based on variables**, with no need for a database table. In that mode:
 
-- La grilla se define con **variables** en lugar de atributos de transacción
-- Los **filtros** se declaran como variables en la sección de filtros
-- El **code Load** define cómo se populan los datos de cada fila (puede invocar web services externos, APIs, SDTs en memoria, etc.)
-- Los filtros y órdenes funcionan normalmente porque operan sobre las variables declaradas
+- The grid is defined with **variables** instead of transaction attributes
+- The **filters** are declared as variables in the filter section
+- The **Load code** defines how each row's data is populated (it can invoke external web services, APIs, in-memory SDTs, and so on)
+- Filters and orders work normally because they operate on the declared variables
 
-Esto permite crear PXWorkWith que muestran datos provenientes de:
-- Web Services externos (REST/SOAP)
-- APIs de terceros
-- Cálculos en memoria
-- Cualquier fuente de datos accesible desde código GeneXus
+That makes it possible to build PXWorkWith screens showing data coming from:
+- External web services (REST/SOAP)
+- Third-party APIs
+- In-memory computations
+- Any data source reachable from GeneXus code
 
 ```xml
 <selection>
   <grid>
-    <!-- Grilla 100% basada en variables, sin atributos de transacción -->
+    <!-- A grid 100% based on variables, with no transaction attributes -->
     <variables>
-      <variable name="Codigo" dataType="Character" length="20" />
-      <variable name="Nombre" dataType="Character" length="100" />
-      <variable name="Precio" dataType="Numeric" length="12" decimals="2" />
+      <variable name="Code" dataType="Character" length="20" />
+      <variable name="Name" dataType="Character" length="100" />
+      <variable name="Price" dataType="Numeric" length="12" decimals="2" />
     </variables>
   </grid>
   <filter>
     <variables>
-      <variable name="FiltroNombre" dataType="Character" length="100" />
+      <variable name="NameFilter" dataType="Character" length="100" />
     </variables>
   </filter>
   <codes>
     <load><![CDATA[
-      // Cargar datos desde un Web Service externo
-      &SDTProductos = WSGetProductos.Udp(&FiltroNombre)
-      For &Producto in &SDTProductos
-        &Codigo = &Producto.Code
-        &Nombre = &Producto.Name
-        &Precio = &Producto.Price
-        Load  // Agrega la fila a la grilla
+      // Load the data from an external web service
+      &SDTProducts = WSGetProducts.Udp(&NameFilter)
+      For &Product in &SDTProducts
+        &Code = &Product.Code
+        &Name = &Product.Name
+        &Price = &Product.Price
+        Load  // Adds the row to the grid
       EndFor
     ]]></load>
   </codes>
 </selection>
 ```
 
-### 9.4 Variables personalizadas
+### 9.4 Custom variables
 
-El nodo `variables` permite declarar variables adicionales necesarias para los hooks de codigo:
+The `variables` node lets you declare additional variables needed by the code hooks:
 
 ```xml
 <variables>
-  <variable name="&amp;MiVariable" type="Numeric" length="4" />
+  <variable name="&amp;MyVariable" type="Numeric" length="4" />
   <variable name="&amp;RowClass" type="Character" length="20" />
 </variables>
 ```
 
-**Regla — no duplicar variables del form:** el nodo `variables` debe contener **solo** las variables usadas en programación procedural (`codes`, `previousCode`, `actionPostCode`, etc.) que **no** estén ya declaradas en el form. Una variable declarada como **filtro** (`filter/attributes`) o como **columna** de la grilla (`variable` dentro de `attributes`) **no** debe re-declararse en `variables`: hacerlo produce el error de build *"Variable X is declared twice"* y **falla la aplicación del patrón** (`PatternApplicationException`), por lo que no se generan los objetos Ww/View. (Ej.: `&CustomerId`, usado en el Start y en los `dataProviderParameters` de un combo pero sin control en el form, sí va en `variables`; en cambio `&CategoryId`/`&StatusId`, que son combos de filtro, no.)
+**Rule — do not duplicate the form's variables:** the `variables` node must contain **only** the variables used in procedural code (`codes`, `previousCode`, `actionPostCode`, and so on) that are **not** already declared in the form. A variable declared as a **filter** (`filter/attributes`) or as a grid **column** (a `variable` inside `attributes`) must **not** be re-declared in `variables`: doing so produces the build error *"Variable X is declared twice"* and **makes the pattern application fail** (`PatternApplicationException`), so the Ww/View objects are not generated. (E.g. `&CustomerId`, used in the Start and in a combo's `dataProviderParameters` but with no control on the form, does go in `variables`; whereas `&CategoryId`/`&StatusId`, which are filter combos, do not.)
 
-### 9.5 Determinación de la tabla base del Selection
+### 9.5 Determining the Selection's base table
 
-GeneXus determina la **tabla base** de un Selection **por inferencia**: reúne (a) todos los atributos usados como **columnas** de la grilla y (b) todos los atributos referenciados dentro de las **acciones InGrid** — parámetros de lo que la acción invoca, `previousCode`, `actionPostCode` y `condition` evaluada en evento (todo lo que se evalúa dentro del evento de la acción) — y busca la tabla que tenga a todos esos atributos como tabla base o extendida.
+GeneXus determines a Selection's **base table** **by inference**: it gathers (a) every attribute used as a grid **column** and (b) every attribute referenced inside the **InGrid actions** — the parameters of whatever the action invokes, `previousCode`, `actionPostCode` and a `condition` evaluated in the event (everything evaluated inside the action's event) — and looks for the table having all those attributes as its base or extended table.
 
-- **Sin tabla base** (todas las columnas y datos de acción son variables): GeneXus determina que el objeto no tiene tabla base ⇒ hay que iterar manualmente en un `code type="Load"` con el comando **`Load`** adentro (ver 9.3).
-- **Con tabla base**: el `code Load` es **opcional** (la iteración la hace GeneXus recorriendo la tabla base). Un comando `Load` dentro del `code Load` es **carga condicional**: si en una iteración el código corre y **no** llega a un `Load`, ese registro **no** se carga. Pero **tabla base + comando `Load` es muy ineficiente** con miles de registros (corre el `code Load` por cada registro) y complica el conteo total del Selection, obligando a `PagingProgrammingStyle = PXTools` (recorrida masiva, aún más costosa). ⇒ **No recomendado**: con tabla base, usar `code Load` **solo para calcular variables** (sin comando `Load`) y filtrar con `filter/conditions`.
+- **No base table** (every column and every piece of action data is a variable): GeneXus decides the object has no base table ⇒ you have to iterate manually in a `code type="Load"` with the **`Load`** command inside it (see 9.3).
+- **With a base table**: the `code Load` is **optional** (GeneXus does the iteration by walking the base table). A `Load` command inside the `code Load` means **conditional loading**: if in one iteration the code runs and does **not** reach a `Load`, that record **is not loaded**. But **a base table plus a `Load` command is very inefficient** with thousands of records (it runs the `code Load` for every record) and it complicates the Selection's total count, forcing `PagingProgrammingStyle = PXTools` (a mass walk, costlier still). ⇒ **Not recommended**: with a base table, use the `code Load` **only to compute variables** (with no `Load` command) and filter through `filter/conditions`.
 
-**Regla práctica:** para que el Selection tenga tabla base y recorrida nativa eficiente, definí las columnas y los parámetros/condiciones de las acciones como **atributos** (no variables). Las variables calculadas por fila (p. ej. un id derivado) se computan en un `code Load` **sin** comando `Load`.
+**A practical rule:** for the Selection to have a base table and an efficient native walk, define the columns and the actions' parameters/conditions as **attributes** (not variables). Per-row computed variables (say a derived id) are computed in a `code Load` **without** a `Load` command.
 
-### 9.6 descriptionAttribute, links por variable y regla multitenant
+### 9.6 descriptionAttribute, links by variable, and the multi-tenant rule
 
-**`descriptionAttribute`** — el nodo `<descriptionAttribute name="X" />` a nivel `level` establece que la columna `X` del Selection **linkea al View**. No hace falta la propiedad `autolink` en esa columna. La propiedad `autolink` es antigua y **no se recomienda** usarla (sobre todo en proyectos **multitenant**): en lugar de auto-linkear, declarar los links explícitamente con `descriptionAttribute` (columna → View propio) o con `<link>` (abajo).
+**`descriptionAttribute`** — the `<descriptionAttribute name="X" />` node at `level` level establishes that the Selection's `X` column **links to the View**. The `autolink` property is not needed on that column. The `autolink` property is old and using it is **not recommended** (especially in **multi-tenant** projects): instead of auto-linking, declare the links explicitly with `descriptionAttribute` (a column → its own View) or with `<link>` (below).
 
-**Link por `<link>` en columna/variable** — tanto un `<attribute>` como un `<variable>` de la grilla admiten un sub-nodo `<link>` que genera un link en formato **PXInstance** al View de **otro** registro (o de otra instancia):
+**A link through `<link>` on a column/variable** — both an `<attribute>` and a `<variable>` of the grid accept a `<link>` subnode generating a **PXInstance**-format link to **another** record's View (or to another instance's):
 
 ```xml
-<variable name="PedidoRelacionadoId" description="Pedido relacionado" basedOn="PedidoId" readOnly="True">
-  <link instanceObject="PXWorkWithPedidos, MiApp" instanceLevel="Pedidos" instanceLevelNode="View"
-        condition="not &amp;PedidoRelacionadoId.IsEmpty()">
+<variable name="RelatedOrderId" description="Related order" basedOn="OrderId" readOnly="True">
+  <link instanceObject="PXWorkWithOrders, MyApp" instanceLevel="Orders" instanceLevelNode="View"
+        condition="not &amp;RelatedOrderId.IsEmpty()">
     <parameters>
-      <parameter name="ClienteId" />
-      <parameter name="&amp;PedidoRelacionadoId" />
+      <parameter name="CustomerId" />
+      <parameter name="&amp;RelatedOrderId" />
     </parameters>
   </link>
 </variable>
 ```
 
-**Regla multitenant — el id de tenant nunca por parámetro (excepto componentes).** En interfaces FrontEnd el discriminador de tenant (aquí `TenantId`) **no** se recibe por parámetro (evita que se pueda forzar por URL). Se carga con `&Context` (`PLoadContext.Call(&Context)`; el patrón lo inyecta) usando `&Context.SecurityUserTenantId`, y se filtra en las `conditions`:
+**The multi-tenant rule — the tenant id never travels as a parameter (except in components).** In FrontEnd interfaces the tenant discriminator (here `TenantId`) is **not** received as a parameter (that prevents it from being forced through the URL). It is loaded through `&Context` (`PLoadContext.Call(&Context)`; the pattern injects it) using `&Context.SecurityUserTenantId`, and it is filtered in the `conditions`:
 
-- **View**: sus `parameters` llevan solo las claves subordinadas (p. ej. `ClienteId, PedidoId`), **no** `TenantId`; el filtro se hace con `<conditions><condition value="TenantId = &amp;Context.SecurityUserTenantId" /></conditions>`.
-- **Sections (tabs)**: si no declaran `parameters`, heredan los del View. Como los Sections son **componentes** (no accesibles por URL), **sí** pueden recibir `TenantId` junto con el resto de la clave — es la forma de filtrar una grilla hija por la PK completa del registro padre.
+- **View**: its `parameters` carry only the subordinate keys (say `CustomerId, OrderId`), **not** `TenantId`; the filter is done with `<conditions><condition value="TenantId = &amp;Context.SecurityUserTenantId" /></conditions>`.
+- **Sections (tabs)**: if they declare no `parameters`, they inherit the View's. Since Sections are **components** (not reachable through the URL), they **can** receive `TenantId` along with the rest of the key — that is how a child grid is filtered by the parent record's full PK.
 
-**`evaluateCondition="Refresh"`** — una acción cuya visibilidad depende de una **variable de filtro** (no de un atributo de fila) debe evaluarse en Refresh. Ej.: mostrar una acción solo cuando el filtro `&Estado` tiene cierto valor: `evaluateCondition="Refresh" condition="&amp;Estado = EstadoPedido.Pendiente"`.
+**`evaluateCondition="Refresh"`** — an action whose visibility depends on a **filter variable** (not on a row attribute) must be evaluated in Refresh. E.g. showing an action only when the `&Status` filter has a certain value: `evaluateCondition="Refresh" condition="&amp;Status = OrderStatus.Pending"`.
 
-### 9.7 `Refresh` vs `RefreshForm`: código de datos vs código de WebForm (export a Excel)
+### 9.7 `Refresh` vs `RefreshForm`: data code vs WebForm code (the Excel export)
 
-El procedimiento de **export a Excel** (`Ex{Name}`, §8.1) reutiliza la **lógica de datos** del Selection: recorre la misma tabla base con los mismos filtros/órdenes. Para eso el generador **incluye el `code Refresh` dentro de `Ex{Name}`**, pero **no** incluye `RefreshForm`, `events` ni el código de `ControlEvent` (todo eso es exclusivo del WebForm).
+The **Excel export** procedure (`Ex{Name}`, §8.1) reuses the Selection's **data logic**: it walks the same base table with the same filters/orders. For that the generator **includes the `code Refresh` inside `Ex{Name}`**, but it does **not** include `RefreshForm`, `events` or the `ControlEvent` code (all of that is exclusive to the WebForm).
 
-**Regla:** cualquier comando que toque una **propiedad de un control del form** — `&Var.Enabled`, `&Var.Visible`, `Control.Visible`, `.Class`, foco, etc. — **debe ir en `RefreshForm`**, nunca en `Refresh`. Si queda en `Refresh`, se filtra al proc `Ex{Name}` (que **no tiene WebForm**) y la especificación emite warnings sobre ese objeto:
+**Rule:** any command touching a **form control's property** — `&Var.Enabled`, `&Var.Visible`, `Control.Visible`, `.Class`, focus, and so on — **must go in `RefreshForm`**, never in `Refresh`. Left in `Refresh`, it leaks into the `Ex{Name}` procedure (which **has no WebForm**) and the specification emits warnings about that object:
 
 - `src0224` — `'Enabled' is a non-standard expression and support for non-standard expressions is enabled.`
 - `spc0002` — `&Var does not have the 'Enabled' property.`
 
-(Se leen en la navegación del objeto `Ex{Name}` — ver kbbridge → `genexus-navigation.md`.)
+(They are read in the `Ex{Name}` object's navigation — see kbbridge → `genexus-navigation.md`.)
 
-| En `Refresh` (datos — también corre en `Ex{Name}`) | En `RefreshForm` (solo WebForm) |
+| In `Refresh` (data — it also runs in `Ex{Name}`) | In `RefreshForm` (the WebForm only) |
 |---|---|
-| Variables de filtro / rango de fechas (`RetFechasFromPeriodo.Call(&Periodo, &Desde, &Hasta)`) | `&Desde.Enabled = ...` / `&Hasta.Enabled = ...` |
-| Contadores, totales, flags de datos usados en `conditions` | `.Visible`, `.Class`, habilitar/deshabilitar controles |
-| Cualquier lógica que el export **también** necesita para filtrar | Cualquier cosa que **solo** tenga sentido con el form presente |
+| Filter variables / date ranges (`RetDatesFromPeriod.Call(&Period, &From, &To)`) | `&From.Enabled = ...` / `&To.Enabled = ...` |
+| Counters, totals, data flags used in `conditions` | `.Visible`, `.Class`, enabling/disabling controls |
+| Any logic the export **also** needs in order to filter | Anything that **only** makes sense with the form present |
 
-**Ejemplo — filtro Período/Desde/Hasta bien separado:**
+**Example — a Period/From/To filter split properly:**
 
 ```xml
-<!-- Datos: computa el rango; el export lo necesita para su Where -->
-<code type="Refresh"><![CDATA[If &Periodo <> Periodo.Personalizar
-	RetFechasFromPeriodo.Call(&Periodo, &Desde, &Hasta)
+<!-- Data: it computes the range; the export needs it for its Where -->
+<code type="Refresh"><![CDATA[If &Period <> Period.Custom
+	RetDatesFromPeriod.Call(&Period, &From, &To)
 EndIf]]></code>
 
-<!-- WebForm: solo habilita/deshabilita los controles del form -->
-<code type="RefreshForm"><![CDATA[&Desde.Enabled = &Periodo = Periodo.Personalizar
-&Hasta.Enabled = &Periodo = Periodo.Personalizar]]></code>
+<!-- WebForm: it only enables/disables the form's controls -->
+<code type="RefreshForm"><![CDATA[&From.Enabled = &Period = Period.Custom
+&To.Enabled = &Period = Period.Custom]]></code>
 ```
 
-> El código de **`ControlEvent`** (p. ej. `&Periodo.Click`) **sí** puede usar `.Enabled`/`.Visible`: los eventos solo existen en el WebForm y no se incluyen en `Ex{Name}`. La fuga ocurre **únicamente** cuando el comando de WebForm queda en `Refresh`.
+> **`ControlEvent`** code (say `&Period.Click`) **can** use `.Enabled`/`.Visible`: the events exist only in the WebForm and are not included in `Ex{Name}`. The leak happens **only** when the WebForm command is left in `Refresh`.
 
-**Checklist** (PXWorkWith con export a Excel habilitado): si una línea toca una propiedad de control (`.Enabled`, `.Visible`, `.Class`, foco) o cualquier cosa del form → `RefreshForm`; si computa datos/variables que el listado filtra o muestra → `Refresh`.
+**Checklist** (a PXWorkWith with the Excel export enabled): if a line touches a control property (`.Enabled`, `.Visible`, `.Class`, focus) or anything belonging to the form → `RefreshForm`; if it computes data/variables the listing filters or shows → `Refresh`.
 
 ---
 
-## 10. Capacidad dual-platform
+## 10. Dual-platform capability
 
-PXWorkWith genera objetos para dos plataformas web simultaneamente:
+PXWorkWith generates objects for two web platforms at once:
 
 ```
 +---------------------------+---------------------------+
@@ -940,68 +940,68 @@ PXWorkWith genera objetos para dos plataformas web simultaneamente:
 +---------------------------+---------------------------+
 ```
 
-### Propiedades de control por nivel
+### Control properties per level
 
-Cada nodo `level` tiene tres propiedades independientes que controlan la generacion:
+Each `level` node has three independent properties controlling generation:
 
-| Propiedad | Valores | Descripcion |
-|-----------|---------|-------------|
-| `generateWeb` | `<default>`, `True`, `False` | Genera version Web Desktop |
-| `generateWebResponsive` | `<default>`, `True`, `False` | Genera version Web Responsive |
-| `generateSD` | `<default>`, `True`, `False` | Genera version Smart Devices |
+| Property | Values | Description |
+|----------|--------|-------------|
+| `generateWeb` | `<default>`, `True`, `False` | Generate the Web Desktop version |
+| `generateWebResponsive` | `<default>`, `True`, `False` | Generate the Web Responsive version |
+| `generateSD` | `<default>`, `True`, `False` | Generate the Smart Devices version |
 
-El valor `<default>` hereda la configuracion del PXWorkWithSettings global.
+The `<default>` value inherits the global PXWorkWithSettings configuration.
 
-### Convencion de prefijos por plataforma
+### The prefix convention per platform
 
-| Plataforma | Prefijo Transaction | Prefijo Selection | Prefijo View | Prefijo Prompt | Prefijo Controller |
-|------------|--------------------|--------------------|--------------|---------------|--------------------|
+| Platform | Transaction prefix | Selection prefix | View prefix | Prompt prefix | Controller prefix |
+|----------|--------------------|------------------|-------------|---------------|-------------------|
 | Desktop | `D` | `WW` | `View` | `Pr` | `Ct` |
 | Responsive | `R` | `RWW` | `RView` | `RPr` | `RCt` |
 
 ---
 
-## 11. Relacion con otros patterns
+## 11. Relationship with the other patterns
 
-PXWorkWith es el pattern central de PXTools. Se relaciona con los demas patterns de la siguiente manera:
+PXWorkWith is PXTools' central pattern. It relates to the other patterns like this:
 
 ```
 +------------------+
-|   PXWorkWith     |<-------- Pattern principal CRUD
+|   PXWorkWith     |<-------- The main CRUD pattern
 +------------------+
         |
-        | genera Transaction -----> Asociada a una GX Transaction
+        | generates a Transaction --> Associated with a GX Transaction
         |
-        | linkType="PXInstance" --> Puede invocar otras instancias PXWorkWith
+        | linkType="PXInstance" ----> Can invoke other PXWorkWith instances
         |
-        | security.object -------> Integra con modulo PXSecurity
+        | security.object ----------> Integrates with the PXSecurity module
         |
-        | masterPage, theme -----> Referencia objetos de UI compartidos
+        | masterPage, theme --------> References shared UI objects
         |
-        | externalComponent -----> Embebe WebComponents de otros patterns
-        |                          o desarrollados manualmente
+        | externalComponent --------> Embeds WebComponents from other patterns
+        |                             or developed manually
         |
-        | modes.exportExcel -----> Genera Procedures de exportacion
-        | modes.chart -----------> Genera Procedures de graficos
+        | modes.exportExcel --------> Generates export Procedures
+        | modes.chart --------------> Generates chart Procedures
         |
-        +-- controller ----------> Controla navegacion entre
-             |                     Selection <-> View <-> Transaction
+        +-- controller -------------> Controls navigation between
+             |                        Selection <-> View <-> Transaction
              |
-             +-- afterTrn -------> Define flujo post-transaccion
+             +-- afterTrn ----------> Defines the post-transaction flow
 ```
 
-### Interaccion clave: acciones con linkType="PXInstance"
+### The key interaction: actions with linkType="PXInstance"
 
-Cuando una accion tiene `linkType="PXInstance"`, el pattern resuelve automaticamente el objeto GeneXus generado por la instancia PXTools destino. Esto permite construir navegaciones entre multiples instancias de PXWorkWith sin hardcodear nombres de objetos.
+When an action has `linkType="PXInstance"`, the pattern automatically resolves the GeneXus object generated by the target PXTools instance. That makes it possible to build navigation between several PXWorkWith instances without hardcoding object names.
 
 ---
 
-## 12. Convenciones de nomenclatura
+## 12. Naming conventions
 
-### 12.1 Prefijos por tipo de objeto
+### 12.1 Prefixes per object type
 
-| Prefijo | Tipo de objeto | Ejemplo |
-|---------|---------------|---------|
+| Prefix | Object type | Example |
+|--------|-------------|---------|
 | `D` | Transaction Desktop | `DCustomer` |
 | `R` | Transaction Responsive | `RCustomer` |
 | `WW` | Selection Desktop | `WWCustomer` |
@@ -1014,52 +1014,52 @@ Cuando una accion tiene `linkType="PXInstance"`, el pattern resuelve automaticam
 | `RCt` | Controller Responsive | `RCtCustomer` |
 | `Ex` | Export/Chart Procedure | `ExCustomer` |
 | `Upd` | Update Grid Rows Procedure | `UpdCustomerGridRows` |
-| `PXWW` | SDT de filas | `PXWWCustomerRows` |
-| `Chk` | Validacion Chosen | `ChkCustomerChosenValueSelected` |
+| `PXWW` | The rows SDT | `PXWWCustomerRows` |
+| `Chk` | Chosen validation | `ChkCustomerChosenValueSelected` |
 | `Ret` | Return Chosen values | `RetCustomerChosenValues` |
 
-### 12.2 Sufijos comunes
+### 12.2 Common suffixes
 
-| Sufijo | Uso | Ejemplo |
+| Suffix | Use | Example |
 |--------|-----|---------|
-| `Rows` | SDT de coleccion de filas | `PXWWCustomerRows` |
-| `ExcelSDT` | SDT para exportacion Excel | `ExCustomerExcelSDT` |
-| `GridRows` | Procedure de actualizacion masiva | `UpdCustomerGridRows` |
-| `ChosenValueSelected` | Validacion de Chosen | `ChkCustomerChosenValueSelected` |
-| `ChosenValues` | DataProvider de valores Chosen | `RetCustomerChosenValues` |
-| `ChosenResults` | Procedure de resultados Chosen | `RetCustomerChosenResults` |
+| `Rows` | The row-collection SDT | `PXWWCustomerRows` |
+| `ExcelSDT` | The SDT for the Excel export | `ExCustomerExcelSDT` |
+| `GridRows` | The bulk-update Procedure | `UpdCustomerGridRows` |
+| `ChosenValueSelected` | Chosen validation | `ChkCustomerChosenValueSelected` |
+| `ChosenValues` | The DataProvider of the Chosen values | `RetCustomerChosenValues` |
+| `ChosenResults` | The Procedure of the Chosen results | `RetCustomerChosenResults` |
 
-### 12.3 Regla general
+### 12.3 The general rule
 
-El nombre base es siempre `{Instance.Name}`, que tipicamente coincide con el nombre de la Transaction asociada. Los prefijos indican el tipo de objeto y la plataforma. Los sufijos indican la funcion especifica.
+The base name is always `{Instance.Name}`, which typically matches the name of the associated Transaction. The prefixes indicate the object type and the platform. The suffixes indicate the specific function.
 
 ```
-[Prefijo Plataforma][Prefijo Funcion]{Instance.Name}[Sufijo]
+[Platform prefix][Function prefix]{Instance.Name}[Suffix]
 
-Ejemplos:
+Examples:
   R    +  WW   + Customer +        = RWWCustomer       (Selection Responsive)
        +  View + Customer +        = ViewCustomer      (View Desktop)
   R    +  Pr   + Customer +        = RPrCustomer       (Prompt Responsive)
-       +  Ex   + Customer + ExcelSDT = ExCustomerExcelSDT (SDT Export Excel)
-       +  PXWW + Customer + Rows   = PXWWCustomerRows  (SDT filas)
+       +  Ex   + Customer + ExcelSDT = ExCustomerExcelSDT (the Excel export SDT)
+       +  PXWW + Customer + Rows   = PXWWCustomerRows  (the rows SDT)
 ```
 
 ---
 
-## Referencia rapida de XPaths
+## A quick XPath reference
 
-Tabla de referencia para localizar elementos dentro de la instancia XML:
+A reference table for locating elements inside the XML instance:
 
-| Elemento | XPath |
-|----------|-------|
-| Transaccion | `//transaction` |
-| Nivel | `instance/level` |
+| Element | XPath |
+|---------|-------|
+| Transaction | `//transaction` |
+| Level | `instance/level` |
 | Selection | `instance/level/selection` |
 | View | `instance/level/view` |
 | Prompt | `instance/level/prompt` |
-| Controlador de instancia | `instance/controller` |
+| Instance controller | `instance/controller` |
 | Tab Tabular | `instance/level/view/sections//section[@type='Tabular']` |
 | Tab Grid | `instance/level/view/sections//section[@type='Grid']` |
 | Modes | `instance/level/selection/modes` |
-| Control Chosen | `instance//variable/controlInfo[@controlType='Chosen']` |
+| Chosen control | `instance//variable/controlInfo[@controlType='Chosen']` |
 | Level Controller | `instance/level[../transaction[@afterTrn='Call Levels Controllers']]` |
