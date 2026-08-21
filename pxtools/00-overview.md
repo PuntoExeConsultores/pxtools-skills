@@ -172,6 +172,29 @@ When several WebComponents are **displayed on the same screen at the same time**
 
 `GlobalEvents` is wired up in the **code hooks** (`codes` and `events` nodes) of the pattern instances, not as a declarative property of the pattern.
 
+## `&WindowSelf`: which kind of window the screen is running in
+
+Every screen PXTools generates receives a `&WindowSelf` parameter, and it is not bookkeeping: it
+**declares the kind of window the screen is running in**, and two things are decided from it.
+
+1. **The `RecentLink` history**, which is kept **separately per window kind**. A modal browsing its own
+   history does not disturb the history of the main area behind it.
+2. **The JavaScript PXTools injects into the HTML** so the window can **size itself**. This is the part
+   that bites: hand a screen the wrong value and nothing fails — no error, no warning — the window
+   simply comes out the wrong size, and the cause looks nothing like the symptom.
+
+| Value | The window it means |
+|---|---|
+| *(empty)* | the main area |
+| `MD`, `MD1`, `MD2`… | a **modal**, opened with GeneXus' `Popup()` method. The first one is `MD`, **not** `MD0`; a modal that opens another popup passes `MD1`, and so on |
+| `PU`, `PU1`, `PU2`… | a **browser popup window**, the old way of opening a screen. Worse than a modal: it does not hold focus well and can end up lost behind the main window if the user clicks there. The first one is `PU`, not `PU0` |
+| `EM`, `EM1`… | a screen opened through an **Embedded Page** control, which ends up as an `iFrame` in the HTML |
+
+**The rule is to pass the value that matches how the screen is really being opened**, and to increment
+the number when a window of a kind opens another of the same kind. Calling `SomeScreen.Popup()` while
+passing an empty `&WindowSelf` says "I am the main area" to a screen that is in fact a modal: the
+auto-sizing scripts never get injected, and the modal is left at whatever size it happens to get.
+
 ## Code hooks: CDATA formatting and indentation (common to all patterns)
 
 `codes` nodes exist in **PXWorkWith, PXParameterRequest and PXComposer**. In the `.gxPattern`, each hook is serialized with the code inside a CDATA and the **first line flush against the opening** `<![CDATA[`:

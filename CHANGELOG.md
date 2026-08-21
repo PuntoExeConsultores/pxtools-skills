@@ -10,6 +10,24 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-08-21
+
+### Added
+- **`pxtools/00-overview.md`** — new section *`&WindowSelf`: which kind of window the screen is running
+  in*. Every generated screen receives the parameter and it is routinely treated as bookkeeping to pass
+  along; it is not. It declares the kind of window the screen runs in, and two things are decided from
+  it: the **`RecentLink` history**, which is kept separately per window kind so a modal browsing its own
+  history does not disturb the main area behind it, and the **JavaScript PXTools injects so the window
+  can size itself**. The section gives the four values with their meaning — empty for the main area,
+  `MD`/`MD1`/`MD2`… for a modal opened with `Popup()`, `PU`… for a browser popup window (the old way,
+  which does not hold focus and can end up lost behind the main window), `EM`… for an Embedded Page that
+  becomes an `iFrame` — including the counting rule that trips people up: the first one is `MD`, never
+  `MD0`, and a window that opens another of its kind increments. The reason this belongs in writing is
+  the failure mode: passing the wrong value **fails silently**. Calling `SomeScreen.Popup()` with an
+  empty `&WindowSelf` tells a modal it is the main area, the auto-sizing scripts are never injected, and
+  the window simply comes out the wrong size — with no error, no warning, and a cause that looks nothing
+  like the symptom
+
 ## 2026-08-20
 
 ### Added
