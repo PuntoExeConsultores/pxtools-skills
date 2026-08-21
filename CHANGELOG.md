@@ -13,6 +13,20 @@ Nothing pending.
 ## 2026-08-21
 
 ### Added
+- **`pxtools/00-overview.md`** — new section *Do not declare a property that already carries its
+  default*. An instance should hold decisions and nothing else: a property written with the value it
+  already has changes nothing either way, and the longer the instance grows the harder it is to see
+  what was actually decided — when every filter carries `type="Equal" isRequired="False"
+  allowNullValue="False"`, the one filter that is genuinely required disappears into the noise, and so
+  does the real content of any diff. The section says where the defaults live — each pattern's own
+  `Patterns/<Pattern>/<Pattern>Instance.xml`, where every property declares its `DefaultValue` — and
+  gives a one-liner that lists them for an element before writing anything. The reason it is worth a
+  section rather than a style note is the case that prompted it: `<orderAttribute ascending="True" />`,
+  a line that says nothing because `true` is already the default, makes the PXWSQuery apply fail with
+  an `InvalidCastException` on the order domain, while `ascending="False"` — the value that does change
+  the behaviour — works and is used in production. It closes with the rule read the other way round:
+  when an existing instance declares something, check the default before removing it, because a value
+  that differs from the default is the author saying something
 - **`pxtools/00-overview.md`** — new section *`&WindowSelf`: which kind of window the screen is running
   in*. Every generated screen receives the parameter and it is routinely treated as bookkeeping to pass
   along; it is not. It declares the kind of window the screen runs in, and two things are decided from

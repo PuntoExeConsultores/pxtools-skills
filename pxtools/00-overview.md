@@ -407,6 +407,50 @@ See the detail in [20-pxtools-modules.md](20-pxtools-modules.md).
 | PXWSTransaction | Save Procedure | `WSTransactionTrnV1Save` | `WSTransactionCustomerV1Save` |
 | PXWSTransaction | Delete Procedure | `WSTransactionTrnV1Delete` | `WSTransactionCustomerV1Delete` |
 
+## Do not declare a property that already carries its default
+
+An instance should contain **decisions**, and nothing else. A property whose value equals the
+pattern's default changes nothing when it is written and changes nothing when it is removed — it only
+makes the instance longer, and the longer it gets the harder it is to see what was actually decided.
+When every filter carries `type="Equal" isRequired="False" allowNullValue="False"`, the one filter that
+is genuinely required disappears into the noise, and so does the real content of any diff.
+
+**Where the defaults are.** Each pattern ships its own schema in
+`Patterns/<Pattern>/<Pattern>Instance.xml`, and every property declares its own:
+
+```xml
+<Attribute Name="ascending" Type="bool" ... DefaultValue="true" />
+```
+
+To list them for an element before writing an instance:
+
+```bash
+python -c "
+import io,re
+s=io.open('Patterns/PXWSQuery/PXWSQueryInstance.xml',encoding='utf-8',errors='replace').read()
+i=s.find('ElementType Name=\"OrderAttribute\"'); j=s.find('</ElementType>',i)
+for m in re.finditer(r'<Attribute Name=\"([^\"]+)\"[^>]*?DefaultValue=\"([^\"]*)\"',s[i:j]):
+    print(m.group(1),'->',repr(m.group(2)))
+"
+```
+
+**It is not only tidiness.** A property written with its default value can be **the thing that breaks
+the apply**. Real case in PXWSQuery: `<orderAttribute ascending="True" />` — the default is already
+`true`, so the line says nothing — makes the pattern application fail with
+
+```
+'System.InvalidCastException'
+Unable to cast object of type 'Artech.Common.Diagnostics.GxException'
+                      to type 'Artech.Genexus.Common.CustomTypes.EnumValues'
+```
+
+while `ascending="False"`, the value that *does* change the behaviour, works and is used in production.
+Time spent hunting that is time spent on a line that should never have been written.
+
+> **Reading the other way round:** when an existing instance declares something, assume it was
+> deliberate and check the default before removing it. The value that differs from the default is the
+> author telling you something.
+
 ## Method: check the instance against the generated object
 
 The objects a pattern generates **are written to disk** (externalized KB) in a hidden folder next to the instance:
