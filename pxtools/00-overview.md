@@ -499,6 +499,66 @@ same row.
 > `columnsDependant`, `tableType`, or a `name`/`description` used as a section title. What should not
 > be written is the **bare** `<row>` around a single control, which sets nothing.
 
+## A `visibleCondition` over an editable control needs something to trigger the round trip
+
+`visibleCondition` decides whether a control is shown. `visibleConditionEvaluation` decides **when the
+condition is evaluated**:
+
+| Value | Evaluated | Fits a condition over |
+|---|---|---|
+| `Rules` (default) | in the object's rules | a value fixed before the form is drawn — the trn mode, a received parameter |
+| `Start` | once, in the `Start` event | the same, when the value is computed in `Start` |
+| `Refresh` | on every refresh of the form | a control the user can change while the form is open |
+
+**Choosing `Refresh` is only half of it, and choosing `Rules` does not rescue the other half.** Both
+run *on the server*. A checkbox ticked in the browser changes the variable on the page, but if nothing
+goes back to the server the condition is never re-evaluated under any of the three settings, and the
+dependent control simply stays hidden — no error, no warning, nothing to search for. The missing piece
+is not the evaluation moment: it is the **round trip**, and what causes it is a code hook on the
+control that changed.
+
+```xml
+<attributes>
+  <variable name="ShowDetail" description="Show detail" dataType="Boolean">
+    <controlInfo controlType="Check Box" controlTitle="Show the detail fields." />
+  </variable>
+  <variable name="DetailNote" description="Note" dataType="Character" length="200"
+            visibleCondition="&amp;ShowDetail" visibleConditionEvaluation="Refresh"
+            invisibleProgrammingStyle="PXTools" />
+</attributes>
+
+<codes>
+  <code type="ControlEvent" name="&amp;ShowDetail.Click"><![CDATA[refresh]]></code>
+</codes>
+```
+
+**Which event signals a value change**, by control kind:
+
+| Control | Event |
+|---|---|
+| `Check Box`, `Combo Box`, `Dynamic Combo Box`, `Radio Button` | `.Click` |
+| `Edit`, and prompt-backed fields | `.IsValid` |
+
+The `ControlEvent`'s `name` is the control followed by the event — `&MyVariable.Click` for a variable,
+`MyAttribute.Click` for an attribute — and `data` is ordinary GeneXus code ending in `refresh`. It may
+do more than refresh; normalizing a dependent value first is the common case:
+
+```xml
+<code type="ControlEvent" name="&amp;CompanyKind.Click"><![CDATA[If &CompanyKind <> CompanyKind.Fleet
+&VehicleCount = 1
+EndIf
+refresh]]></code>
+```
+
+`invisibleProgrammingStyle="PXTools"` on the dependent control is the usual companion: it generates the
+invisibility on the form while GeneXus still considers the control visible, which the schema notes is
+required when the control is tied to a Prompt that returns values.
+
+> **The symptom to recognise.** A field that never appears when its checkbox is ticked is almost always
+> this, not a wrong condition. Before rewriting the expression, check that the control it reads has a
+> `ControlEvent` firing `refresh` — a condition that is correct and never re-evaluated looks exactly
+> like a condition that is wrong.
+
 ## Method: check the instance against the generated object
 
 The objects a pattern generates **are written to disk** (externalized KB) in a hidden folder next to the instance:

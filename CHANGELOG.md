@@ -13,6 +13,24 @@ Nothing pending.
 ## 2026-08-27
 
 ### Added
+- **`pxtools/00-overview.md`** — new section *A `visibleCondition` over an editable control needs
+  something to trigger the round trip*. The section gives the three `visibleConditionEvaluation` values
+  with the kind of condition each fits — `Rules` (the default) and `Start` for values fixed before the
+  form is drawn, `Refresh` for a control the user can change while it is open — and then makes the
+  point the table alone does not: all three run **on the server**, so picking `Refresh` is only half
+  the job and switching back to `Rules` does not rescue the other half. A checkbox ticked in the
+  browser changes the variable on the page; if nothing goes back to the server the condition is never
+  re-evaluated under any setting and the dependent control just stays hidden, with no error and
+  nothing to search for. The missing piece is the **round trip**, and what causes it is a
+  `<code type="ControlEvent">` on the control that changed whose body ends in `refresh`. Includes the
+  event to use per control kind — `.Click` for `Check Box`, `Combo Box`, `Dynamic Combo Box` and
+  `Radio Button`, `.IsValid` for `Edit` and prompt-backed fields — the `name` convention
+  (`&MyVariable.Click` for a variable, `MyAttribute.Click` for an attribute), an example that
+  normalizes a dependent value before refreshing, and a note on `invisibleProgrammingStyle="PXTools"`
+  as the usual companion on the dependent control. It closes with the symptom worth recognising on
+  sight: a field that never appears when its checkbox is ticked is almost always a missing refresh
+  rather than a wrong expression — a condition that is correct and never re-evaluated looks exactly
+  like a condition that is wrong
 - **`pxtools/00-overview.md`** — new section *`<row>` puts controls side by side — it is not a
   wrapper*. Every tabular section already lays its children out one per line, so `<row>` has exactly
   one purpose: putting two or more controls on the same line. A row around a single control renders
