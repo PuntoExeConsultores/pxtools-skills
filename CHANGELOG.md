@@ -10,6 +10,28 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-08-27
+
+### Added
+- **`pxtools/00-overview.md`** — new section *`<row>` puts controls side by side — it is not a
+  wrapper*. Every tabular section already lays its children out one per line, so `<row>` has exactly
+  one purpose: putting two or more controls on the same line. A row around a single control renders
+  identically to the control declared on its own, which makes it a level of nesting that groups
+  nothing — the same noise problem the *default values* section describes, in structural form: the
+  markup announces a decision (*these belong together on one line*) where none was made, and whoever
+  reads it has to open the row to find one thing inside. The section is deliberately placed in the
+  overview rather than under a single pattern because the node is not a form feature: it is accepted
+  by every tabular container in the UI patterns — attribute lists, tabs, columns, rectangles,
+  fixed-data sections and filter areas — and the entry ships the one-liner over
+  `Patterns/<Pattern>/<Pattern>Instance.xml` that lists which containers take it, so the claim can be
+  checked per pattern instead of trusted. It also records what a row may contain, which is wider than
+  input fields (`attribute`, `variable`, `variableReference`, `image`, `label`, `action`,
+  `actionReference`, mixable in one row), and closes with the exception that keeps the rule from
+  becoming dogma: a single-control row is a real decision when the row's own properties are the point
+  — `responsiveSizes`, `firstElementAligned`, `columnsDependant`, `tableType`, or a
+  `name`/`description` acting as a section title. What should never be written is the *bare* row that
+  sets nothing
+
 ## 2026-08-21
 
 ### Added

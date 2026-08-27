@@ -451,6 +451,54 @@ Time spent hunting that is time spent on a line that should never have been writ
 > deliberate and check the default before removing it. The value that differs from the default is the
 > author telling you something.
 
+## `<row>` puts controls side by side — it is not a wrapper
+
+Every tabular section lays its children out **one per line**. The `<row>` node exists for one reason:
+to place **two or more controls on the same line**.
+
+```xml
+<attributes>
+  <!-- Two controls sharing a line: this is what a row is for -->
+  <row>
+    <variable name="DateFrom" description="From" basedOn="OrderDate" />
+    <variable name="DateTo"   description="To"   basedOn="OrderDate" />
+  </row>
+
+  <!-- A single control: declare it directly, with no row -->
+  <variable name="IncludeCancelled" description="Include cancelled" dataType="Boolean">
+    <controlInfo controlType="Check Box" controlTitle="Include cancelled records." />
+  </variable>
+</attributes>
+```
+
+A row holding one control renders exactly like that control declared on its own, so it adds a level of
+nesting that groups nothing. It is the same noise problem as declaring a property with its default
+value: the structure announces a decision — *these controls belong together on one line* — where no
+decision was made, and the reader has to open the row to discover it contains a single thing.
+
+**It applies to every tabular section, not only to the form.** `<row>` is a valid child anywhere
+controls are laid out tabularly, which in the UI patterns means the attribute lists, tabs, columns,
+rectangles, fixed-data sections and filter areas alike. Consult the pattern's own
+`Patterns/<Pattern>/<Pattern>Instance.xml` to see which containers accept it:
+
+```bash
+python -c "
+import io,re
+s=io.open('Patterns/PXParameterRequest/PXParameterRequestInstance.xml',encoding='utf-8',errors='replace').read()
+for m in re.finditer(r'<ElementType Name=\"(\w+)\"(.*?)</ElementType>', s, re.S):
+    if 'ChildElement Name=\"row\"' in m.group(2): print(m.group(1))
+"
+```
+
+A row is not limited to input fields either: besides `attribute` and `variable` it accepts
+`variableReference`, `image`, `label`, `action` and `actionReference`, and they can be mixed in the
+same row.
+
+> **The exception that keeps the rule honest.** A row carrying one control *is* a decision when the
+> row's own properties are what you are after — `responsiveSizes`, `firstElementAligned`,
+> `columnsDependant`, `tableType`, or a `name`/`description` used as a section title. What should not
+> be written is the **bare** `<row>` around a single control, which sets nothing.
+
 ## Method: check the instance against the generated object
 
 The objects a pattern generates **are written to disk** (externalized KB) in a hidden folder next to the instance:
