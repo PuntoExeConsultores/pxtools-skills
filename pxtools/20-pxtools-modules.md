@@ -51,6 +51,22 @@ Knowledge Base/
 
 ---
 
+### @AI — AI Accounts and Connectors
+
+**Purpose**: one place to configure how to call a language model — key, model, token cap and the
+connector object that speaks to the provider — so that a consumer asks for an account and never for a
+provider. A row of `AIAccounts` is one configured way of calling a service; its connector code
+resolves through @DynamicCallReferences to the object that does the talking.
+
+Child module `@PXTools/@AI/@Anthropic/` holds one provider's connector.
+
+> 📄 **Detailed module documentation:** [modules/ai.md](modules/ai.md)
+
+**PXTools instances included**:
+- `PXWorkWithAIAccounts` — AI accounts CRUD
+
+---
+
 ### @Alerts — Alert and Notification System
 
 **Purpose**: a complete system of schedulable alerts supporting several delivery channels, languages, categories and subscriptions/unsubscriptions.
@@ -163,6 +179,16 @@ Knowledge Base/
 
 ---
 
+### @MCPServer — Model Context Protocol Server
+
+**Purpose**: exposes the application's operations as tools a language model can call, over the Model
+Context Protocol. It is the surface an assistant reaches; what a caller may do there is decided by the
+access token it arrives with, not by the tool.
+
+> 📄 **Detailed module documentation:** [modules/mcpserver.md](modules/mcpserver.md)
+
+---
+
 ### @Menus — Menu System
 
 **Purpose**: management of web navigation menus (a basic menu with hierarchical items).
@@ -171,6 +197,38 @@ Knowledge Base/
 
 **PXTools instances included**:
 - `PXWorkWithTMnuWeb` — web menus CRUD
+
+---
+
+### @Messaging — Conversational Channels
+
+**Purpose**: a chat channel between the application and a person. It receives what someone writes to a
+bot, answers it — optionally through a language model with tools — and pushes documents and messages
+out on the application's own initiative, through a queue with retries and error classification.
+
+Two ideas carry it: a row of `MessagingAccounts` **is** one bot, and a row of `MessagingLink` is not a
+directory entry but **the credential** — it issues an internal authorization and hands out a live
+access token on every turn.
+
+> 📄 **Detailed module documentation:** [modules/messaging.md](modules/messaging.md)
+
+**PXTools instances included**:
+- `PXWorkWithMessagingAccounts` — bots CRUD
+- `PXWorkWithMessagingLink` — linked chats
+- `PXWorkWithMessagingMessage` — inbox and conversation log
+- `PXWorkWithMessagingOutbox` — outbound queue and its targets
+- `PXWorkWithMessagingPendingAction` — actions waiting on a person
+- `PXParameterRequestMessagingTelegramLink` — the panel where a user links their own chat
+
+---
+
+### @OAuthService — OAuth Authorization Server
+
+**Purpose**: issues and revokes the authorizations and access tokens the application's own surfaces
+are protected with. It is what turns "this caller" into "this user, with these scopes" — including
+authorizations the system issues to itself on a person's behalf, which is how a linked chat operates.
+
+> 📄 **Detailed module documentation:** [modules/oauthservice.md](modules/oauthservice.md)
 
 ---
 
@@ -427,6 +485,10 @@ A graph derived from the KB (qualified `, PXTools.<Module>` references and share
 | **@ProcessMonitor** | @APIs, @System, @SystemParameters, @SendMails, @FileStorage, @TaskManager |
 | **@TaskManager** | @APIs, @System, @DynamicCallReferences, @ProcessMonitor, @SystemParameters |
 | **@Alerts** | @APIs, @SendMails, @SystemParameters (+@FileStorage, @MailAccounts, optionally @TaskManager) |
+| **@OAuthService** | @APIs, @System, @Security, @SystemParameters |
+| **@MCPServer** | @APIs, @OAuthService, @Security, @SystemParameters, @WebServicesLog |
+| **@AI** | @APIs, @SystemParameters, @DynamicCallReferences |
+| **@Messaging** | @APIs, @System, @SystemParameters, @OAuthService, @MCPServer, @AI, @FileStorage, @WebServicesLog · drained by @TaskManager |
 | **@CloudTasks** | @APIs, @ProcessMonitor, @FileStorage, @Alerts, @SystemParameters · triggered by @TaskManager |
 
 > **Note:** nearly every module also references `@Menus` and `@DynamicCallReferences` through their `Personalized/RetMenus*` and `RetDynamicCallReference*` DataProviders (generation scaffolding), not through their functional logic. Those are omitted above except where the dependency is functional (e.g. @DynamicCallReferences in @TaskManager/@TableCleaner/@Statistics/@OAV).
@@ -456,3 +518,7 @@ This graph is the basis for **domain attribution**: a domain used by more than o
 | Statistics | @Statistics |
 | Data cleanup | @TableCleaner |
 | Project management | @Projects |
+| A chat channel with a person | @Messaging |
+| Tools a language model can call | @MCPServer |
+| Calling a language model | @AI |
+| Authorizations and access tokens of your own | @OAuthService |

@@ -41,6 +41,53 @@ Nothing pending.
   correct answer; `Failed` is only for something breaking internally. Using `Failed` for a correct negative
   answer fills the log with problems that do not exist and buries the calls that really did break.
 
+## 2026-09-28
+
+### Added
+- **`pxtools/modules/messaging.md`** — new module document for `@PXTools/@Messaging` (88 objects, 7
+  transactions), written around the two ideas the module is unreadable without: a row of
+  `MessagingAccounts` **is** one bot, so everything is scoped by account; and a row of `MessagingLink`
+  is not a directory entry but **the credential** — it issues an internal authorization and hands out
+  a live access token on every turn, which is why unlinking must revoke rather than flag, and why an
+  expired authorization under an active link is reissued in silence. Covers the inbound path (the
+  header secret that authenticates the origin *and* identifies the bot in one query), the
+  conversation memory living in the message table itself, the two-level outbox with its
+  classification of provider errors by code, pending actions, and the Mini App's two halves — a
+  replayable signed payload plus an invitation that expires and is spent once, neither sufficient
+  alone.
+- **`pxtools/modules/ai.md`** — new module document for `@PXTools/@AI`: a row of `AIAccounts` is one
+  configured way of calling a model, and its connector code resolves through @DynamicCallReferences
+  to the object that speaks to a provider, so changing provider is changing a value on a screen. Two
+  connector kinds because they are two contracts (chat takes messages and returns text; transcription
+  takes audio). Documents the connector `Parm` and why the tool-surface access token **enters as a
+  parameter** — the platform owns it, the engine does not.
+- **`pxtools/modules/oauthservice.md`** — new module document for `@PXTools/@OAuthService`: an
+  authorization server implemented inside the KB, not a client of one. Core idea: the authorization is
+  the grant and tokens are disposable, with every identity field on a token resolved through the
+  foreign key — which is what makes revocation instant and what makes issuing a new authorization
+  silently kill the previous grant. Includes a **Known gaps** section with defects verified in the
+  code: the authorization code is never consumed on exchange (replayable for its full ten-minute
+  window), the purge deletes authorizations by an expiration that is always creation + 10 minutes even
+  for grants whose tokens live for weeks, the authorize endpoint alone does not check client status,
+  refresh is impossible under a never-expiring policy, and the module's own domains carry values
+  belonging to one installation.
+- **`pxtools/modules/mcpserver.md`** — new module document for `@PXTools/@MCPServer`: a stateless
+  JSON-RPC-over-POST engine where one application can publish several servers, each an endpoint plus a
+  registry. Documents the tool contract and the two things about it that are easy to miss — a business
+  error comes back as a tool *result* flagged as an error and not as a protocol error, and the second
+  output exists so a chart re-runs the tool server-side, because figures that pass through the model
+  can come back subtly wrong and nobody would notice. Known gaps include a built-in tool hard-coded in
+  one natural language inside the generic engine, rate limiting that cannot emit its own
+  `Retry-After`, six dead External Object methods (so the protocol version header is never validated),
+  and an internal procedure link that is serialized into the JSON handed to the protocol builder —
+  whether it reaches the client cannot be determined from the KB.
+
+### Changed
+- **`pxtools/20-pxtools-modules.md`** — the four modules above were entirely absent from the index:
+  added their catalogue sections, their rows in the inter-module dependency table, and their entries
+  in "when to bring each module in". Until now a reader of the index had no way to learn that the
+  product had a chat channel, an authorization server, an MCP surface or an AI abstraction at all.
+
 ## 2026-08-27
 
 ### Added
