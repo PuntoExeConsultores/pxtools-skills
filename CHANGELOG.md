@@ -83,6 +83,15 @@ Nothing pending.
   whether it reaches the client cannot be determined from the KB.
 
 ### Changed
+- **`pxtools/20-pxtools-modules.md`** — the three tables at the foot of the index were still describing
+  the product as it was before the four new modules: the instance summary listed none of them, and the
+  dependency graph was missing **@SecurityProjects** as well, a gap that predates this change. All
+  three were then verified row by row against the Knowledge Base — every count in the instance table
+  now matches what is on disk, every module has a row in the dependency graph or a stated reason not
+  to, and the two tables carry a note naming what is deliberately absent and why (@MCPServer publishes
+  no screens; the base modules are not "brought in for a need"). A table that says what it omits can be
+  audited; one that is merely incomplete cannot.
+
 - **`pxtools/20-pxtools-modules.md`** — the four modules above were entirely absent from the index:
   added their catalogue sections, their rows in the inter-module dependency table, and their entries
   in "when to bring each module in". Until now a reader of the index had no way to learn that the

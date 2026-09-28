@@ -436,6 +436,7 @@ authorizations the system issues to itself on a person's behalf, which is how a 
 
 | Module | PXWorkWith | PXParameterRequest | PXComposer | PXReportTemplate | Total |
 |--------|-----------|--------------------|------------|------------------|-------|
+| @AI | 1 | 0 | 0 | 0 | 1 |
 | @APIs | 1 | 4 | 0 | 0 | 5 |
 | @Alerts | 4 | 3 | 2 | 0 | 9 |
 | @CloudTasks | 6 | 3 | 0 | 0 | 9 |
@@ -444,6 +445,8 @@ authorizations the system issues to itself on a person's behalf, which is how a 
 | @FileStorage | 4 | 0 | 1 | 0 | 5 |
 | @MailAccounts | 1 | 0 | 0 | 0 | 1 |
 | @Menus | 1 | 0 | 0 | 0 | 1 |
+| @Messaging | 5 | 1 | 0 | 0 | 6 |
+| @OAuthService | 4 | 1 | 0 | 0 | 5 |
 | @OAV | 3 | 1 | 0 | 0 | 4 |
 | @ProcessMonitor | 4 | 0 | 0 | 0 | 4 |
 | @Projects | 3 | 0 | 0 | 0 | 3 |
@@ -457,6 +460,9 @@ authorizations the system issues to itself on a person's behalf, which is how a 
 | @TaskManager | 2 | 2 | 0 | 0 | 4 |
 | @WSLayer | 1 | 0 | 0 | 0 | 1 |
 | @WebServicesLog | 3 | 1 | 2 | 0 | 6 |
+
+> A module that publishes no screens is not listed here. **@MCPServer** is the case to know about: it
+> is an HTTP surface with no UI at all, and its absence from this table is the fact, not an omission.
 
 ## Dependencies between modules
 
@@ -479,6 +485,7 @@ A graph derived from the KB (qualified `, PXTools.<Module>` references and share
 | **@MailAccounts** | @APIs, @System |
 | **@FileStorage** | @APIs, @System |
 | **@Projects** | @APIs, @Security |
+| **@SecurityProjects** | @Security, @Projects — it is only the subtype groups that tie the two together |
 | **@Security** | @APIs, @System, @SystemParameters, @ControlPreferences, @SendMails |
 | **@SendMails** | @APIs, @System, @FileStorage, @MailAccounts (optionally @TaskManager) |
 | **@ReceiveMails** | @APIs, @System, @MailAccounts, @FileStorage |
@@ -522,3 +529,8 @@ This graph is the basis for **domain attribution**: a domain used by more than o
 | Tools a language model can call | @MCPServer |
 | Calling a language model | @AI |
 | Authorizations and access tokens of your own | @OAuthService |
+
+> Seven modules are deliberately absent from this table. **@APIs, @System, @DynamicCallReferences** and
+> **@ControlPreferences** are the base — they are not brought in for a need, they are already there.
+> **@ResponsiveLayout** and **@SmartMenus** are GeneXus modules, not PXTools ones. **@SecurityProjects**
+> is an extension of @Security and arrives with it.
