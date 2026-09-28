@@ -1,5 +1,11 @@
 # @OAuthService — OAuth 2.0 + OpenID Connect Authorization Server
 
+> 📄 **This document is the integration guide** — endpoints, the hooks a host KB must implement,
+> configuration and how to import the module. For how the module works inside — the authorization as
+> the unit of grant, the transactions, the flows and the known defects — see
+> [modules/oauthservice.md](modules/oauthservice.md).
+
+
 ## What it is
 
 A PXTools module implementing an **OAuth 2.0 Authorization Server** (RFC 6749) with extensions:

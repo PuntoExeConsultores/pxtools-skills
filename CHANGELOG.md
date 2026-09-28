@@ -88,6 +88,15 @@ Nothing pending.
   in "when to bring each module in". Until now a reader of the index had no way to learn that the
   product had a chat channel, an authorization server, an MCP surface or an AI abstraction at all.
 
+- **`pxtools-start-here.md`** and **`pxtools/21-oauth-service.md`** — the entry point still said "25+
+  modules" and named only four of them, so a reader arriving there could not learn that the product had
+  a chat channel, an MCP surface or an AI abstraction; it now points at the catalogue as the way in and
+  says that every module has its own document. And `21-oauth-service.md` — the one module promoted to a
+  top-level document, which is why it was easy to write `modules/oauthservice.md` without noticing it —
+  now declares itself the **integration guide** (endpoints, host hooks, configuration, import) and links
+  to the module reference, which links back. Two documents about one module stay honest only while each
+  says what the other is for.
+
 ## 2026-08-27
 
 ### Added

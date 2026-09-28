@@ -156,6 +156,9 @@ anything but trusted callers:
    with an out parameter — the very shape the first three explain breaks OAuth clients.
 
 ## References
+- [21-oauth-service.md](../21-oauth-service.md) — **the integration guide**: the HTTP endpoints one by
+  one, the hooks a host KB must implement, the configuration parameters and the import procedure. This
+  document covers how the module works; that one covers how to put it into a Knowledge Base.
 - [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.
 - [security.md](security.md) — where an account reference becomes a user context.
 - [mcpserver.md](mcpserver.md) — the heaviest consumer of token validation.

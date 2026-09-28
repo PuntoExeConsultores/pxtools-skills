@@ -43,8 +43,8 @@ All the detailed documentation lives in the [`pxtools/`](pxtools/) subfolder:
 - [11-pxreporttemplate.md](pxtools/11-pxreporttemplate.md) — Templates for report generation
 
 ### @PXTools modules
-- [20-pxtools-modules.md](pxtools/20-pxtools-modules.md) — 25+ reusable modules: Security, Alerts, CloudTasks, FileStorage, etc.
-- [21-oauth-service.md](pxtools/21-oauth-service.md) — `@OAuthService`: OAuth 2.0 + OpenID Connect Authorization Server (token / introspect / revoke / userinfo / .well-known + PKCE + JWT id_token HS256 + TaskManager purge)
+- [20-pxtools-modules.md](pxtools/20-pxtools-modules.md) — the catalogue: 29 reusable modules (Security, Alerts, CloudTasks, FileStorage, Messaging, MCPServer, OAuthService, AI, …), the dependency graph between them, and a "what do I need this for" table. **Each module has its own document under [pxtools/modules/](pxtools/modules/)** — start at the catalogue and follow the link.
+- [21-oauth-service.md](pxtools/21-oauth-service.md) — `@OAuthService` as something you **integrate into a host KB**: endpoints, the hooks the host must implement, configuration and the import procedure. For how the module *works* inside, see [modules/oauthservice.md](pxtools/modules/oauthservice.md).
 
 ### Cross-cutting guides
 - [30-pattern-recognition-guide.md](pxtools/30-pattern-recognition-guide.md) — How to analyse hand-written WebPanels and decide which pattern to migrate them to
