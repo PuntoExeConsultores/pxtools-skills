@@ -45,6 +45,19 @@ Enum = the stored value. **Owned** by @SystemParameters (named `SystemParameter*
 2. **Seed** (idempotent) — `AddSystemParameters(in: &ShowMessages)` invokes every `RetSystemParameters<Module>()`, accumulates all of them and **upserts** through `AddSystemParameter` (`New … When Duplicate … EndNew`), then **deletes the orphans** (those no DataProvider declares any more). This is the "Upgrade System Parameters" action. It fires by itself from the grid's Start (`CheckSystemParametersExistence` → if there is nothing, `AddSystemParameters.Call(False)`) or from a button.
 3. **Read** — from any object: `PXTools.SystemParameters.RetSystemParameterPreference<Type>.Udp(SystemParameterCode.<Code>)`.
 
+**The two registrations are not interchangeable, and forgetting the second one fails silently.**
+`AddSystemParameters` creates the rows; `RetSystemParameters` serves the **combo options**, live, on
+every paint of the preferences screen (`RetSystemParameterComboValues` → `RetSystemParameters`). A module
+registered only in the first gets its parameters created and editable — and any `Combo` or `Chosen`
+parameter it declares comes out as an **empty dropdown**. Nothing errors, and the screen looks built. The
+usual reading of an empty combo is "the seeding has not run" or "there is no data yet", which sends the
+search to `AddSystemParameters` and to the table behind the options; both are fine.
+
+The omission survives for a long time because it only shows on `Combo` and `Chosen` parameters. A module
+whose parameters are all strings, numbers or booleans behaves identically registered or not — so the
+aggregator drifts, module after module, and the first combo parameter added to any of them is the one
+that pays.
+
 ## 6. APIs vs Personalized
 
 - **`APIs/`** (core): the transactions, the `SDTSystemParameters` SDT, the generic seeding (`AddSystemParameter`), and the whole `Ret*/Upd*/Chk*` read/write family.

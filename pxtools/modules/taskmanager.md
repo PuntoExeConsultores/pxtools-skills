@@ -213,7 +213,8 @@ TaskManager is the system's **batch orchestrator**. An application integrates it
 1. Create the procedure with the three-parameter contract (read the parameters with `RetTaskManagerParameter*`).
 2. Add a value to the `DynamicCallReferenceCode` domain.
 3. Register it in the application's `Personalized` DataProvider (`RetDynamicCallReference<App>`), mapping the code → `<Proc>.Type` with `ReferenceType.TaskManagerExecution`.
-4. Enqueue it with `AddTaskManagerSDT` (or create it as a cyclic task in the WW), naming the queue.
+4. **Make sure that DataProvider is itself invoked from `AddDynamicCallReferences`** (`@DynamicCallReferences/Personalized/`) — the single place where every module's provider is gathered into the `TDynamicCallReferences` table. A provider nobody calls feeds nothing: the code never reaches the table, the combo does not offer it and the runner cannot resolve it, so the task compiles and simply never runs, with nothing reporting the omission. A brand-new module's provider has to be added to that list; an existing module's is already there.
+5. Enqueue it with `AddTaskManagerSDT` (or create it as a cyclic task in the WW), naming the queue.
 
 ## References
 - [20-pxtools-modules.md](../20-pxtools-modules.md) — module index.

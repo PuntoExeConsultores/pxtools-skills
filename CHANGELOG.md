@@ -10,6 +10,37 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-09-28
+
+### Added
+- **`pxtools/modules/systemparameters.md`** — the *declare, seed, read* section now states what happens
+  when a module is registered in `AddSystemParameters` but not in `RetSystemParameters`. The two are not
+  interchangeable: the first creates the parameter rows, the second serves the **combo options**, live, on
+  every paint of the preferences screen (`RetSystemParameterComboValues` → `RetSystemParameters`). A module
+  in the first only gets its parameters created and editable, and any `Combo` or `Chosen` parameter it
+  declares comes out as an **empty dropdown** — nothing errors, and the screen looks built. The entry names
+  the wrong turn the symptom invites, which is to read an empty combo as "the seeding has not run" or "there
+  is no data yet" and go debug `AddSystemParameters` and the table behind the options, both of which are
+  fine. It also explains why the omission survives so long: it only shows on `Combo` and `Chosen`
+  parameters, so a module whose parameters are all strings, numbers or booleans behaves identically
+  registered or not — the aggregator drifts module after module, and the first combo parameter added to any
+  of them is the one that pays.
+
+- **`pxtools/modules/taskmanager.md`** — the *how to integrate a batch task* recipe gained the step it was
+  missing: registering the procedure in the application's `RetDynamicCallReference<App>` provider is not
+  enough if that provider is not itself invoked from `AddDynamicCallReferences`, the single place where
+  every module's provider is gathered into `TDynamicCallReferences`. A provider nobody calls feeds nothing
+  — the code never reaches the table, the combo does not offer it, the runner cannot resolve it — so the
+  task compiles and simply never runs, with nothing reporting the omission. A brand-new module's provider
+  has to be added to that list; an existing module's is already there.
+- **`pxtools/modules/webserviceslog.md`** — new section on what the `WebServiceLogStatus` values mean,
+  because the natural reading of `Failed` is wrong. The status records **how the call went, not whether the
+  business answer was the one somebody hoped for**: `WithoutResponse` is what `AddWebServiceLog` writes when
+  it opens the row, so a row left in that state is a call that never reached its end; `Success` covers a
+  service that ran and returned what it was supposed to, **including returning nothing** when empty is the
+  correct answer; `Failed` is only for something breaking internally. Using `Failed` for a correct negative
+  answer fills the log with problems that do not exist and buries the calls that really did break.
+
 ## 2026-08-27
 
 ### Added

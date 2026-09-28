@@ -42,6 +42,20 @@ All `WebService*`/`WebServices*` domains belong to @WebServicesLog (by naming). 
 | **WebServiceStatisticCounter** | module | Numeric(10.0) — the counter's value |
 | **StatisticFilterDuring** | module | *(placeholder — a domain declared with no body)* |
 
+### 4.1 What the `WebServiceLogStatus` values mean
+
+The status records **how the call went, not whether the business answer was the one somebody hoped for**.
+
+| Value | When |
+|---|---|
+| **`WithoutResponse`** | What `AddWebServiceLog` writes when the row is opened: the call started and has not been closed yet. A row left in this state is a call that never reached its end. |
+| **`Success`** | The service **ran and returned the message it was supposed to return**. This includes returning nothing: an empty value, no rows, no document. If that is the correct answer, the call was satisfactory and the status is `Success`. |
+| **`Failed`** | Only when something broke **internally** — an exception or the like. |
+
+> **Do not use `Failed` to mean "the answer was negative".** A service that correctly answers "there is
+> no such record", or that correctly returns an empty result, answered. Logging that as `Failed` fills
+> the log with problems that do not exist and buries the calls that really did break.
+
 ## 5. How it works
 
 ### 5.1 Logging an invocation
