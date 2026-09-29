@@ -13,6 +13,16 @@ Nothing pending.
 ## 2026-09-29
 
 ### Added
+- **`pxtools/01-pxworkwith.md`** — the Dynamic Combo Box section now covers narrowing a combo by
+  another attribute of the same screen, and states that the condition has to name the **attribute**.
+  The alternative that suggests itself — declare a variable, load it from the attribute in `code Start`,
+  and compare against `&Var` — does not work, and it fails in the most expensive way available: the
+  combo comes out **empty for every value**, which reads as "the filter works and there is nothing of
+  this type" rather than as a broken filter. A `ControlEvent` with `Refresh` does not rescue it, because
+  the variable is loaded once in `Start` while the condition resolves when the combo builds. The entry
+  also removes the reason people reach for the variable at all: two different domains are not an
+  obstacle, since `Character(n)` domains carrying the same values compare on the value, so the
+  `FromString` bridge solves a problem that does not exist.
 - **`pxtools/01-pxworkwith.md`** — section 9.6 documented `descriptionAttribute` as the way to link a
   Selection column to its View, and said nothing about the other route: an eye icon written as an in-grid
   `<action>` pointing at `instanceLevelNode="View"`. Both are valid and they can coexist on the same grid,

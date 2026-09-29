@@ -398,6 +398,31 @@ The `transaction/layouts/layout` node defines the **transaction's form**. Left e
 </transaction>
 ```
 
+**A combo narrowed by another attribute of the same screen: put the attribute in `conditions`, not a variable.**
+
+```xml
+<!-- WORKS — the condition names the attribute, and the pattern wires the dependency:
+     changing AccountType reloads the combo by itself, with no event and no Refresh -->
+<attribute name="AccountConnectorCode" description="Connector">
+  <controlInfo controlType="Dynamic Combo Box" dataSourceFrom="Attributes"
+    itemValue="ReferenceCode" itemDescription="ReferenceDescription"
+    conditions="ReferenceType = AccountType" />
+</attribute>
+```
+
+The alternative that suggests itself — declare a variable, load it from the attribute in `code Start`,
+and write `conditions="ReferenceType = &Var"` — **does not work**, and it fails in the way that costs
+most: the combo comes out **empty for every value**, which reads as "the filter works and there is
+nothing of this type" rather than as a broken filter. Adding a `ControlEvent` with `Refresh` does not
+rescue it. The variable is loaded once, in `Start`; the condition is resolved when the combo builds,
+and the two never meet.
+
+**Two different domains are not an obstacle.** Wanting the variable in the first place usually comes
+from the condition comparing attributes of different domains — say an `AIReferenceType` on the row
+against a `ReferenceType` in the source table. If both are `Character(n)` with the same values, the
+comparison resolves on the value and needs no conversion: the `FromString` bridge is machinery for a
+problem that is not there.
+
 `itemValue` / `itemDescription` are attributes **of the foreign table** (not the subtypes), and both must belong to the same table. For a combo fed by a DataProvider instead of by a table, see §6.1.
 
 > **List every attribute.** The `<attributes>` node replaces the whole form: an omitted attribute
