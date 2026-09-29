@@ -863,6 +863,22 @@ GeneXus determines a Selection's **base table** **by inference**: it gathers (a)
 
 **`descriptionAttribute`** — the `<descriptionAttribute name="X" />` node at `level` level establishes that the Selection's `X` column **links to the View**. The `autolink` property is not needed on that column. The `autolink` property is old and using it is **not recommended** (especially in **multi-tenant** projects): instead of auto-linking, declare the links explicitly with `descriptionAttribute` (a column → its own View) or with `<link>` (below).
 
+**Do NOT reach the View with an in-grid `<action>`.** Writing an eye icon as an action that points at the View — `inGrid="True" instanceLevelNode="View" evaluateLink="Event"` — looks equivalent and is not: **an action does not carry the row's key**. It generates a `Click` event with a positional `Link()` call that is missing the key, and the remaining arguments shift by one:
+
+```genexus
+// What the action generates — the View's parm is (&OrderId, &WindowSelf, in:&TabCode):
+Event &Ver.Click
+    MyApp.VeOrders.Link(&WindowSelf, "")      // &WindowSelf lands in &OrderId
+Endevent
+
+// What descriptionAttribute generates, in the grid's Load:
+OrderId.Link = Link(VeOrders, OrderId, &WindowSelf, "")
+```
+
+**It builds green and the symptom is only "the button does nothing."** The one signal is a `spc0023` on the Selection (`Tr{Name}`), which names the mismatch outright — *"Parameter &WindowSelf (Character) linking to MyApp.VeOrders has wrong type (expecting Numeric)"* — and is easy to dismiss as noise from a generated object. It is not noise: on the Selection it means the link is losing the key. Read it as the diagnosis, and the fix is to delete the `<actions>` block and declare the `descriptionAttribute`.
+
+An in-grid action remains the right tool for anything that is **not** navigation to the View — running a procedure over the row, a delete with `<confirm>` — because there its own `<parameters>` node is what carries the key explicitly.
+
 **A link through `<link>` on a column/variable** — both an `<attribute>` and a `<variable>` of the grid accept a `<link>` subnode generating a **PXInstance**-format link to **another** record's View (or to another instance's):
 
 ```xml

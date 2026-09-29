@@ -10,6 +10,22 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-09-29
+
+### Added
+- **`pxtools/01-pxworkwith.md`** — section 9.6 documented `descriptionAttribute` as the way to link a
+  Selection column to its View, and said nothing about the alternative that suggests itself first: an eye
+  icon written as an in-grid `<action>` pointing at `instanceLevelNode="View"`. That one looks equivalent
+  and is not, because **an action does not carry the row's key**. It generates a `Click` event whose
+  positional `Link()` call is missing the key, so every remaining argument shifts by one and the window
+  type lands in the id. The entry gives both generated forms side by side, since seeing them next to each
+  other is what makes the difference obvious. It also names the only signal, which is easy to throw away:
+  a `spc0023` on the Selection stating that a `Character` parameter is being linked where a `Numeric` is
+  expected. On a generated object that reads like noise; on a Selection it means the link is losing the
+  key, and it is the diagnosis rather than a nuisance. The section closes by keeping in-grid actions where
+  they belong — anything that is not navigation to the View — since there the action's own `<parameters>`
+  node carries the key explicitly, which is exactly what the View link never gets.
+
 ## 2026-09-28
 
 ### Added
