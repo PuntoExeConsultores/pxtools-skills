@@ -14,17 +14,20 @@ Nothing pending.
 
 ### Added
 - **`pxtools/01-pxworkwith.md`** — section 9.6 documented `descriptionAttribute` as the way to link a
-  Selection column to its View, and said nothing about the alternative that suggests itself first: an eye
-  icon written as an in-grid `<action>` pointing at `instanceLevelNode="View"`. That one looks equivalent
-  and is not, because **an action does not carry the row's key**. It generates a `Click` event whose
-  positional `Link()` call is missing the key, so every remaining argument shifts by one and the window
-  type lands in the id. The entry gives both generated forms side by side, since seeing them next to each
-  other is what makes the difference obvious. It also names the only signal, which is easy to throw away:
-  a `spc0023` on the Selection stating that a `Character` parameter is being linked where a `Numeric` is
-  expected. On a generated object that reads like noise; on a Selection it means the link is losing the
-  key, and it is the diagnosis rather than a nuisance. The section closes by keeping in-grid actions where
-  they belong — anything that is not navigation to the View — since there the action's own `<parameters>`
-  node carries the key explicitly, which is exactly what the View link never gets.
+  Selection column to its View, and said nothing about the other route: an eye icon written as an in-grid
+  `<action>` pointing at `instanceLevelNode="View"`. Both are valid and they can coexist on the same grid,
+  so choosing between them is style. What the section now states is the part that is not optional — the
+  action's `<parameters>` node. An action passes **exactly what it declares**, and pointing it at a View
+  does not make the row's key travel on its own. Omit the node and the build is green while the icon does
+  nothing: the generated `Link()` is positional, so the missing key leaves no hole and every remaining
+  argument shifts up one place, landing the window type in the id. The entry shows the action written
+  correctly, then both generated forms side by side, and names the only signal — a `spc0023` on the
+  Selection about a `Character` parameter linked where a `Numeric` is expected, which reads like noise
+  from a generated object and on a Selection means the link is losing the key.
+- **`pxtools/01-pxworkwith.md`** — the same section gained a note on **which** column to give the link
+  when using `descriptionAttribute`. It has to be one a person can see and aim at, and an identifier is
+  the obvious choice and often the worst: a short number is a small target and nothing about it suggests
+  it can be clicked. A date or a name reads as a label and gives the pointer something to land on.
 
 ## 2026-09-28
 

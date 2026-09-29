@@ -863,21 +863,32 @@ GeneXus determines a Selection's **base table** **by inference**: it gathers (a)
 
 **`descriptionAttribute`** — the `<descriptionAttribute name="X" />` node at `level` level establishes that the Selection's `X` column **links to the View**. The `autolink` property is not needed on that column. The `autolink` property is old and using it is **not recommended** (especially in **multi-tenant** projects): instead of auto-linking, declare the links explicitly with `descriptionAttribute` (a column → its own View) or with `<link>` (below).
 
-**Do NOT reach the View with an in-grid `<action>`.** Writing an eye icon as an action that points at the View — `inGrid="True" instanceLevelNode="View" evaluateLink="Event"` — looks equivalent and is not: **an action does not carry the row's key**. It generates a `Click` event with a positional `Link()` call that is missing the key, and the remaining arguments shift by one:
+**An in-grid `<action>` reaches the View too, and it must declare its `<parameters>`.** Both routes are valid and they can coexist — a linked column and an eye icon on the same grid — so which one to use is a matter of style. What is not optional is the parameters node: an action passes **exactly what it declares**, and `instanceLevelNode="View"` does not make the row's key travel on its own.
+
+```xml
+<!-- The eye reaching the View: the key is declared, as in any other action -->
+<action name="Ver" controlType="Image" definedImages="Display" tooltip="View" inGrid="True"
+        instanceObject="PXWorkWithOrders, MyApp" instanceLevel="Orders" instanceLevelNode="View"
+        evaluateLink="Event">
+  <parameters><parameter name="OrderId" /></parameters>
+</action>
+```
+
+**Omit `<parameters>` and it builds green while the icon does nothing.** The generated `Link()` is positional, so a missing key leaves no hole — every remaining argument shifts up one place:
 
 ```genexus
-// What the action generates — the View's parm is (&OrderId, &WindowSelf, in:&TabCode):
+// Action WITHOUT <parameters> — the View's parm is (&OrderId, &WindowSelf, in:&TabCode):
 Event &Ver.Click
     MyApp.VeOrders.Link(&WindowSelf, "")      // &WindowSelf lands in &OrderId
 Endevent
 
-// What descriptionAttribute generates, in the grid's Load:
+// What descriptionAttribute generates in the grid's Load, for comparison:
 OrderId.Link = Link(VeOrders, OrderId, &WindowSelf, "")
 ```
 
-**It builds green and the symptom is only "the button does nothing."** The one signal is a `spc0023` on the Selection (`Tr{Name}`), which names the mismatch outright — *"Parameter &WindowSelf (Character) linking to MyApp.VeOrders has wrong type (expecting Numeric)"* — and is easy to dismiss as noise from a generated object. It is not noise: on the Selection it means the link is losing the key. Read it as the diagnosis, and the fix is to delete the `<actions>` block and declare the `descriptionAttribute`.
+The one signal is a `spc0023` on the Selection (`Tr{Name}`), which names the mismatch outright — *"Parameter &WindowSelf (Character) linking to MyApp.VeOrders has wrong type (expecting Numeric)"*. On a generated object that reads like noise; on a Selection it means the link is losing the key, so it is the diagnosis and not a nuisance.
 
-An in-grid action remains the right tool for anything that is **not** navigation to the View — running a procedure over the row, a delete with `<confirm>` — because there its own `<parameters>` node is what carries the key explicitly.
+**Which column to link, when using `descriptionAttribute`.** It has to be a column somebody can see and aim at. An identifier is the obvious choice and often the worst one: a short number is a small target and nothing about it suggests it can be clicked. A date or a name reads as a label and gives the pointer something to land on.
 
 **A link through `<link>` on a column/variable** — both an `<attribute>` and a `<variable>` of the grid accept a `<link>` subnode generating a **PXInstance**-format link to **another** record's View (or to another instance's):
 
