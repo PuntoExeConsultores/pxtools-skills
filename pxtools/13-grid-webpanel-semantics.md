@@ -8,6 +8,36 @@ This document describes **how to read the presence of grids in a WebPanel** in o
 - Design decisions when modelling a new screen with PXTools
 - Analysis of legacy GeneXus Evolution 1 / 2 / 3 code
 
+## Base table or no base table: what the `Load` command actually tells you
+
+A grid can be filled from a base-table scan or entirely from code, and **the presence of a `Load`
+command does not distinguish them**. Reading `Load` and concluding "this grid is built by code" is
+wrong, and it leads to designing screens the pattern cannot produce -- or to rejecting ones it can.
+
+**A grid has no base table only when all three hold:**
+
+1. no attributes among the grid columns -- variables only;
+2. no attributes outside a `For Each` anywhere in the level's code or actions;
+3. a `Load` command is present.
+
+It is the **absence of attributes** that removes the base table. `Load` is then what emits a row, and
+each invocation emits one, so the grid shows exactly what the code decides: two fixed rows, one row
+per element of a collection, several rows for the same entity, rows that match no record at all.
+
+**With a base table, the same `Load` means something else entirely.** The `Code Load` runs **once per
+record** of the scan, and a record whose execution never reaches `Load` is **not displayed**. There it
+is a per-record filter, not a row generator -- the way to hide rows that a `Where` cannot express.
+
+So the two readings of one keyword are opposite: row generator without a base table, row filter with
+one. Check the columns before deciding which one you are looking at.
+
+### Worked example in the framework itself
+
+`PXWorkWithSecurityObjectAccess`, level `SecurityObjectAccess01_W02` ("Actions Allowed"), is a grid
+with no base table: its columns are three variables, and its `Code Load` emits two fixed rows --
+`Access` and `Full Control` -- plus one per entry of `&SystemObjectStructure.Functions`, the security
+metadata the calling screen left in the session. None of those rows is a record of anything.
+
 ## Kinds of grid by purpose
 
 ### 1. Listing / selection grid (the main UI)

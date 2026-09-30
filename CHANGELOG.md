@@ -10,6 +10,23 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-09-30
+
+### Added
+- **`pxtools/13-grid-webpanel-semantics.md`** — new section on what the `Load` command actually tells
+  you about a grid. Reading `Load` and concluding "this grid is built by code" is wrong, and it is
+  wrong in both directions: it makes you reject screens the pattern can produce and design ones it
+  cannot. A grid has no base table only when **all three** hold — no attributes among the columns, no
+  attributes outside a `For Each` anywhere in the level's code or actions, and a `Load` command
+  present. The absence of attributes is what removes the base table; `Load` then emits one row per
+  invocation, so the grid shows whatever the code decides, including several rows for the same entity
+  or rows matching no record at all. **With a base table the same keyword means the opposite**: the
+  `Code Load` runs once per record of the scan and a record that never reaches `Load` is not
+  displayed — a per-record filter, not a row generator. The entry closes with the framework's own
+  worked example, `PXWorkWithSecurityObjectAccess` level `SecurityObjectAccess01_W02`, whose three
+  columns are variables and whose Load emits two fixed rows plus one per declared security function,
+  none of them a record of anything.
+
 ## 2026-09-29
 
 ### Added
