@@ -13,6 +13,7 @@ Nothing pending.
 ## 2026-09-30
 
 ### Added
+- **`pxtools/01-pxworkwith.md`** — new section on the three ways a `<variable>` of an instance is typed, written after three builds were spent discovering them one at a time: a basic type takes `dataType` with `length`/`decimals` as **separate attributes**, an attribute or domain takes `basedOn`/`domain`, and an SDT takes `SDT="Root, Module"` with `SDTStructure="ItemName"` for one item of a collection. It names the two forms that look right and are not — `dataType="Numeric(2.0)"`, which belongs to `.gxSource` and not to a pattern, and `SDT="Root.Item, Module"`, which does not resolve — together with the build message each produces. The entry closes with what makes the mistake expensive rather than merely wrong: **GeneXus drops the attribute it does not recognise** when it externalizes the instance, so the declaration comes back as a bare `<variable name="X" />` with no type. Read the file a second time and the thing you are hunting for is not wrong, it is gone, and the error ("no variable definition type found") describes the file accurately while saying nothing about what was rejected. Checking that the attribute survived the import is the only notice available
 - **`pxtools/13-grid-webpanel-semantics.md`** — new section on what the `Load` command actually tells
   you about a grid. Reading `Load` and concluding "this grid is built by code" is wrong, and it is
   wrong in both directions: it makes you reject screens the pattern can produce and design ones it

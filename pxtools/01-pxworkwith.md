@@ -481,6 +481,38 @@ That is: **a combo in the edit form, a name subtype in the grid**. See the group
 
 ---
 
+## Declaring a `<variable>`: the three forms, and how a wrong one hides
+
+A `<variable>` in an instance is typed one of three ways, and none of them is guessable from the
+others. Getting it wrong costs a full build each time, because the pattern applies at build time and
+not at import.
+
+| What you want | Written as |
+|---|---|
+| A basic type | `dataType="Boolean"` / `dataType="Character" length="20"` / `dataType="Numeric" length="2" decimals="0"` |
+| The type of an attribute or domain | `basedOn="SecurityPartyId"` or `domain="ObjectType"` |
+| An SDT, or one item of a collection SDT | `SDT="SDTRoot, Module"`, plus `SDTStructure="ItemName"` for the item |
+
+Two forms that look right and are not:
+
+- **`dataType="Numeric(2.0)"`** — the parenthesised form belongs to `.gxSource`, not to a pattern.
+  Here the length is its own attribute. The build answers `Variable <name> has an invalid Data Type`.
+- **`SDT="SDTRoot.ItemName, Module"`** — qualifying the level inside `SDT` does not resolve. The root
+  goes in `SDT` and the level in `SDTStructure`. The build answers
+  `No variable definition type found for [<name>]`.
+
+### The part that makes this expensive: the file stops showing what you wrote
+
+GeneXus **drops the attribute it does not recognise** when it externalizes the instance back. A
+variable declared with a bad `SDT=` comes back as a bare `<variable name="RoleItem" />` — no type at
+all. So the second time you read the file, the declaration you are hunting for is not wrong, it is
+*gone*, and the error message ("no variable definition type found") is describing the file accurately
+while telling you nothing about the attribute that was rejected.
+
+The way out is to read the file again after the import and check the attribute survived. If it is
+still there, the syntax was accepted; if it vanished, that is the rejection, and it is the only notice
+you get.
+
 ## 5. The action system
 
 The action system is shared by the three UI patterns (PXWorkWith, PXParameterRequest, PXComposer). The complete reference is in [12-pattern-ui-actions.md](12-pattern-ui-actions.md). This section documents the specifics of using it in PXWorkWith.
