@@ -124,6 +124,11 @@ The `action` node's structure is **practically identical** in all three patterns
 | `closeWindowControlCondition` | expression | The condition for accepting the close |
 | `hasPostCode` | bool | Enables code that runs after the popup closes |
 | `security` | subnode | Access control: `object` + `operation` |
+| `inGrid` | bool | Puts the action on the row — subject to the `ConvertInGridActions` setting, see below |
+| `forceInGrid` | bool | Keeps this action in the grid when the setting would move it out |
+| `checkRowSelected` | bool | Demands a selected row before the action runs |
+
+**`inGrid="True"` does not guarantee a control in the grid.** The `ConvertInGridActions` pattern setting can move every in-grid action out of it, leaving the pattern to demand that a row be selected instead. The action's code is generated in the grid's Load either way, so **everything it uses as a parameter, in `previousCode` or in its `condition` has to be a grid column** — hidden with `visible="False"` if it should not be seen, the key included. Without that, every row acts on the last one loaded and nothing in the build says so. Full account in `01-pxworkwith.md`, section 9.5.
 
 ---
 

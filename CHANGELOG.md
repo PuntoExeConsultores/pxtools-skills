@@ -10,6 +10,18 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-10-05
+
+### Added
+- **`pxtools/01-pxworkwith.md`** — section 9.5 now covers what `inGrid="True"` actually produces. The
+  `ConvertInGridActions` pattern setting can move every in-grid action out of the grid and have the
+  pattern demand a selected row instead, and the action's code is generated in the grid's Load either
+  way. So whatever the action uses — its `<parameters>`, its `previousCode`, its `condition` — has to be
+  a grid column, hidden with `visible="False"` when it should not be seen, the key included. Leaving the
+  key out builds green and makes every row act on the last one loaded, which reads like a wiring bug.
+- **`pxtools/12-pattern-ui-actions.md`** — `inGrid`, `forceInGrid` and `checkRowSelected` added to the
+  action property table, pointing at the account above.
+
 ## 2026-10-04
 
 ### Fixed

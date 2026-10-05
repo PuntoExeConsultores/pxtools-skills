@@ -976,6 +976,26 @@ GeneXus determines a Selection's **base table** **by inference**: it gathers (a)
 
 **A practical rule:** for the Selection to have a base table and an efficient native walk, define the columns and the actions' parameters/conditions as **attributes** (not variables). Per-row computed variables (say a derived id) are computed in a `code Load` **without** a `Load` command.
 
+**An in-grid action may not end up in the grid, and then it reads the row through the columns.** The `ConvertInGridActions` setting (pattern settings, *Actions* category) decides what `inGrid="True"` actually produces:
+
+| Value | What the user gets |
+|---|---|
+| `Do not convert` | The action is a column of the grid; the row is the one the icon sits on |
+| `Outside grid checking row selection` | Every in-grid action moves out of the grid, and the pattern adds the control demanding that a row be selected first |
+
+`forceInGrid="True"` opts a single action out of the conversion; `checkRowSelected` is the per-action form of the same control.
+
+Either way the action's code is generated in the grid's **Load**, so what it reads is whatever the **last iteration** left behind. **Everything the action uses — its `<parameters>`, its `previousCode`, its `condition` — must therefore be a grid column**, hidden with `visible="False"` when it should not be seen. The key included: the pattern does not add it on its own.
+
+```xml
+<attributes>
+  <attribute name="AccountId" description="Id" visible="False" autolink="False" />
+  <attribute name="AccountName" description="Account Name" visible="True" autolink="False" />
+</attributes>
+```
+
+Leaving it out fails silently and reads like a wiring bug: every row opens the same record — the last one loaded — and the build is green, because an attribute outside the grid is a valid reference, just one with nobody filling it per row.
+
 ### 9.6 descriptionAttribute, links by variable, and the multi-tenant rule
 
 **`descriptionAttribute`** — the `<descriptionAttribute name="X" />` node at `level` level establishes that the Selection's `X` column **links to the View**. The `autolink` property is not needed on that column. The `autolink` property is old and using it is **not recommended** (especially in **multi-tenant** projects): instead of auto-linking, declare the links explicitly with `descriptionAttribute` (a column → its own View) or with `<link>` (below).
