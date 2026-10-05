@@ -665,23 +665,83 @@ filter
 
 ### 6.2 Orders
 
-The `orders` node defines the available sorting options:
+The `orders` node defines the available sorting options. Each `order` lists its attributes as
+`orderAttribute` children:
 
 ```xml
-<orders>
-  <order name="Most recent" expression="InvoiceDate DESC" default="True" />
-  <order name="By customer" expression="CustomerName ASC, InvoiceDate DESC" />
-  <order name="By amount" expression="InvoiceTotal DESC" />
+<orders showCombo="False">
+  <order name="Oldest first" condition="&amp;SortDirection &lt;&gt; 'D'">
+    <orderAttribute name="InvoiceDate" />
+  </order>
+  <order name="Newest first" condition="&amp;SortDirection = 'D'">
+    <orderAttribute name="InvoiceDate" ascending="False" />
+  </order>
 </orders>
 ```
 
-| Property | Description |
+| Element / property | Description |
 |----------|-------------|
-| `name` | The text visible in the order selector |
-| `expression` | The sorting expression (attributes + ASC/DESC) |
-| `default` | `True` if it is the order applied by default |
+| `orders/@showCombo` | `False` hides the generated order selector — use it when your own filter variable drives the order |
+| `order/@name` | The text shown in the order selector |
+| `order/@condition` | Optional. The order is only offered/applied while the condition holds |
+| `orderAttribute/@name` | An attribute of the order, in sequence |
+| `orderAttribute/@ascending` | `False` for descending. Omit it for ascending: do not write the default |
 
-A combo/selector is generated letting the user choose the sort criterion at run time.
+> **Correction.** Earlier versions of this page described `order` with `expression` and `default`
+> properties. They do not exist in the pattern schema (`PXWorkWithInstance.xml`); an element the schema
+> does not know is dropped on import without a message.
+
+A combo/selector is generated letting the user choose the sort criterion at run time, unless
+`showCombo="False"`.
+
+**Two traps with conditional orders, both verified:**
+
+- **The grid sorts by `&OrderSelected`, and the Responsive object does not always set it.** In the
+  generated Refresh, the conditional-order evaluation runs *before* your Refresh code. When the
+  condition that applies changes, the Desktop object assigns both `&OrderedBy` and `&OrderSelected`;
+  the Responsive one assigns only `&OrderedBy`, so its grid keeps the previous order. The visible
+  symptom is a "descending" choice that still lists ascending. Fix it in the instance: set
+  `&OrderSelected` yourself in the Refresh code, from the same variable the conditions read. Also keep
+  the conditions on variables that are already set when the evaluation runs (filters, `Start`), not on
+  values your Refresh code computes.
+- **A Data Selector with its own `#Orders` wins over the grid's order.** If the selection uses a
+  `dataSelector` that declares orders, those are applied and the instance's orders are ignored — the
+  navigation lists both, which makes it look as if yours were in effect. Use a Data Selector without
+  `#Orders` for a grid whose order the user chooses. (Creating that selector from a file has its own
+  trap — see **kbbridge → `file-formats.md`**, *Data Selector Files*.)
+
+### 6.3 Force Grid Load: keeping edits across pages and filters
+
+`forceGridLoad="True"` on a `selection` (or a Grid `section`) keeps what the user typed in the grid's
+editable columns while they page, filter or reorder. The pattern generates a collection SDT
+`<Object>SDT` with one field per grid column, keeps the rows in `&GridRows`, saves them in the session
+(`&FormState.GridState.Data`) in `'SaveGridState'`, and restores them in `'Internal Grid Load'` by
+matching **every non-editable column** of the row.
+
+What that means for your own code, all verified on a real instance:
+
+- **Only the visible lines are copied into `&GridRows`.** An action that processes the edits must
+  iterate `&GridRows`, not `For Each Line`, or it loses what was typed on other pages and on rows the
+  current filter hides. Make it a multi-row action with `saveRows="SDT Nowhere"` and
+  `callType="Subroutine"`: it runs **once**, after the state was saved, and keeps the `&Selected`
+  checkbox column. Rows the user never displayed are not in `&GridRows` at all — leave their data as it
+  was instead of treating them as unselected.
+- **Do not combine it with `initializeSelectedVariable="False"`.** That combination generates a
+  `'ReloadGridRows'` routine that runs on the first Refresh, and its `For Each` **omits the selection's
+  `dataSelector`**: it reads the whole base table, every tenant, calling your Load code per row. The
+  screen never finishes loading.
+- **With the default, the selection is reset after your Load code.** `'Internal Grid Load'` sets
+  `&Selected = False` *after* the Load event's code and then restores it only from `&GridRows`. A row
+  that must start checked has to be added to `&GridRows` from the Load code, with the same values the
+  restore compares.
+- **Clearing the edits takes the session too.** `Grid1.Refresh()` inside an event runs the Refresh and
+  the Load **at that point**, and the generated `'SaveGridState'` that follows reloads `&GridRows` from
+  the session before saving. Emptying `&GridRows` is not enough: also write the empty collection to
+  `&FormState.GridState.Data` and `SaveFormState` it before the refresh, or the old values come back on
+  the next action. The generated flag `&ClearGridRowsRequested` skips the copy from the screen, but it
+  keeps its value between requests — reset it, or nothing is saved from then on.
+- **The Load code runs for every row of every page.** Paging is decided after the Load code, so a
+  procedure call per row is paid for the whole result, not for the 20 rows shown.
 
 ---
 

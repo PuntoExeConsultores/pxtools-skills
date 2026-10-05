@@ -10,6 +10,34 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-10-04
+
+### Fixed
+- **`pxtools/01-pxworkwith.md`** — section 6.2 *Orders* described `order` with `expression` and `default`
+  properties. They do not exist in the pattern schema, and an element the schema does not know is dropped
+  on import without a message, so following the page produced an instance with no orders and no error.
+  The section now shows the real structure, verified against `PXWorkWithInstance.xml`: `order` with
+  `name` and an optional `condition`, `orderAttribute` children with `name` and `ascending="False"` for
+  descending, and `orders/@showCombo="False"` to hide the generated selector.
+
+### Added
+- **`pxtools/01-pxworkwith.md`** — two verified traps with conditional orders. The grid sorts by
+  `&OrderSelected`, and when the applicable condition changes the **Responsive** object updates only
+  `&OrderedBy`, so a "descending" choice keeps listing ascending while the Desktop object behaves; the fix
+  is to set `&OrderSelected` from the instance's Refresh code. And a **Data Selector with its own
+  `#Orders` wins over the grid's order** while the navigation lists both, which makes the instance's
+  order look applied when it is not.
+- **`pxtools/01-pxworkwith.md`** — new section 6.3 on `forceGridLoad`, written from a screen rebuilt with
+  it. What it generates and how rows are matched on restore; why an action processing the edits must
+  iterate `&GridRows` and not `For Each Line` (multi-row, `saveRows="SDT Nowhere"`, `callType="Subroutine"`);
+  that combining it with `initializeSelectedVariable="False"` generates a `'ReloadGridRows'` whose
+  `For Each` **omits the selection's `dataSelector`** — a full scan of every tenant that keeps the screen
+  from loading; that with the default the selection is reset *after* the user's Load code and restored
+  only from `&GridRows`; that clearing the edits requires emptying the session copy before
+  `Grid1.Refresh()`, which runs immediately; that `&ClearGridRowsRequested` survives between requests;
+  and that the Load code runs for every row of every page. All verified on a real instance and its
+  generated code.
+
 ## 2026-09-30
 
 ### Added
