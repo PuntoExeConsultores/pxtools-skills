@@ -156,6 +156,18 @@ Inside the `For Each` over `SecurityObjectAccess`, for each row (`&SecurityParty
 - A new screen/action has **no** restrictions until somebody creates rows in `SecurityObjectAccess`.
 - Restricting a resource means **explicitly defining** who may use it (users/roles); as soon as **one** ACL row exists for that object, it stops being public (only the listed parties — directly or through a role/domain — get in).
 
+**It is a default, not a law.** `PIsAuthorized` lives in `Personalized`, so the policy is one line of code the installation owns: turn that `When None` into `False` and the system becomes default-deny. What that costs is the whole point of the default — every object a user touches then needs an ACL row, the framework's own dialogs and popups included, and a missing one shows up as an access denied that names nothing. An installation that wants to close the door usually does it for a subset (a module, a kind of user) rather than globally.
+
+### 6.6 Responsive screens have no ACLs of their own
+
+An ACL is defined **once, against the Desktop object**, and the Responsive menu resolves it that way on purpose: `LeftMenusResponsive` reads the menu rows filtering by `ApplicationPlatform.WebDesktop`, so the name it checks with `PIsAuthorized` is the Desktop one. That is why `SystemObjects` holds `TrCustomers` and not `RTrCustomers`, and why nobody configures the same permission twice.
+
+**Entering a page does not do that.** The master page asks with `&Pgmname` — the object actually running, which in Responsive is the `R`-prefixed one. No row carries that name, so under default-allow the lookup falls through to "nobody restricted it".
+
+The two together make a trap worth stating plainly: in Responsive, **the menu hides the option and the URL still opens it**. Not reachable by clicking, which is what makes it look protected; reachable by typing.
+
+An installation that cares closes this inside `PIsAuthorized`: when the lookup finds no row at all, resolve the Desktop twin of the name and look again. The prefixes are the ones `RetNodeTypePlatformPrefix` emits — `Tr`/`RTr`, `Ve`/`RVe`, `Pu`/`RPu`, `Wb`/`RWb` and so on — with Transaction as the odd one, because its Desktop prefix is **empty** and its Responsive prefix is `RTrn`: `RTrnOrders` is `Orders`, so `RTrn` has to be tested before `RTr` or the general rule swallows it.
+
 ## 7. How to secure a screen or an action (how-to)
 
 1. **The object catalogues itself.** When they run, the generated objects register the `SystemObjectName` in `TSystemObjects` (through `PAddSecurityContext`). There is nothing to create by hand.

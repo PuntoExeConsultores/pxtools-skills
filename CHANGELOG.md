@@ -10,6 +10,25 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-10-06
+
+### Added
+- **`pxtools/modules/security.md`** — section 6.5 now says that default-allow is a **default, not a law**:
+  `PIsAuthorized` lives in `Personalized`, so the policy is one line the installation owns, and turning
+  that `When None` into `False` makes the system default-deny. What that costs is why the default exists
+  — every object a user touches then needs an ACL row, the framework's own dialogs included, and a
+  missing one shows up as an access denied that names nothing.
+- **`pxtools/modules/security.md`** — new section 6.6: **Responsive screens have no ACLs of their own**.
+  An ACL is defined once against the Desktop object and the Responsive menu resolves it that way on
+  purpose (`LeftMenusResponsive` filters the menu rows by `ApplicationPlatform.WebDesktop`), which is
+  why `SystemObjects` holds `TrCustomers` and not `RTrCustomers`. Entering a page does not: the master
+  page asks with `&Pgmname`, the object actually running, and under default-allow a name nobody
+  restricted is authorized. The two together mean that in Responsive **the menu hides the option and the
+  URL still opens it** — not reachable by clicking, which is what makes it look protected, and reachable
+  by typing. The entry closes with how an installation shuts it: retry the lookup with the Desktop twin,
+  using the prefixes `RetNodeTypePlatformPrefix` emits, testing `RTrn` before `RTr` because a
+  Transaction's Desktop prefix is empty.
+
 ## 2026-10-05
 
 ### Added
