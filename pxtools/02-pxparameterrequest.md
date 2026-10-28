@@ -351,6 +351,33 @@ A variable with controlType='Chosen'
 </form>
 ```
 
+### Rule — do not duplicate the form's variables
+
+A variable placed on the form (in a real instance, a `variable` inside `layouts/layout/attributes`, with its
+`domain`, `basedOn` or `dataType`) is **already declared** by that node. The level's `variables` node must
+contain **only** the variables the procedural code uses (`codes`, `previousCode`, `actionPostCode`, action
+`condition` and `parameters`) that have **no control on the form** — typically the level's `in` parameters.
+Re-declaring a form variable there produces *"Variable X is declared twice"*, and the two declarations can
+drift apart: changing the form variable's `domain` leaves the copy in `variables` with the old type.
+
+```xml
+<layouts>
+  <layout>
+    <attributes>
+      <variable name="DateFrom" description="Date from" domain="LongDate" />
+      <variable name="DateTo" description="Date to" domain="LongDate" />
+    </attributes>
+  </layout>
+</layouts>
+...
+<variables>
+  <!-- Only the in parameter: DateFrom/DateTo are already declared by the form -->
+  <variable name="CustomerId" basedOn="CustomerId" />
+</variables>
+```
+
+The same rule exists for PXWorkWith (filters and grid columns); see `01-pxworkwith.md`.
+
 ## 6. The action and call system
 
 ### Actions (buttons)

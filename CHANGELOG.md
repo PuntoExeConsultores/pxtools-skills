@@ -10,6 +10,15 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-10-28
+
+### Added
+- **`pxtools/02-pxparameterrequest.md`** — new rule in section 5: **do not duplicate the form's
+  variables**. A variable placed on the form is already declared there; the level's `variables` node only
+  holds what the code uses with no control on the form (typically the `in` parameters). Re-declaring it
+  produces *"Variable X is declared twice"* and lets the two declarations drift apart — changing the form
+  variable's `domain` leaves the copy with the old type. PXWorkWith already documented the same rule.
+
 ## 2026-10-06
 
 ### Added
