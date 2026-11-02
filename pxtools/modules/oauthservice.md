@@ -87,7 +87,7 @@ spaces on both sides, so `write` does not match `write:invoices`.
 
 - **`APIs/Basic/`** — the engine: the transactions, `CreateNewAuthorization`, `CreateTokens`,
   `DisableAuthorizationTokens`, `RetDataFromToken`, `RevokeAuthorization`, `RevokeToken`,
-  `SilentAuthorization`, `PurgeExpiredTokens`, plus pure helpers (`HasScope`, `NormalizeRedirectUri`,
+  `SilentAuthorization`, `PurgeExpiredTokens`, `ChkAuthorizationHasTokens`, plus pure helpers (`HasScope`, `NormalizeRedirectUri`,
   `GenerateIdToken`, `ToBase64Url`) and the SDTs.
 - **`APIs/WS/`** — the six HTTP endpoints.
 - **`Personalized/`** — the hooks. Three ship as **stubs and must be implemented** before the server
@@ -138,10 +138,11 @@ anything but trusted callers:
 1. **The authorization code is not consumed when it is exchanged.** Nothing marks the authorization
    as used, so the same code can be replayed for its full 10-minute window, minting fresh token pairs
    each time. RFC 6749 requires single use.
-2. **The purge deletes authorizations that still own live tokens.** An authorization's expiration is
-   always creation + 10 minutes — for client-credentials and internal grants too — while the default
-   policy issues hour-long access and month-long refresh tokens. The column is doing duty as both
-   "code TTL" and "row retention", and they are not the same number.
+2. **Fixed — the purge no longer deletes authorizations that still own live tokens.** An
+   authorization's expiration is still creation + 10 minutes for every grant: it is the code's
+   lifetime, not the row's retention. The purge now deletes an expired authorization only when
+   `ChkAuthorizationHasTokens` says it owns no token; the token loops run first, so any token still
+   hanging from it is alive.
 3. **The authorize endpoint does not check the client's status**, while token, introspect and revoke
    all do. A disabled client can still obtain a code.
 4. **Refresh is impossible under a never-expiring policy**: the lookup requires an expiration greater

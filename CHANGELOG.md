@@ -10,6 +10,15 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-11-02
+
+### Changed
+- **`pxtools/modules/oauthservice.md`** — known gap 2 is **fixed**: the purge no longer deletes
+  authorizations that still own live tokens. An authorization's expiration stays creation + 10 minutes
+  (the code's lifetime); the purge now deletes an expired authorization only when the new
+  `ChkAuthorizationHasTokens` says it owns no token. Section 6 lists the new procedure under
+  `APIs/Basic/`.
+
 ## 2026-10-28
 
 ### Added
