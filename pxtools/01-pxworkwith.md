@@ -809,6 +809,76 @@ When `externalComponent="true"`, the section embeds an existing WebComponent ins
 |  +--------------------+-----------+------+
 ```
 
+### 7.4 CRUD of a subordinated entity from a section
+
+A section can declare **its own `transaction` node** for a transaction subordinated to the view's
+one, the same way an instance does at its root. With it, the section's grid inserts, updates and
+deletes rows of that entity, and the node's `layouts` define **that transaction's form**: order,
+descriptions, `readOnly`, `visible="False"` and `controlInfo` of each attribute. The pattern applies
+that layout to the subordinated transaction when the instance is applied.
+
+```xml
+<section name="Addresses" code="Addresses" wcname="CustomerAddresses">
+  <transaction name="CustomerAddresses, Sales">
+    <parameters>
+      <parameter name="&amp;Mode" />
+      <parameter name="CustomerId" null="False" />
+      <parameter name="CustomerAddressId" />
+    </parameters>
+    <layouts>
+      <layout platform="Any">
+        <attributes>
+          <attribute name="CustomerId" visible="False" />
+          <attribute name="CustomerAddressId" description="Number" readOnly="True" />
+          <attribute name="CustomerAddressStreet" description="Street" />
+        </attributes>
+      </layout>
+    </layouts>
+  </transaction>
+  <modes />
+  <layouts>
+    <layout>
+      <attributes>
+        <attribute name="CustomerAddressId" description="Number" />
+        <attribute name="CustomerAddressStreet" description="Street" />
+      </attributes>
+    </layout>
+  </layouts>
+</section>
+```
+
+- **The parent key travels on its own** when the transaction is subordinated (its key starts with the
+  view's key): no `parameters` node on the section, and `<modes />` with no attributes leaves insert,
+  update and delete enabled.
+- **A section's `transaction` node with only `parameters`** (no `layouts`) is also valid: the grid
+  navigates to the transaction, and the form stays as it was. Seeing one like that does not mean a
+  section cannot define the form.
+- **When to use a separate instance instead** (a section with `externalComponent` pointing to another
+  instance's `Selection`): only when the view already has many sections and applying the pattern
+  becomes slow, because every section adds generated children. Needing a CRUD or a form for the
+  subordinated transaction is **not** a reason: the section's own `transaction` covers it.
+
+### 7.5 Showing a section depending on the record
+
+The `condition` attribute of a section hides it when it evaluates to false. To make it depend on the
+viewed record, compute a view variable **in the view's `Load` code**, which is where attributes have
+the record loaded, and use that variable in the condition:
+
+```xml
+<section name="Branches" code="Branches" condition="not &amp;HasParent" ...>
+...
+<codes>
+  <code type="Load"><![CDATA[&HasParent = not CustomerParentId.IsNull()]]></code>
+</codes>
+<variables>
+  <variable name="HasParent" dataType="Boolean" />
+</variables>
+```
+
+The view's Load code is generated **before** the tabs are loaded and their conditions checked, so the
+variable is ready when the condition is evaluated. Do not read attributes in `Refresh` or `Start`:
+those codes are for variables and parameters, not for the record.
+
 ---
 
 ## 8. Modes (Export, Charts, Update Grid Rows)

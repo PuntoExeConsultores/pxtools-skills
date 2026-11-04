@@ -10,6 +10,18 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-11-04
+
+### Added
+- **`pxtools/01-pxworkwith.md`** — section 7.4: a view section can declare **its own `transaction`
+  node** for a subordinated transaction. It gives the section's grid insert, update and delete, and its
+  `layouts` define that transaction's form. A separate instance (an `externalComponent` section) is
+  justified only when the view has so many sections that applying the pattern becomes slow, not to
+  get a CRUD or a form.
+- **`pxtools/01-pxworkwith.md`** — section 7.5: a section's `condition` that depends on the viewed
+  record uses a variable computed in the view's `Load` code, which runs before the tab conditions are
+  checked. Attributes are not read in `Refresh` or `Start`.
+
 ## 2026-11-02
 
 ### Changed
