@@ -10,6 +10,15 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-11-16
+
+### Added
+- **`pxtools/01-pxworkwith.md`** — when `ConvertInGridActions` moves in-grid actions out of the grid
+  (`Outside grid checking row selection`), an action's `condition` with `evaluateCondition="Load"`
+  is generated in `Grid1.OnLineActivate`. That event also sees the selected row only through the
+  grid's columns. An attribute in the condition that is not a column arrives empty, and the button
+  disappears as soon as any row is selected. The fix is the existing rule: make it a hidden column.
+
 ## 2026-11-04
 
 ### Added

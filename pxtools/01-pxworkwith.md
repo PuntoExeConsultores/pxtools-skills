@@ -1066,6 +1066,20 @@ Either way the action's code is generated in the grid's **Load**, so what it rea
 
 Leaving it out fails silently and reads like a wiring bug: every row opens the same record — the last one loaded — and the build is green, because an attribute outside the grid is a valid reference, just one with nobody filling it per row.
 
+**Converted out of the grid, the `condition` moves to `OnLineActivate`, and the symptom changes.** With `Outside grid checking row selection`, an action with `evaluateCondition="Load"` gets its visibility code generated in `Grid1.OnLineActivate`, which runs when the user selects a row. That event sees the selected row only through its columns too, so an attribute in the `condition` that is not a column arrives empty:
+
+```
+Event Grid1.OnLineActivate
+	If (PaymentProcessorId = PaymentProcessor.Wallet and PaymentMode = WalletMode.FixedQR)
+		btnPrintQR.Visible = Boolean.True     // PaymentMode is not a grid column: always empty here
+	Else
+		btnPrintQR.Visible = Boolean.False
+	Endif
+EndEvent
+```
+
+The button is drawn when the screen opens and **disappears as soon as any row is selected**, whichever row it is. An attribute of the same condition that *is* a column, such as `PaymentProcessorId`, works fine, which makes the cause easy to miss. The fix is the same rule: add the attribute to the grid with `visible="False"`. The general GeneXus behaviour behind it — grid events of a hand-written Web Panel only know the row through its columns — is in the KBBridge doc `genexus-object-types.md`, section *Web Panel grids: base table or no base table*.
+
 ### 9.6 descriptionAttribute, links by variable, and the multi-tenant rule
 
 **`descriptionAttribute`** — the `<descriptionAttribute name="X" />` node at `level` level establishes that the Selection's `X` column **links to the View**. The `autolink` property is not needed on that column. The `autolink` property is old and using it is **not recommended** (especially in **multi-tenant** projects): instead of auto-linking, declare the links explicitly with `descriptionAttribute` (a column → its own View) or with `<link>` (below).
