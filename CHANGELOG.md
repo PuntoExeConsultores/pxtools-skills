@@ -10,6 +10,15 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-11-18
+
+### Changed
+- **`pxtools/modules/taskmanager.md`** — an empty `TaskManagerCycleExpire` now means the task never
+  expires (it used to be mandatory, and an empty value ended the cycle). Section 5.2 explains why a
+  cyclic task with no `Suspended` execution never runs again, and that confirming an enabled task in
+  its transaction now schedules the next one through the new `AddTaskManagerNextExecution`
+  (section 8). `Once` tasks are left alone and are run again with Retry.
+
 ## 2026-11-16
 
 ### Added

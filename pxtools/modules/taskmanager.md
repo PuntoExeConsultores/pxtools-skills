@@ -61,7 +61,7 @@ There are three ways to use a task, depending on **how and who** creates it:
 
 - **Execution:** `TaskManagerExecutionCode` (`DynamicCallReferenceCode` → the object to run), `TaskManagerExecutionParameters` (`MaxStr`, a JSON of parameters). Their `…Visualization…` counterparts serve the "view result" object.
 - **Retries:** `TaskManagerRetry` (Boolean), `TaskManagerRetryDay/Hour/Minute/Second` (the interval), `TaskManagerRetryTimes` (the maximum).
-- **Cycle:** `TaskManagerCycleType` (`CycleType` Once/Daily/Weekly/Monthly), `…CycleTimes`, `…CycleWeekDays/Months/MonthDays/MonthsWeeks` (JSON), `…CycleRepeat` + `…CycleRepeatEveryMinutes/EveryHours/ForMinutes/ForHours` (intra-cycle repetition), `…CycleExpire`.
+- **Cycle:** `TaskManagerCycleType` (`CycleType` Once/Daily/Weekly/Monthly), `…CycleTimes`, `…CycleWeekDays/Months/MonthDays/MonthsWeeks` (JSON), `…CycleRepeat` + `…CycleRepeatEveryMinutes/EveryHours/ForMinutes/ForHours` (intra-cycle repetition), `…CycleExpire` (**empty = the task never expires**).
 - **Queueing/status:** `TaskManagerQueue` (Nullable; **null = Main**), `TaskManagerFilterData` (`VarChar(40)`; identifies the **target entity** of an on-demand task so it can be found — see §2.2), `TaskManagerStatus`, `TaskManagerEnable`, `TaskManagerCreatedBy` (System/User), the `TaskManagerExecuting`/`…CountExecuting` formulas.
 - **History:** `TaskManagerHistoryClear`, `…HistoryWithMessage`/`…WithoutMessage` (retention days, default 90).
 
@@ -149,7 +149,9 @@ The **`SDTTaskManager` SDT** is the enqueueing API: `Id, Date, Subject, Executio
 8. **Retry**: if `RetTaskManagerExecutionCount < TaskManagerRetryTimes`, schedule a `Retry` execution at `ServerNow + Retry…`.
 9. **Persist + log**: `UpdTaskManagerExecutionStatus` (status + message + dates), `ChkTaskManagerStatus` (recomputes the aggregate status and propagates to the parent), `AddProcessStatusMessage` (persistent log in ProcessMonitor).
 
-**Cycles**: `RetTaskManagerNextExecution` decides the next repetition (`RetTaskManagerNextRepeat`) or the next cycle (`RetTaskManagerNextCycle`, honouring days/weeks/months and `CycleExpire`).
+**Cycles**: `RetTaskManagerNextExecution` decides the next repetition (`RetTaskManagerNextRepeat`) or the next cycle (`RetTaskManagerNextCycle`, honouring days/weeks/months and `CycleExpire`). An empty `CycleExpire` means the task never expires: the cycle goes on until the task is disabled.
+
+**A cyclic task runs only while it has a `Suspended` execution**, and the one that schedules the next is the previous one, when it succeeds. A task whose cycle ended (it expired) or whose last execution failed with no retries left has none, so it stays enabled and never runs again. Confirming the task in its transaction repairs that: on Update, with the task enabled, it calls `AddTaskManagerNextExecution`, which schedules the next execution with the same computation the runner uses. It adds nothing when the task already has a `Suspended` or `Executing` execution, when the task is still expired (it says so in a message), or when the task is `Once` — those are run again with the **Retry** action of the Executions tab.
 
 ### 5.3 Reading the parameters inside the task
 
@@ -184,6 +186,7 @@ The whole engine: the transactions (`TaskManager*`), the BCs, the `PrcTaskManage
 **Enqueueing / executions**
 - `AddTaskManagerSDT(in: &SDTTaskManager, out: &TaskManagerId)` — creates the task + its first execution.
 - `AddTaskManagerExecution(...)` — creates/brings forward a `Suspended` execution.
+- `AddTaskManagerNextExecution(in: &TaskManagerId)` — gives an enabled cyclic task its next `Suspended` execution when it has none pending (see §5.2). Called by the transaction on Update.
 - `AddTaskManagerExecutions` / `AddTaskManagerExecutionsAndReset` — re-enqueues the task (and its failed descendants); the *Reset* variant clears the retry counter. Used by the "Retry" action.
 - `AddTaskManagerReferenceValue` — attaches an id/value pair.
 
