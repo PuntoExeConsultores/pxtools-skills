@@ -19,7 +19,8 @@ Nothing pending.
   an in-grid `Delete`; no transaction, no Update. It covers where the node goes (directly under
   `section`, not in `fixedData`), a suggest as the insert variable, when to use it instead of 7.4, and
   that each action is gated by `PIsAuthorized`, which for an object with no security defined depends on
-  the project's security policy (often authorized by default).
+  the project's security policy (often authorized by default). The in-grid `Delete` needs
+  `forceInGrid="True"` too, or `ConvertInGridActions` can move it out of the grid.
 - **`pxtools/00-overview.md`** — the `InsertVariables` template element points to that section.
 
 ## 2026-11-18

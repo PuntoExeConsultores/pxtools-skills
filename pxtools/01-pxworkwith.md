@@ -916,7 +916,7 @@ There is no `transaction` node, so there is no insert/update/delete form.
         <parameter name="&amp;ErrorMessage" />
       </parameters>
     </action>
-    <action name="Delete" inGrid="True" confirm="Remove this member?" callType="Call"
+    <action name="Delete" inGrid="True" forceInGrid="True" confirm="Remove this member?" callType="Call"
             gxObject="DltGroupMember, Sales" refreshAction="Grid Refresh">
       <parameters>
         <parameter name="GroupId" />
@@ -937,8 +937,10 @@ There is no `transaction` node, so there is no insert/update/delete form.
   parameters and `refreshAction="Grid Refresh"`. The procedure validates (the entity exists, it is not
   already linked), inserts, and returns an error to show in `actionPostCode`. If the rows have an order,
   the procedure puts the new one last; the order is changed with in-grid up/down actions, never typed.
-- **Delete is an in-grid action** (`name="Delete"`, `inGrid="True"`) that calls a delete procedure,
-  so it appears inside each row and not above the grid. There is no Update: a link has nothing to edit.
+- **Delete is an in-grid action** (`name="Delete"`, `inGrid="True"` **and** `forceInGrid="True"`) that
+  calls a delete procedure, so it appears inside each row. Without `forceInGrid`, the
+  `ConvertInGridActions` setting may move it out of the grid, next to the "+" (see 9.5). There is no
+  Update: a link has nothing to edit.
 - **A suggest is the usual insert variable** for picking an entity among many; a dynamic combo box is
   fine when the list is short.
 - **The parent key travels on its own** when the section's base table is subordinated to the view's
