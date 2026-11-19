@@ -893,13 +893,10 @@ There is no `transaction` node, so there is no insert/update/delete form.
   <insertVariables>
     <variable name="PersonId" description="Person" basedOn="PersonId">
       <controlInfo suggest="Incremental" itemValue="PersonId"
-                   itemDescription="PersonSuggest" conditions="TenantId = &amp;TenantId"
+                   itemDescription="PersonSuggest" conditions="TenantId = &amp;Context.TenantId"
                    inputType="Descriptions" filterOperator="Contains" suggestMaxItems="10" />
     </variable>
   </insertVariables>
-  <codes>
-    <code type="Start"><![CDATA[&TenantId = &Context.TenantId]]></code>
-  </codes>
   <layouts>
     <layout>
       <attributes>
@@ -946,15 +943,14 @@ There is no `transaction` node, so there is no insert/update/delete form.
   Update: a link has nothing to edit.
 - **A suggest is the usual insert variable** for picking an entity among many; a dynamic combo box is
   fine when the list is short.
-- **The suggest's `conditions` use plain variables loaded in `Start`,** never an expression like
-  `&Context.TenantId`. The suggest is resolved by a separate request from the browser, which carries
-  the form's variables but not an SDT like `&Context`; a condition on it has been seen to return no
-  items. Load `&TenantId = &Context.TenantId` in the section's `Start` code and filter by `&TenantId`.
+- **`&Context` is available everywhere** (sections, suggests, actions): use `&Context.…` directly in
+  a suggest's `conditions` and in action parameters, without copying it into a variable first.
 - **The "+" lives outside the grid, so its parameters cannot be grid attributes.** An attribute in the
   parameters of a non-grid action takes the value of the **last row loaded** (empty when the grid is
   empty). The view's own parameters are the exception: the generator turns them into the parameter
   variable (`GroupId` above becomes `&GroupId`). Anything else, such as a tenant key that is not a view
-  parameter, must be a variable loaded in `Start`.
+  parameter, is passed straight from where it already lives (`&Context.TenantId`); there is no need
+  for an extra variable just to carry it into the action.
 - **The parent key travels on its own** when the section's base table is subordinated to the view's
   (its key starts with the view's key), as in 7.4. When it is not, pass it with
   `<parameters><parameter name="ChildAttribute" callerName="ViewAttribute" /></parameters>`.
