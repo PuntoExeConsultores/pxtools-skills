@@ -10,6 +10,17 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-11-19
+
+### Added
+- **`pxtools/01-pxworkwith.md`** — section 7.6, *Adding rows from a section without a transaction:
+  `insertVariables`*. A view section whose rows link existing entities declares insert variables
+  (placed left of the "+"), a nameless action that calls an add procedure and refreshes the grid, and
+  an in-grid `Delete`; no transaction, no Update. It covers where the node goes (directly under
+  `section`, not in `fixedData`), a suggest as the insert variable, when to use it instead of 7.4, and
+  that the actions stay hidden until the new procedures are authorized (`PIsAuthorized`).
+- **`pxtools/00-overview.md`** — the `InsertVariables` template element points to that section.
+
 ## 2026-11-18
 
 ### Changed

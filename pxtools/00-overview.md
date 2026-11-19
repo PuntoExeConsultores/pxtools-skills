@@ -297,7 +297,7 @@ The Template Elements available for PXWorkWith Selection (taken from real Templa
 | `ButtonActions` | Button actions |
 | `StandardButtonActions` | Standard actions (OK, Cancel) |
 | `OrderSelector` | Order selector |
-| `InsertVariables` | Insert variables |
+| `InsertVariables` | Insert variables of a section, left of the "+" (see `01-pxworkwith.md` §7.6) |
 | `GridPagingStatus` | Paging status |
 | `PageJump` | Page jump |
 | `PageRowChange` | Rows-per-page change |

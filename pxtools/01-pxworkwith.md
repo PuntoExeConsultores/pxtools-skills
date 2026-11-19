@@ -879,6 +879,78 @@ The view's Load code is generated **before** the tabs are loaded and their condi
 variable is ready when the condition is evaluated. Do not read attributes in `Refresh` or `Start`:
 those codes are for variables and parameters, not for the record.
 
+### 7.6 Adding rows from a section without a transaction: `insertVariables`
+
+When a section's rows are **links to entities that already exist** (a product in a category, a
+member in a group, a domain assigned to a user), a form to fill in is the wrong tool: the user only
+picks something. For that a section declares **`insertVariables`**: variables the generator places in
+the `InsertVariables` element of the layout template, **to the left of the "+" button**, above the
+grid. The "+" calls a procedure that receives those variables and inserts the row; the grid refreshes.
+There is no `transaction` node, so there is no insert/update/delete form.
+
+```xml
+<section name="Members" code="Members" wcname="GroupMembers" type="Grid">
+  <insertVariables>
+    <variable name="PersonId" description="Person" basedOn="PersonId">
+      <controlInfo controlType="Edit" suggest="Incremental" itemValue="PersonId"
+                   itemDescription="PersonSuggest" conditions="TenantId = &amp;Context.TenantId"
+                   inputType="Descriptions" filterOperator="Contains" suggestMaxItems="10" />
+    </variable>
+  </insertVariables>
+  <layouts>
+    <layout>
+      <attributes>
+        <attribute name="PersonId" description="Person" />
+        <attribute name="PersonName" description="Name" />
+      </attributes>
+    </layout>
+  </layouts>
+  <actions>
+    <action callType="Call" gxObject="AddGroupMember, Sales"
+            actionPostCode="If &amp;Error&#xD;&#xA;&#x9;Msg(&amp;ErrorMessage)&#xD;&#xA;EndIf"
+            refreshAction="Grid Refresh">
+      <parameters>
+        <parameter name="GroupId" />
+        <parameter name="&amp;PersonId" />
+        <parameter name="&amp;Error" />
+        <parameter name="&amp;ErrorMessage" />
+      </parameters>
+    </action>
+    <action name="Delete" inGrid="True" confirm="Remove this member?" callType="Call"
+            gxObject="DltGroupMember, Sales" refreshAction="Grid Refresh">
+      <parameters>
+        <parameter name="GroupId" />
+        <parameter name="PersonId" />
+      </parameters>
+    </action>
+  </actions>
+  <variables>
+    <variable name="Error" dataType="Boolean" />
+    <variable name="ErrorMessage" domain="MaxStr" />
+  </variables>
+</section>
+```
+
+- **Where the node goes:** directly under `<section>` of the view, next to `layouts` and `actions`.
+  It is not part of `fixedData`.
+- **The "+" is an action with no `name`.** It calls the procedure with the insert variables as
+  parameters and `refreshAction="Grid Refresh"`. The procedure validates (the entity exists, it is not
+  already linked), inserts, and returns an error to show in `actionPostCode`. If the rows have an order,
+  the procedure puts the new one last; the order is changed with in-grid up/down actions, never typed.
+- **Delete is an in-grid action** (`name="Delete"`, `inGrid="True"`) that calls a delete procedure,
+  so it appears inside each row and not above the grid. There is no Update: a link has nothing to edit.
+- **A suggest is the usual insert variable** for picking an entity among many; a dynamic combo box is
+  fine when the list is short.
+- **The parent key travels on its own** when the section's base table is subordinated to the view's
+  (its key starts with the view's key), as in 7.4. When it is not, pass it with
+  `<parameters><parameter name="ChildAttribute" callerName="ViewAttribute" /></parameters>`.
+- **Choosing between this and 7.4:** use 7.4 (a `transaction` in the section) when the row has its
+  own data to type in; use `insertVariables` when adding a row means choosing something that exists.
+- **Actions that call new procedures are hidden until they are authorized.** The generated code shows
+  each action only if `PIsAuthorized('<module>.<procedure>')` is true, so after creating the add and
+  delete procedures (and any up/down procedure) authorize them for the roles, or the "+", Delete and
+  the in-grid images do not appear.
+
 ---
 
 ## 8. Modes (Export, Charts, Update Grid Rows)
