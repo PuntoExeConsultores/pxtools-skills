@@ -20,10 +20,10 @@ Nothing pending.
   `section`, not in `fixedData`), a suggest as the insert variable, when to use it instead of 7.4, and
   that each action is gated by `PIsAuthorized`, which for an object with no security defined depends on
   the project's security policy (often authorized by default). The in-grid `Delete` needs
-  `forceInGrid="True"` too, or `ConvertInGridActions` can move it out of the grid. `&Context` is
-  available everywhere, so a suggest's conditions and the actions use `&Context.…` directly; and the
-  "+" (outside the grid) takes the view parameters or `&Context.…`, never grid attributes, which carry
-  the last loaded row.
+  `forceInGrid="True"` too, or `ConvertInGridActions` can move it out of the grid. A suggest's
+  conditions filter by a variable loaded in `Start`: with `&Context.…` the suggest returned nothing
+  (verified). Actions take `&Context.…` directly, and the "+" (outside the grid) takes the view
+  parameters or `&Context.…`, never grid attributes, which carry the last loaded row.
 - **`pxtools/00-overview.md`** — the `InsertVariables` template element points to that section.
 
 ## 2026-11-18

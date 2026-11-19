@@ -893,10 +893,13 @@ There is no `transaction` node, so there is no insert/update/delete form.
   <insertVariables>
     <variable name="PersonId" description="Person" basedOn="PersonId">
       <controlInfo suggest="Incremental" itemValue="PersonId"
-                   itemDescription="PersonSuggest" conditions="TenantId = &amp;Context.TenantId"
+                   itemDescription="PersonSuggest" conditions="TenantId = &amp;TenantId"
                    inputType="Descriptions" filterOperator="Contains" suggestMaxItems="10" />
     </variable>
   </insertVariables>
+  <codes>
+    <code type="Start"><![CDATA[&TenantId = &Context.TenantId]]></code>
+  </codes>
   <layouts>
     <layout>
       <attributes>
@@ -943,8 +946,14 @@ There is no `transaction` node, so there is no insert/update/delete form.
   Update: a link has nothing to edit.
 - **A suggest is the usual insert variable** for picking an entity among many; a dynamic combo box is
   fine when the list is short.
-- **`&Context` is available everywhere** (sections, suggests, actions): use `&Context.…` directly in
-  a suggest's `conditions` and in action parameters, without copying it into a variable first.
+- **A suggest's `conditions` filter by a plain variable loaded in `Start`, not by `&Context.…`.**
+  The suggest is resolved by a separate request from the browser that only runs its query; with
+  `conditions="TenantId = &Context.TenantId"` it returned no items (only the literal word "Suggest"),
+  and loading `&TenantId = &Context.TenantId` in the section's `Start` and filtering by `&TenantId`
+  fixed it (verified). The navigation report shows the suggest's query under *Suggestions*, which is
+  where to compare it against a suggest that works.
+- **Actions use `&Context.…` directly** in their parameters: the context is loaded wherever an event
+  runs, so there is no need to copy it into a variable for an action.
 - **The "+" lives outside the grid, so its parameters cannot be grid attributes.** An attribute in the
   parameters of a non-grid action takes the value of the **last row loaded** (empty when the grid is
   empty). The view's own parameters are the exception: the generator turns them into the parameter
