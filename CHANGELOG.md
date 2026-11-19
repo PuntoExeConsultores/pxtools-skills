@@ -18,7 +18,8 @@ Nothing pending.
   (placed left of the "+"), a nameless action that calls an add procedure and refreshes the grid, and
   an in-grid `Delete`; no transaction, no Update. It covers where the node goes (directly under
   `section`, not in `fixedData`), a suggest as the insert variable, when to use it instead of 7.4, and
-  that the actions stay hidden until the new procedures are authorized (`PIsAuthorized`).
+  that each action is gated by `PIsAuthorized`, which for an object with no security defined depends on
+  the project's security policy (often authorized by default).
 - **`pxtools/00-overview.md`** — the `InsertVariables` template element points to that section.
 
 ## 2026-11-18

@@ -946,10 +946,11 @@ There is no `transaction` node, so there is no insert/update/delete form.
   `<parameters><parameter name="ChildAttribute" callerName="ViewAttribute" /></parameters>`.
 - **Choosing between this and 7.4:** use 7.4 (a `transaction` in the section) when the row has its
   own data to type in; use `insertVariables` when adding a row means choosing something that exists.
-- **Actions that call new procedures are hidden until they are authorized.** The generated code shows
-  each action only if `PIsAuthorized('<module>.<procedure>')` is true, so after creating the add and
-  delete procedures (and any up/down procedure) authorize them for the roles, or the "+", Delete and
-  the in-grid images do not appear.
+- **Each action is gated by security.** The generated code shows an action only if
+  `PIsAuthorized('<module>.<procedure>')` is true. Whether a new procedure with no security defined is
+  authorized depends on the project's security policy: in many projects an object without security is
+  authorized by default, so a new procedure needs nothing. Look at the policy before blaming
+  authorization for a missing "+" or Delete.
 
 ---
 
