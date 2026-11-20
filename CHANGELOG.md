@@ -17,6 +17,9 @@ Nothing pending.
   read-only and need an `Accept(&Var);` rule in the instance's `transaction/rules`. It includes the
   recipe for editing data of another table on the form: load in `code Start` for Update/Delete, `Accept`,
   and save with `AfterInsert` / `AfterUpdate` rules.
+- **`pxtools/01-pxworkwith.md`** — section 4.5: the transaction node's code and rules cannot contain a
+  `For Each`, because they end up in a transaction; other tables are read through a procedure. The
+  mistake only shows at build time, as a failed pattern apply while saving the `RTrn…` transaction.
 
 ## 2026-11-19
 

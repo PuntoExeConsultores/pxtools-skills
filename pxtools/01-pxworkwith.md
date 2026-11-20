@@ -448,6 +448,12 @@ layout, loaded in `code Start` when `&Mode` is Update or Delete, `Accept` rules 
 and `AfterInsert` / `AfterUpdate` rules that save them (after the main record exists, before the
 commit). Without the `Accept` the variables render as plain text and cannot be edited.
 
+The transaction node's `code` (Start, AfterTrn…) and `rules` end up in a **transaction**, so they
+cannot contain a `For Each`. Read other tables through a procedure that returns the values
+(`RetX.Call(…, &out…)`, `&Flag = ChkX.Udp(…)`). The instance imports cleanly; the failure appears at
+build time as "Pattern apply failed" with "Saving Transaction 'RTrn…' … failed", and the transaction
+keeps its previous version.
+
 ### 4.6 Where a ControlType is defined
 
 | Place | Reach | When |
