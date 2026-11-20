@@ -428,6 +428,26 @@ problem that is not there.
 > **List every attribute.** The `<attributes>` node replaces the whole form: an omitted attribute
 > **disappears from the screen**. When adding a single combo you still have to enumerate all the rest.
 
+**Editable variables on the transaction form need an `Accept` rule.** A `<variable>` placed in the
+transaction's layout (or in one of its tabs) is generated **read-only**: GeneXus only accepts input on
+attributes unless told otherwise. Declare one rule per variable in the instance's
+`transaction/rules` node:
+
+```xml
+<rules>
+  <rule value="Accept(&amp;InStock);" />
+  <rule value="Accept(&amp;PreparationAreaId);" />
+  <!-- and the rules that persist them, inside the transaction's unit of work -->
+  <rule value="UpdProductExtra.Call(ProductId, &amp;InStock, &amp;PreparationAreaId);" condition="&amp;HasExtra" event="AfterInsert" />
+  <rule value="UpdProductExtra.Call(ProductId, &amp;InStock, &amp;PreparationAreaId);" condition="&amp;HasExtra" event="AfterUpdate" />
+</rules>
+```
+
+The full recipe for data that lives in **another table** but is edited on this form: variables in the
+layout, loaded in `code Start` when `&Mode` is Update or Delete, `Accept` rules to make them editable,
+and `AfterInsert` / `AfterUpdate` rules that save them (after the main record exists, before the
+commit). Without the `Accept` the variables render as plain text and cannot be edited.
+
 ### 4.6 Where a ControlType is defined
 
 | Place | Reach | When |

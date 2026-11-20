@@ -10,6 +10,14 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-11-20
+
+### Added
+- **`pxtools/01-pxworkwith.md`** — section 4.5: variables placed on the transaction form are generated
+  read-only and need an `Accept(&Var);` rule in the instance's `transaction/rules`. It includes the
+  recipe for editing data of another table on the form: load in `code Start` for Update/Delete, `Accept`,
+  and save with `AfterInsert` / `AfterUpdate` rules.
+
 ## 2026-11-19
 
 ### Added
