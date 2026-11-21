@@ -10,6 +10,13 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-11-21
+
+### Added
+- **`pxtools/01-pxworkwith.md`** — "Declaring a `<variable>`": `dataType="Image"` (and other media
+  types) is rejected by the pattern with `Variable <name> has an invalid Data Type`; an image variable
+  is based on an image attribute (`basedOn`).
+
 ## 2026-11-20
 
 ### Added

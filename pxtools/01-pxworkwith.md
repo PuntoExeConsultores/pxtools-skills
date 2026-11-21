@@ -526,6 +526,9 @@ Two forms that look right and are not:
 - **`SDT="SDTRoot.ItemName, Module"`** — qualifying the level inside `SDT` does not resolve. The root
   goes in `SDT` and the level in `SDTStructure`. The build answers
   `No variable definition type found for [<name>]`.
+- **`dataType="Image"`** (also `Blob`/media types) — not a basic type for the pattern. The build answers
+  `Variable <name> has an invalid Data Type`. Base the variable on an attribute of that type:
+  `basedOn="ProductImage"`.
 
 ### The part that makes this expensive: the file stops showing what you wrote
 
