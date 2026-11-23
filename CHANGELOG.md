@@ -10,6 +10,14 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-11-23
+
+### Added
+- **`pxtools/01-pxworkwith.md`** — "An in-grid action may not end up in the grid": do not force text
+  actions into the grid. `forceInGrid="True"` is for image actions (Delete, Display, Up/Down); text
+  actions forced into the grid are grouped into an "Actions" combo box per row. Text actions keep
+  `inGrid="True"` only and become buttons outside the grid acting on the selected row.
+
 ## 2026-11-21
 
 ### Added
