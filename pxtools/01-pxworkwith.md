@@ -1176,8 +1176,6 @@ GeneXus determines a Selection's **base table** **by inference**: it gathers (a)
 
 `forceInGrid="True"` opts a single action out of the conversion; `checkRowSelected` is the per-action form of the same control.
 
-**Do not force text actions into the grid.** `forceInGrid="True"` is for **image** actions (Delete, Display, Up/Down) that belong on each row. A **text** action (`controlType="Text"`) forced into the grid does not show as a link: when a row has more than one, the pattern groups them into an "Actions" combo box per row, which is awkward to use and hides what the row can do. Leave text actions with `inGrid="True"` only, so they are converted into buttons outside the grid that act on the selected row.
-
 Either way the action's code is generated in the grid's **Load**, so what it reads is whatever the **last iteration** left behind. **Everything the action uses — its `<parameters>`, its `previousCode`, its `condition` — must therefore be a grid column**, hidden with `visible="False"` when it should not be seen. The key included: the pattern does not add it on its own.
 
 ```xml
