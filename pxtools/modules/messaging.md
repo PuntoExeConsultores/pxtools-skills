@@ -77,8 +77,8 @@ screen that shows them.
    secret up in `MessagingAccounts` — **the same query that proves the origin also says which bot it
    is**, so there is no URL or endpoint per account. No matching account → 403.
 2. It writes a `MessagingMessage` row with the raw payload, stamped with the account, deduplicates by
-   the provider's message id, answers 200 immediately and hands the id to `MessagingProcessMessage`.
-3. **`MessagingProcessMessage`** runs in background. One turn per chat: if another turn is running,
+   the provider's message id, answers 200 immediately and hands the id to `PrcMessagingMessageTurn`.
+3. **`PrcMessagingMessageTurn`** runs in background. One turn per chat: if another turn is running,
    the message waits and the running turn picks it up when it finishes — without that, two messages
    in a row would start two conversations with inconsistent histories.
 4. It dispatches by type: a command, a callback from a button, a linking code, or a conversation turn.
@@ -88,6 +88,39 @@ screen that shows them.
 **The history filter is why the account matters most.** It reads the last turns of *this chat*; with
 two bots and one chat id, leaving the account out of that filter feeds one conversation into the
 other — and feeds it to the model.
+
+### 5.1 Documents
+
+The webhook stores a file sent to the bot as type `Document`, with its caption as the message text and
+the file's id, name, MIME type and size from the update. The turn then decides, in code and before any
+model is called:
+
+1. **Not a PDF** → `DocumentNotPdf`. **Over 20 MB** (the provider's download limit) →
+   `DocumentTooLarge`. The turn ends.
+2. The file is downloaded and offered to **`MessagingHandleDocument`** (`Personalized/`). A project
+   that recognises the document — an invoice, a statement, a form of its own — processes it, answers
+   `&Handled = True` with the reply, and the turn ends there: **no model, no quota**. The hook ships
+   answering "not mine".
+3. Otherwise the PDF's text (`PDFReaderGetText`, cut to a fixed maximum) is appended to the caption
+   and the turn goes on as an ordinary conversation, so the model can talk about the document.
+
+The local file is deleted when the turn ends, whichever way it went.
+
+### 5.2 AI quota
+
+Before calling the model the turn asks `RetAIUsageBalance` (see [ai.md](ai.md) §6). When the user is
+not unlimited and has used up the limit:
+
+- a message that is only a thanks — compared, lower-cased and without accents, against the
+  comma-separated list in `ThanksWords` — gets `ThanksReply`;
+- anything else gets `AIQuotaNotContracted` when the limit is zero, or `AIQuotaReached` when it is
+  spent.
+
+Neither answer enters the history. After every model call, both on a normal turn and when rendering
+the outcome of a confirmed action, the turn records the tokens with `AddAIUsage`.
+
+Documents handled by `MessagingHandleDocument` never reach this check: what the project processes
+itself does not consume quota.
 
 ## 6. Outbound: the outbox
 
@@ -131,6 +164,8 @@ the account has to travel with the invitation or it would be checked against the
   |---|---|
   | `MessagingHandleStartPayload` | What to do with a deep-link payload this module does not recognise — an invitation of the project's own. Ships answering "not mine" |
   | `MessagingHandleChatCallback` | What a button's callback means for a chat with no identity |
+  | `MessagingHandleDocument` | Whether a received PDF is the project's own business (§5.1). Ships answering "not mine" |
+  | `RetMessagingTexts` | Every fixed text the bot says, including the document and quota answers and the `ThanksWords` list |
   | `RetMessagingSystemPrompt` | What the model is told it is |
   | `RetMessagingExtraCommands` | Situational commands, offered only while they apply |
   | `RetMessagingMiniAppTarget` | Which screen an invitation opens |

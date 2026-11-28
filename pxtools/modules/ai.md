@@ -38,6 +38,8 @@ be asked.
 | `AIAccountApiKey` | |
 | `AIAccountModel` | |
 | `AIAccountMaxTokens` | |
+| `AIAccountInputTokenWeight` | CompanyTokens per input token — the model's US$ price per million input tokens (see §6) |
+| `AIAccountOutputTokenWeight` | CompanyTokens per output token — same, for output |
 
 The key is stored as text for the same reason as elsewhere in PXTools: the `Password` accessor
 truncates, and what protects the value is the access control on the screen.
@@ -63,9 +65,34 @@ Nothing in it belongs to one provider or to one consumer. Two parameters are wor
 - **`&AccessToken`** — the tool surface's credential **enters as a parameter**. The platform hands it
   to the engine; the engine does not own it and cannot obtain it.
 
-`AICallAnthropic` (`@Anthropic/APIs/`) is the implementation for one provider.
+`PrcAIAccountCallAnthropic` (`@Anthropic/APIs/`) is the implementation for one provider.
 
-## 6. What a project registers
+## 6. Usage and quota: CompanyTokens
+
+Token counts are not comparable across models — a thousand tokens of a large model cost many times
+what they cost on a small one. Usage is therefore recorded in **CompanyTokens**, a unit of provider
+cost: **1 CompanyToken = US$ 0.000001**. Each account converts its tokens with two weights, and each
+weight is simply **the model's price in US$ per million tokens** (a model at US$ 2 / US$ 10 per
+million input / output tokens has weights 2 and 10). A turn with 20,000 input and 800 output tokens
+costs 20,000 × 2 + 800 × 10 = 48,000 CompanyTokens.
+
+| Object | Where | What it does |
+|---|---|---|
+| `AIUsage` | `APIs/` | One row per user and month (`AIUsagePeriod` = yyyymm): input, output and CompanyTokens consumed. The user's name is an inferred subtype, for the screen |
+| `AddAIUsage` | `APIs/` | Adds one call's tokens to the user's month, converted with the account's weights. No commit: it joins the caller's unit of work |
+| `RetAIUsageBalance` | `Personalized/` | `Parm(in:&SecurityUserId, out:&Unlimited, out:&Limit, out:&Consumed)`. **Ships answering `Unlimited = True`**: the module records usage but does not decide who pays for it. A project that sells a quota answers the limit and what its user's company has consumed this month |
+| `RetAIModelCosts` | `Personalized/` | The price list: model name → the two weights. **Ships empty** |
+| `UpdAIAccountsTokenWeights` | `APIs/` | Copies the price list onto every account whose `AIAccountModel` matches. Accounts with no model, or a model not listed, keep their weights |
+
+**The account is never created from a Data Provider**: it holds the API key. Only the weights travel,
+matched by model name, so a provider's price change is one edit in `RetAIModelCosts` followed by the
+project's table-loading process. An account left without a model is not updated — give it the model
+explicitly, even when its connector has a default.
+
+The consumer decides what to do with the balance. The messaging turn is the first one (see
+[messaging.md](messaging.md)).
+
+## 7. What a project registers
 
 The module is small, and all three of its registrations are of the obligatory kind — the sort whose
 omission does not fail, it deletes or silently disables:
@@ -80,13 +107,21 @@ The module itself must also be declared in `SaveSystemModules`, or the seeding o
 with "Missing module" — and, worse, a module row created by hand is deleted the next time that
 procedure runs, because it starts by clearing the table.
 
-## 7. Adding a provider
+To charge usage, the project also calls **`UpdAIAccountsTokenWeights`** from its table-loading
+process, fills `RetAIModelCosts`, and answers `RetAIUsageBalance`. Without them usage is still
+recorded, at weight zero.
+
+Screens: `PXWorkWithAIAccounts` (with the two weights) and `PXWorkWithAIUsage` (read-only, by period),
+both under the AI menu.
+
+## 8. Adding a provider
 
 1. Write the connector in a child module (`@PXTools/@AI/@<Provider>/APIs/`) honouring the contract in
    §5.
 2. Add a value to `DynamicCallReferenceCode`.
 3. Declare it in `RetDynamicCallReferencesAI` with the right `ReferenceType`.
 4. Create the account row and pick the connector.
+5. Add the model's price to `RetAIModelCosts`.
 
 No consumer changes.
 

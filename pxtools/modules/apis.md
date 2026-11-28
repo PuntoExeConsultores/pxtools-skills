@@ -108,6 +108,7 @@ Supporting objects: `HWCHdrDesktop`/`HWCHdrResponsive` (headers), `Publico`/`Pri
 | **Certificate** | X.509/keystore: PFX→JKS, public key from a PEM. | `CreateKeyStoreFromPFX`, `GetPublicKeyFromPemFile`. |
 | **Components / ErrorLog** | Internal naming of web components; deduplicated error logging. | `RetComponentPrefix`; `AddErrorLog`, the `SDTErrorLog` SDT. |
 | **Confirm** | Reusable confirmation/message dialogs (desktop + responsive). | `HPEXE_Confirm`, `ResponsiveConfirm` (see §9). |
+| **PDFs** | Reading a PDF's text through the `PDFReader` External Object (PDFBox): the whole text, positioned fragments, or the text inside named rectangles. Coordinates are PDF points (1/72"), origin top-left; an A4 page is 595 × 842. Every method of the External Object declares `DataType = 'PDFReaderResultData, PXTools.APIs'`: without it GeneXus generates the call as `void` and the callers do not compile. | `PDFReaderGetText` (plain text, fragments joined by line), `PDFReaderGetInfo` (pages, lines and fragments with position), `PDFReaderGetRegionsText` (text of each named region, trimmed). |
 
 *(Plus: BlobTools, HTML, KB, Links, Network, Password, QRCode, Session, Tabs, Timezones, URL, Window, Zip, XMLUtil, Platform_APIs, …)*
 
