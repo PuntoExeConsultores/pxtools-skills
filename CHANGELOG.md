@@ -10,6 +10,19 @@ were published to `master`.
 
 Nothing pending.
 
+## 2026-11-28
+
+### Added
+- **`pxtools/modules/ai.md`** — section 6, "Usage and quota: CompanyTokens":
+  - the unit (1 CompanyToken = US$ 0.000001 of provider cost) and the two token weights per account, each being the model's US$ price per million tokens;
+  - the `AIUsage` table, `AddAIUsage`, the `RetAIUsageBalance` hook (ships unlimited), and the `RetAIModelCosts` price list (ships empty), copied onto the accounts by `UpdAIAccountsTokenWeights`.
+- **`pxtools/modules/messaging.md`** — section 5.1, "Documents": how a received PDF is filtered and offered to the new `MessagingHandleDocument` hook before any model is called, and otherwise passed to the model as text.
+- **`pxtools/modules/messaging.md`** — section 5.2, "AI quota": the balance check before the model, the fixed thanks / quota answers, and the usage recorded after every model call.
+- **`pxtools/modules/apis.md`** — the **PDFs** group in the utility catalogue: `PDFReaderGetText`, `PDFReaderGetInfo`, `PDFReaderGetRegionsText`. Each method of the `PDFReader` External Object must declare its return `DataType`; without it GeneXus generates a `void` call and the callers do not compile.
+
+### Changed
+- **`pxtools/modules/ai.md`** — the account table lists the two weights; "What a project registers" adds the quota pieces; "Adding a provider" adds the price-list step.
+
 ## 2026-11-21
 
 ### Added
